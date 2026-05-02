@@ -7,6 +7,31 @@
 - GitHub/GitLab/Bitbucket 등에 레포가 연결되어 있거나, Vercel CLI로 배포할 수 있음
 - Node 패키지 매니저는 **npm** 기준 (`package-lock.json` 사용)
 
+## 이 레포에서 이미 맞춰 둔 것
+
+- **GitHub**: [SuperWallaby/math-lens-tutor](https://github.com/SuperWallaby/math-lens-tutor) (`main` 푸시)
+- **Vercel 프로덕션(별칭 예시)**: `https://study-alpha-rosy.vercel.app` — 팀·프로젝트 이름에 따라 URL은 대시보드 기준으로 확인
+- **웹만 배포**: 루트에 `.vercelignore`로 `flutter_app/`, `mobile/` 업로드 제외 → 빌드 시간·용량 절감
+- **타입 검사**: `tsconfig.json`에서 `flutter_app`, `mobile` 제외 → Expo 코드가 Next 빌드를 깨지 않음
+
+Git 저장소는 처음부터 있었고(`git init` 중복 불필요), 원격만 추가해 푸시한 상태입니다.
+
+### GitHub 자동 배포가 안 될 때
+
+Vercel 대시보드에서 GitHub **Login Connection**이 없으면 레포 Import/Git 연동이 실패할 수 있습니다. [계정 연결 문서](https://vercel.com/docs/accounts/create-an-account#login-methods-and-connections)를 따라 GitHub를 연결한 뒤, 프로젝트에 레포를 연결하면 `git push`마다 자동 배포됩니다. 연결 전에는 **Vercel CLI**로 배포할 수 있습니다.
+
+```bash
+export npm_config_cache="$(pwd)/.npm-cache-cli"
+mkdir -p "$npm_config_cache"
+npx vercel@latest deploy --prod --yes --scope <팀-slug>
+```
+
+팀이 여러 개면 CLI가 `--scope`를 요구합니다. 대시보드 URL의 `/team-slug/project` 형태를 참고하세요.
+
+### 빌드 시 `.env` 경고
+
+Vercel 빌드 로그에 로컬 `.env` 감지 경고가 나오면, 프로덕션·프리뷰용 값은 **Vercel 환경 변수**로만 두고 저장소에는 시크릿을 넣지 마세요(`.gitignore`에 `.env*` 포함).
+
 ## 1. Vercel에서 새 프로젝트 만들기
 
 1. [Vercel Dashboard](https://vercel.com) → **Add New…** → **Project**
