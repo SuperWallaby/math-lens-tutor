@@ -1,4 +1,4 @@
-package com.yourcompany.math_lens_tutor
+package com.mathlens.tutor
 
 import io.flutter.embedding.android.FlutterActivity
 
