@@ -4,14 +4,29 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "dev:next": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+
+    "flutter:pub-get": "flutter pub get --directory=flutter_app",
+    "flutter:run": "cd flutter_app && flutter run --dart-define=API_BASE_URL=http://localhost:3000",
+    "flutter:run:android-emulator": "cd flutter_app && flutter run --dart-define=API_BASE_URL=http://10.0.2.2:3000",
+    "flutter:run:chrome": "cd flutter_app && flutter run -d chrome --dart-define=API_BASE_URL=http://localhost:3000",
+    "flutter:run:macos": "cd flutter_app && flutter run -d macos --dart-define=API_BASE_URL=http://localhost:3000",
+
+    "mobile:expo": "npm run start --prefix mobile"
   },
   "dependencies": {
+    "chart.js": "^4.5.1",
+    "clsx": "^2.1.1",
+    "katex": "^0.16.45",
+    "mongodb": "^7.2.0",
     "next": "16.2.4",
     "react": "19.2.4",
-    "react-dom": "19.2.4"
+    "react-chartjs-2": "^5.3.1",
+    "react-dom": "19.2.4",
+    "zod": "^4.3.6"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
