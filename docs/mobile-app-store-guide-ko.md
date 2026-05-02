@@ -1,31 +1,43 @@
 # Flutter 스토어 출시 (짧은 메모)
 
-## 앱 ID (코드에 이미 맞춤)
+## 번들 ID / 패키지 이름 (한 가지)
 
-- **Bundle / applicationId:** `com.mathlens.tutor`  
-- Android·iOS·macOS·Linux·Windows 식별자는 위와 맞췄다. 스토어( App Store Connect / Play Console )에 **같은 ID**로 앱을 만들면 된다.
+**`com.mathlens.tutor`**
 
-## API 주소 (배포한 웹 URL)
+- **Apple:** App Store Connect·Xcode의 **Bundle ID**  
+- **Google:** Play Console **애플리케이션 ID**(패키지 이름) — 생성 후 변경 불가  
 
-빌드할 때마다 프로덕션 HTTPS를 넣는다.
+코드(Android `applicationId`, iOS `PRODUCT_BUNDLE_IDENTIFIER` 등)는 이미 위 값으로 맞춰 두었다.
+
+## API 주소 (프로덕션)
+
+기본값이 코드에 박혀 있다: **`https://study-alpha-rosy.vercel.app`** (`flutter_app/lib/services/api_client.dart`)
+
+로컬 Next만 쓸 때만 덮어쓴다:
 
 ```bash
 cd flutter_app
-flutter build ipa --dart-define=API_BASE_URL=https://<프로덕션-도메인>
-flutter build appbundle --dart-define=API_BASE_URL=https://<프로덕션-도메인>
+flutter run --dart-define=API_BASE_URL=http://localhost:3000
 ```
 
-## `.env` — 내가 대신 못 넣는 이유
+스토어 빌드는 기본값 그대로 두거나, 명시하려면:
 
-Azure 키·Mongo URI·Vercel 환경 변수는 **당신 계정·대시보드**에서만 설정 가능하다. 레포 루트 `.env.example`을 복사해 로컬은 `.env.local`로 두고, Vercel에는 **같은 변수 이름**으로 Environment Variables에 붙여 넣으면 된다.
+```bash
+flutter build ipa --dart-define=API_BASE_URL=https://study-alpha-rosy.vercel.app
+flutter build appbundle --dart-define=API_BASE_URL=https://study-alpha-rosy.vercel.app
+```
+
+## `.env`
+
+서버(Azure·Mongo)는 레포 루트 `.env.example` → `.env.local` / Vercel 환경 변수. Flutter 앱 바이너리에는 넣지 않는다.
 
 ## 스토어에 넣을 URL
 
-- 개인정보: `https://<프로덕션-도메인>/privacy`
+- 개인정보: `https://study-alpha-rosy.vercel.app/privacy`
 
 ## 계정 있을 때만 할 일
 
-**Apple:** App Store Connect에 위 Bundle ID로 앱 생성 → Xcode 서명·프로비저닝 → TestFlight → 심사.  
-**Google:** Play Console에 패키지 `com.mathlens.tutor`로 앱 생성(변경 불가) → 데이터 보안 설문 → 내부 테스트 `.aab` → 프로덕션.
+**Apple:** App Store Connect에 **Bundle ID `com.mathlens.tutor`**로 앱 생성 → Xcode 서명·프로비저닝 → TestFlight → 심사.  
+**Google:** Play Console에 **패키지 `com.mathlens.tutor`**로 앱 생성 → 데이터 보안 설문 → 내부 테스트 `.aab` → 프로덕션.
 
-웹(Vercel) 배포 상세는 `docs/vercel-deploy-guide-ko.md`.
+웹 배포 상세는 `docs/vercel-deploy-guide-ko.md`.

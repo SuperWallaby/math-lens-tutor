@@ -4,18 +4,18 @@ Flutter native client for the Math Lens Tutor backend.
 
 ## Backend URL
 
-The app talks to the existing Next.js API. Pass the backend URL at run/build time:
+기본값은 프로덕션 **`https://study-alpha-rosy.vercel.app`** (`ApiClient` 컴파일 상수).
+
+로컬 Next 서버를 쓸 때만 덮어쓴다:
 
 ```bash
 flutter run --dart-define=API_BASE_URL=http://localhost:3000
 ```
 
-Common values:
+다른 환경 예시:
 
-- iOS Simulator: `http://localhost:3000`
-- Android Emulator: `http://10.0.2.2:3000`
-- Physical device: `http://<your-lan-ip>:3000`
-- Production: your deployed HTTPS URL
+- iOS Simulator (로컬): `http://localhost:3000`
+- Android Emulator (로컬): `http://10.0.2.2:3000`
 
 ## Anonymous Device ID
 
@@ -28,7 +28,9 @@ so the backend can keep learning records separated per device.
 ```bash
 cd flutter_app
 flutter pub get
-flutter run --dart-define=API_BASE_URL=http://localhost:3000
+flutter run
+# 로컬 백엔드:
+# flutter run --dart-define=API_BASE_URL=http://localhost:3000
 ```
 
 ## Build

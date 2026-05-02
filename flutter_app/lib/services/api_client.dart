@@ -14,7 +14,7 @@ class ApiClient {
 
   static const _defaultBaseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://localhost:3000',
+    defaultValue: 'https://study-alpha-rosy.vercel.app',
   );
   static const _deviceIdKey = 'anonymous_device_id';
 
