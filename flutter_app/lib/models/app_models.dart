@@ -1,3 +1,10 @@
+/// `/api/analyze` multipart 필드 `qualityMode` 값과 동일 (enum.name)
+enum AnalyzeQualityMode {
+  fast,
+  balanced,
+  accurate,
+}
+
 class SolutionAnalysis {
   const SolutionAnalysis({
     required this.problemText,
@@ -16,7 +23,7 @@ class SolutionAnalysis {
       problemText: json['problemText'] as String? ?? '',
       extractedStudentAnswer: json['extractedStudentAnswer'] as String? ?? '',
       inferredCorrectAnswer: json['inferredCorrectAnswer'] as String? ?? '',
-      isLikelyCorrect: json['isLikelyCorrect'] as bool? ?? false,
+      isLikelyCorrect: _readBool(json['isLikelyCorrect']),
       confidence: (json['confidence'] as num? ?? 0).toDouble(),
       solutionSteps: _stringList(json['solutionSteps']),
       errorSummary: json['errorSummary'] as String? ?? '',
@@ -251,4 +258,18 @@ class WeakConcept {
 
 List<String> _stringList(Object? value) {
   return ((value as List?) ?? []).whereType<String>().toList();
+}
+
+bool _readBool(Object? value) {
+  if (value is bool) {
+    return value;
+  }
+  if (value is int) {
+    return value != 0;
+  }
+  if (value is String) {
+    final s = value.trim().toLowerCase();
+    return s == 'true' || s == '1' || s == 'yes';
+  }
+  return false;
 }

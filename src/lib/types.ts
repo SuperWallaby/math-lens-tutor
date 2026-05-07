@@ -64,9 +64,18 @@ export const generatedProblemSetSchema = z.object({
   problems: z.array(generatedProblemSchema).length(5),
 });
 
+/** 한 번의 비전 호출로 분석 + 유사 문제 세트를 함께 받을 때 */
+export const unifiedAnalyzeProblemSetSchema = z.object({
+  analysis: solutionAnalysisSchema,
+  problemSet: generatedProblemSetSchema,
+});
+
 export type SolutionAnalysis = z.infer<typeof solutionAnalysisSchema>;
 export type GeneratedProblem = z.infer<typeof generatedProblemSchema>;
 export type GeneratedProblemSet = z.infer<typeof generatedProblemSetSchema>;
+export type UnifiedAnalyzeProblemSet = z.infer<
+  typeof unifiedAnalyzeProblemSetSchema
+>;
 
 export type SolutionSubmission = {
   id: string;

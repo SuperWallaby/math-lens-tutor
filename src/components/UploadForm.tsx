@@ -9,6 +9,9 @@ export function UploadForm() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [qualityMode, setQualityMode] = useState<
+    "fast" | "balanced" | "accurate"
+  >("balanced");
   const previewUrlRef = useRef<string | null>(null);
 
   useEffect(() => {
@@ -50,6 +53,7 @@ export function UploadForm() {
 
     const formData = new FormData();
     formData.append("image", file);
+    formData.append("qualityMode", qualityMode);
 
     const response = await fetch("/api/analyze", {
       method: "POST",
@@ -99,6 +103,42 @@ export function UploadForm() {
           />
         </div>
       ) : null}
+      <fieldset className="mt-5">
+        <legend className="text-sm font-medium text-slate-200">
+          응답 모드
+        </legend>
+        <p className="mt-1 text-xs text-slate-400">
+          빠른 응답은 이미지 한 번으로 분석과 유사 문제를 함께 생성합니다. 정확 모드는
+          분석 후 문제 생성까지 두 단계로 나눕니다.
+        </p>
+        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+          {(
+            [
+              { value: "fast" as const, label: "빠른 응답" },
+              { value: "balanced" as const, label: "밸런스" },
+              { value: "accurate" as const, label: "정확한 응답" },
+            ] as const
+          ).map((opt) => (
+            <label
+              key={opt.value}
+              className={`flex cursor-pointer items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm transition ${
+                qualityMode === opt.value
+                  ? "border-blue-400 bg-blue-500/20 text-white"
+                  : "border-white/10 bg-slate-900/60 text-slate-300 hover:border-white/20"
+              }`}
+            >
+              <input
+                type="radio"
+                name="qualityModeUi"
+                checked={qualityMode === opt.value}
+                onChange={() => setQualityMode(opt.value)}
+                className="h-4 w-4 accent-blue-500"
+              />
+              {opt.label}
+            </label>
+          ))}
+        </div>
+      </fieldset>
       {error ? <p className="mt-4 text-sm text-red-300">{error}</p> : null}
       <button
         type="submit"

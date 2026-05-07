@@ -2,7 +2,7 @@
 
 ## 번들 ID / 패키지 이름 (한 가지)
 
-**`com.mathlens.tutor`**
+**`com.neoproject.study`**
 
 - **Apple:** App Store Connect·Xcode의 **Bundle ID**  
 - **Google:** Play Console **애플리케이션 ID**(패키지 이름) — 생성 후 변경 불가  
@@ -23,9 +23,34 @@ flutter run --dart-define=API_BASE_URL=http://localhost:3000
 스토어 빌드는 기본값 그대로 두거나, 명시하려면:
 
 ```bash
+cd flutter_app
 flutter build ipa --dart-define=API_BASE_URL=https://study-alpha-rosy.vercel.app
 flutter build appbundle --dart-define=API_BASE_URL=https://study-alpha-rosy.vercel.app
 ```
+
+같은 내용 한 줄 스크립트:
+
+```bash
+./flutter_app/scripts/build-ios-ipa-release.sh
+```
+
+**코드 서명:** Xcode에서 `Runner` 타깃 → Signing & Capabilities → **Team** 을 선택해야 `flutter build ipa` 가 된다. (본인 Mac; 에이전트/서버에는 보통 인증서 없음)
+
+**Xcode로 프로젝트 열기:** `open flutter_app/ios/Runner.xcworkspace`
+
+## Archives 탭이 비어 있을 때
+
+Organizer의 **Archives**는 **`Product → Archive`를 성공한 뒤**에만 쌓입니다. 터미널의 `flutter build ipa`가 **코드 서명 실패**로 끝났다면 아카이브도 생성되지 않습니다.
+
+**본인 Mac에서 Xcode로 아카이브 (권장 순서):**
+
+1. `open flutter_app/ios/Runner.xcworkspace`
+2. 왼쪽 **Runner** 프로젝트 → **Runner** 타깃 → **Signing & Capabilities** → **Team** 선택 (유료 Apple Developer), **Automatically manage signing** 켜기
+3. 상단 실행 대상을 실제 기기가 아니라 **Any iOS Device (arm64)** 로 선택 (시뮬레이터면 Archive 메뉴가 안 됨)
+4. 메뉴 **Product → Archive** → 완료 후 Organizer 창에 아카이브 등장
+5. 아카이브 선택 → **Distribute App** → **App Store Connect** → **Upload**
+
+업로드 직후 Connect **TestFlight**에서 빌드가 보이면 성공입니다.
 
 ## `.env`
 
@@ -37,7 +62,7 @@ flutter build appbundle --dart-define=API_BASE_URL=https://study-alpha-rosy.verc
 
 ## 계정 있을 때만 할 일
 
-**Apple:** App Store Connect에 **Bundle ID `com.mathlens.tutor`**로 앱 생성 → Xcode 서명·프로비저닝 → TestFlight → 심사.  
-**Google:** Play Console에 **패키지 `com.mathlens.tutor`**로 앱 생성 → 데이터 보안 설문 → 내부 테스트 `.aab` → 프로덕션.
+**Apple:** App Store Connect에 **Bundle ID `com.neoproject.study`**로 앱 생성 → Xcode 서명·프로비저닝 → TestFlight → 심사.  
+**Google:** Play Console에 **패키지 `com.neoproject.study`**로 앱 생성 → 데이터 보안 설문 → 내부 테스트 `.aab` → 프로덕션.
 
 웹 배포 상세는 `docs/vercel-deploy-guide-ko.md`.

@@ -21,10 +21,14 @@ class ApiClient {
   final String baseUrl;
   final Future<String> _deviceId;
 
-  Future<AnalyzeResult> analyzeImage(File imageFile) async {
+  Future<AnalyzeResult> analyzeImage(
+    File imageFile, {
+    AnalyzeQualityMode qualityMode = AnalyzeQualityMode.balanced,
+  }) async {
     final uri = Uri.parse('$baseUrl/api/analyze');
     final request = http.MultipartRequest('POST', uri);
     request.headers['X-Device-Id'] = await _deviceId;
+    request.fields['qualityMode'] = qualityMode.name;
     request.files.add(
       await http.MultipartFile.fromPath('image', imageFile.path),
     );

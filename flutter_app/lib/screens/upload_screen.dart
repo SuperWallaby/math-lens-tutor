@@ -85,6 +85,7 @@ class _UploadScreenState extends State<UploadScreen> {
   bool _loading = false;
   String? _error;
   bool _dragHover = false;
+  AnalyzeQualityMode _qualityMode = AnalyzeQualityMode.balanced;
 
   Future<void> _onDropDone(DropDoneDetails detail) async {
     if (!mounted) return;
@@ -186,7 +187,10 @@ class _UploadScreenState extends State<UploadScreen> {
     });
 
     try {
-      final AnalyzeResult result = await widget.apiClient.analyzeImage(image);
+      final AnalyzeResult result = await widget.apiClient.analyzeImage(
+        image,
+        qualityMode: _qualityMode,
+      );
       if (!mounted) return;
       Navigator.of(context).pushReplacement(
         MaterialPageRoute(
@@ -247,6 +251,44 @@ class _UploadScreenState extends State<UploadScreen> {
                   ),
                 ],
               ],
+            ),
+            const SizedBox(height: 14),
+            Text(
+              '응답 모드',
+              style: TextStyle(
+                color: Color(0xFFE2E8F0),
+                fontWeight: FontWeight.w600,
+                fontSize: 14,
+              ),
+            ),
+            const SizedBox(height: 6),
+            const Text(
+              '빠른 응답: 이미지 한 번에 분석+유사 문제. 정확: 분석 후 문제 생성(두 단계).',
+              style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12, height: 1.4),
+            ),
+            const SizedBox(height: 10),
+            SegmentedButton<AnalyzeQualityMode>(
+              segments: const [
+                ButtonSegment<AnalyzeQualityMode>(
+                  value: AnalyzeQualityMode.fast,
+                  label: Text('빠른'),
+                  tooltip: '빠른 응답',
+                ),
+                ButtonSegment<AnalyzeQualityMode>(
+                  value: AnalyzeQualityMode.balanced,
+                  label: Text('밸런스'),
+                ),
+                ButtonSegment<AnalyzeQualityMode>(
+                  value: AnalyzeQualityMode.accurate,
+                  label: Text('정확'),
+                  tooltip: '정확한 응답',
+                ),
+              ],
+              selected: {_qualityMode},
+              onSelectionChanged: (Set<AnalyzeQualityMode> next) {
+                if (next.isEmpty || _loading) return;
+                setState(() => _qualityMode = next.first);
+              },
             ),
             const SizedBox(height: 14),
             FilledButton.icon(

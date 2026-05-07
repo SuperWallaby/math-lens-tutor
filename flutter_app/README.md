@@ -33,6 +33,16 @@ flutter run
 # flutter run --dart-define=API_BASE_URL=http://localhost:3000
 ```
 
+## iOS app icon & launch screen
+
+Regenerate from a master PNG (auto square-crop to 1024×1024 center):
+
+```bash
+python3 scripts/generate_ios_icons_from_master.py branding/app-icon-master-source.png
+```
+
+Writes into `ios/Runner/Assets.xcassets/AppIcon.appiconset/` and `LaunchImage.imageset/`.
+
 ## Build
 
 ```bash
@@ -41,10 +51,11 @@ flutter build appbundle --dart-define=API_BASE_URL=https://your-app.vercel.app
 flutter build ipa --dart-define=API_BASE_URL=https://your-app.vercel.app
 ```
 
-Before store submission, update:
+Store identifiers are **`com.neoproject.study`** (`android/app/build.gradle.kts`, Xcode Runner bundle ID).
 
-- Android application id: `android/app/build.gradle.kts`
-- iOS bundle id: Xcode Runner target settings
+Before store submission, verify:
+
+- Android application id / iOS bundle id match App Store Connect / Play Console
 - Camera/photo permission copy: Android Manifest and iOS Info.plist
 # math_lens_tutor
 

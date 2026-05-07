@@ -8,7 +8,28 @@ import type { GeneratedProblem, ProblemAttempt } from "@/lib/types";
 type GeneratedChoice = NonNullable<GeneratedProblem["choices"]>[number];
 
 function normalizeAnswer(answer: string) {
-  return answer.replace(/\s+/g, "").toLowerCase();
+  return answer
+    .replace(/\s+/g, "")
+    .replace(/\u2212/g, "-")
+    .replace(/，/g, ",")
+    .toLowerCase();
+}
+
+/** LLM 이 객관식에 번호(1~5)만 넣는 경우가 있어 라벨과 비교되며 전부 오답 처리되는 것을 막음 */
+function expectedAnswerForProblem(problem: GeneratedProblem): string {
+  const raw = problem.correctAnswer.trim();
+  const choices = problem.choices ?? [];
+  const byId = choices.find((c) => c.id === raw);
+  if (byId) {
+    return byId.label;
+  }
+  const byLabel = choices.find(
+    (c) => normalizeAnswer(c.label) === normalizeAnswer(raw),
+  );
+  if (byLabel) {
+    return byLabel.label;
+  }
+  return raw;
 }
 
 export async function POST(request: Request) {
@@ -45,8 +66,9 @@ export async function POST(request: Request) {
         choice.id === body.answer || choice.label === body.answer,
     );
     const submittedAnswer = chosenChoice?.label ?? body.answer;
+    const expected = expectedAnswerForProblem(problem);
     const isCorrect =
-      normalizeAnswer(submittedAnswer) === normalizeAnswer(problem.correctAnswer);
+      normalizeAnswer(submittedAnswer) === normalizeAnswer(expected);
 
     const attempt: ProblemAttempt = {
       id: randomUUID(),
@@ -57,7 +79,7 @@ export async function POST(request: Request) {
       isCorrect,
       feedback: isCorrect
         ? "정답입니다. 같은 풀이 전략을 다음 문제에도 적용해 보세요."
-        : `오답입니다. 정답은 ${problem.correctAnswer}입니다. ${problem.explanation}`,
+        : `오답입니다. 정답은 ${expected}입니다. ${problem.explanation}`,
       createdAt: new Date().toISOString(),
     };
 
