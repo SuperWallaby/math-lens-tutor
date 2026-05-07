@@ -4,6 +4,7 @@ import 'screens/home_screen.dart';
 import 'services/api_client.dart';
 
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
   runApp(MathLensTutorApp(apiClient: ApiClient()));
 }
 
