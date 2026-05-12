@@ -308,7 +308,7 @@ class _UploadScreenState extends State<UploadScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              '모드를 고른 뒤 사진을 넣으면 자동으로 분석이 시작됩니다. 진행 상태는 아래 안내와 막대로 표시되며, 완료 후 「결과 보기」를 눌러 이동하세요.',
+              '분석·유사 문제 생성 요청 시 서버가 사용할 응답 모드를 고릅니다.',
               style: TextStyle(
                 color: const Color(0xFF94A3B8),
                 fontSize: TabletLayout.bodySmall(context),
