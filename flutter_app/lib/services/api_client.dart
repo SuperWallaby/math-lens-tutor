@@ -1,11 +1,13 @@
 import 'dart:convert';
-import 'dart:io';
 import 'dart:math';
+import 'dart:typed_data';
 
 import 'package:http/http.dart' as http;
+import 'package:http_parser/http_parser.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/app_models.dart';
+import 'image_prepare_for_upload.dart';
 
 class ApiClient {
   ApiClient({String? baseUrl})
@@ -21,16 +23,36 @@ class ApiClient {
   final String baseUrl;
   final Future<String> _deviceId;
 
-  Future<AnalyzeResult> analyzeImage(
-    File imageFile, {
+  MediaType _guessImageMediaType(String filename) {
+    final lower = filename.toLowerCase();
+    if (lower.endsWith('.png')) return MediaType('image', 'png');
+    if (lower.endsWith('.webp')) return MediaType('image', 'webp');
+    if (lower.endsWith('.gif')) return MediaType('image', 'gif');
+    if (lower.endsWith('.bmp')) return MediaType('image', 'bmp');
+    if (lower.endsWith('.heic') || lower.endsWith('.heif')) {
+      return MediaType('image', 'heic');
+    }
+    return MediaType('image', 'jpeg');
+  }
+
+  /// 모든 플랫폼(웹 포함)에서 업로드에 사용합니다.
+  Future<AnalyzeResult> analyzeImageBytes(
+    Uint8List bytes, {
+    required String filename,
     AnalyzeQualityMode qualityMode = AnalyzeQualityMode.balanced,
   }) async {
+    final prepared = prepareImageBytesForAnalyzeUpload(bytes, filename);
     final uri = Uri.parse('$baseUrl/api/analyze');
     final request = http.MultipartRequest('POST', uri);
     request.headers['X-Device-Id'] = await _deviceId;
     request.fields['qualityMode'] = qualityMode.name;
     request.files.add(
-      await http.MultipartFile.fromPath('image', imageFile.path),
+      http.MultipartFile.fromBytes(
+        'image',
+        prepared.bytes,
+        filename: prepared.filename,
+        contentType: _guessImageMediaType(prepared.filename),
+      ),
     );
 
     final streamed = await request.send();
