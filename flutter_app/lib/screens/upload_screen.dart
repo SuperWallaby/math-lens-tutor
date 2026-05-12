@@ -1,10 +1,10 @@
-import 'dart:io';
-
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
+import '../io_compat/read_path_bytes.dart';
+import '../layout/tablet_layout.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
 import 'analysis_screen.dart';
@@ -81,11 +81,18 @@ class UploadScreen extends StatefulWidget {
 
 class _UploadScreenState extends State<UploadScreen> {
   final _picker = ImagePicker();
-  File? _image;
-  bool _loading = false;
+  Uint8List? _imageBytes;
+  String _uploadFilename = 'upload.jpg';
+  /// 사진 선택 등으로 시작한 분석 진행 여부(UI만 바꿈, 메인 버튼 스피너 아님).
+  bool _analysisBusy = false;
+  /// 사용자가「다시 분석」만 눌렀을 때 해당 버튼에만 로딩 표시.
+  bool _buttonSubmitLoading = false;
+  AnalyzeResult? _readyResult;
   String? _error;
   bool _dragHover = false;
   AnalyzeQualityMode _qualityMode = AnalyzeQualityMode.balanced;
+  /// 증가시키면 이전 분석 요청 완료 콜백 무시(새 이미지 등).
+  int _analyzeSeq = 0;
 
   Future<void> _onDropDone(DropDoneDetails detail) async {
     if (!mounted) return;
@@ -118,22 +125,18 @@ class _UploadScreenState extends State<UploadScreen> {
     }
 
     try {
-      final src = File(chosen.path);
-      if (!await src.exists()) {
-        if (!mounted) return;
-        setState(() => _error = '드롭한 파일을 찾을 수 없습니다.');
-        return;
-      }
-      final ext = _inferImageExtension(chosen);
-      final tmp = File(
-        '${Directory.systemTemp.path}/math_lens_drop_${DateTime.now().millisecondsSinceEpoch}$ext',
-      );
-      await tmp.writeAsBytes(await src.readAsBytes(), flush: true);
+      final bytes = await readLocalPathBytes(chosen.path);
       if (!mounted) return;
+      final name = chosen.name.trim().isNotEmpty
+          ? chosen.name
+          : 'drop_${DateTime.now().millisecondsSinceEpoch}${_inferImageExtension(chosen)}';
       setState(() {
-        _image = tmp;
+        _imageBytes = bytes;
+        _uploadFilename = name;
+        _readyResult = null;
         _error = null;
       });
+      _scheduleAnalyzeAfterImageSet();
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = '파일을 불러오지 못했습니다: $e');
@@ -168,45 +171,80 @@ class _UploadScreenState extends State<UploadScreen> {
       return;
     }
 
+    final bytes = await picked.readAsBytes();
+    final name = picked.name.trim().isNotEmpty
+        ? picked.name
+        : 'capture_${DateTime.now().millisecondsSinceEpoch}.jpg';
+
     setState(() {
-      _image = File(picked.path);
+      _imageBytes = bytes;
+      _uploadFilename = name;
+      _readyResult = null;
       _error = null;
+    });
+    _scheduleAnalyzeAfterImageSet();
+  }
+
+  void _scheduleAnalyzeAfterImageSet() {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _runAnalyzeSequence(fromUserTap: false);
     });
   }
 
-  Future<void> _analyze() async {
-    final image = _image;
-    if (image == null) {
-      setState(() => _error = '풀이 사진을 먼저 선택해 주세요.');
-      return;
-    }
+  /// [fromUserTap] 이 true면「다시 분석」버튼에만 스피너를 표시합니다.
+  /// 완료 후 자동으로 분석 화면으로 넘기지 않고 `_readyResult`에 두며, 사용자가「결과 보기」에서 이동합니다.
+  Future<void> _runAnalyzeSequence({required bool fromUserTap}) async {
+    final bytes = _imageBytes;
+    if (bytes == null) return;
 
+    final seq = ++_analyzeSeq;
+    if (!mounted) return;
     setState(() {
-      _loading = true;
+      _analysisBusy = true;
       _error = null;
+      if (fromUserTap) _buttonSubmitLoading = true;
     });
 
     try {
-      final AnalyzeResult result = await widget.apiClient.analyzeImage(
-        image,
+      final AnalyzeResult result = await widget.apiClient.analyzeImageBytes(
+        bytes,
+        filename: _uploadFilename,
         qualityMode: _qualityMode,
       );
-      if (!mounted) return;
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute(
-          builder: (_) => AnalysisScreen(
-            apiClient: widget.apiClient,
-            result: result,
-          ),
-        ),
-      );
+      if (!mounted || seq != _analyzeSeq) return;
+      setState(() {
+        _analysisBusy = false;
+        _buttonSubmitLoading = false;
+        _readyResult = result;
+      });
     } catch (error) {
-      setState(() => _error = error.toString());
-    } finally {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
+      if (!mounted || seq != _analyzeSeq) return;
+      setState(() {
+        _analysisBusy = false;
+        _buttonSubmitLoading = false;
+        _error = error.toString();
+      });
     }
+  }
+
+  void _openResultScreen() {
+    final r = _readyResult;
+    if (r == null) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AnalysisScreen(
+          apiClient: widget.apiClient,
+          result: r,
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _analyzeSeq++;
+    super.dispose();
   }
 
   @override
@@ -214,24 +252,31 @@ class _UploadScreenState extends State<UploadScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('풀이 사진 분석')),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
+        child: TabletBody(
+          child: ListView(
+            padding: TabletLayout.pagePadding(context),
+            children: [
             Text(
-              _supportsImagePickerCamera
-                  ? '풀이 과정과 선택 답안이 보이도록 사진을 찍거나 앨범에서 선택하세요.'
-                  : '풀이 과정과 선택 답안이 보이도록 이미지 파일을 고르거나, 아래 상자로 끌어다 놓으세요. '
-                      '(macOS·Windows 등: 파일 창 또는 드래그 앤 드롭. 카메라는 모바일만)',
-              style: const TextStyle(color: Color(0xFFCBD5E1), height: 1.5),
+              kIsWeb
+                  ? '풀이 과정과 선택 답안이 보이도록 이미지 파일을 선택하세요. (웹 브라우저)'
+                  : _supportsImagePickerCamera
+                      ? '풀이 과정과 선택 답안이 보이도록 사진을 찍거나 앨범에서 선택하세요.'
+                      : '풀이 과정과 선택 답안이 보이도록 이미지 파일을 고르거나, 아래 상자로 끌어다 놓으세요. '
+                          '(macOS·Windows 등: 파일 창 또는 드래그 앤 드롭. 카메라는 모바일만)',
+              style: TextStyle(
+                color: const Color(0xFFCBD5E1),
+                height: 1.5,
+                fontSize: TabletLayout.body(context),
+              ),
             ),
             const SizedBox(height: 18),
-            _buildPreviewDropZone(),
+            _buildPreviewDropZone(context),
             const SizedBox(height: 16),
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton.icon(
-                    onPressed: _loading ? null : () => _pick(ImageSource.gallery),
+                    onPressed: () => _pick(ImageSource.gallery),
                     icon: Icon(
                       _supportsImagePickerCamera
                           ? Icons.photo_library_rounded
@@ -244,7 +289,7 @@ class _UploadScreenState extends State<UploadScreen> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: OutlinedButton.icon(
-                      onPressed: _loading ? null : () => _pick(ImageSource.camera),
+                      onPressed: () => _pick(ImageSource.camera),
                       icon: const Icon(Icons.camera_alt_rounded),
                       label: const Text('카메라'),
                     ),
@@ -256,15 +301,19 @@ class _UploadScreenState extends State<UploadScreen> {
             Text(
               '응답 모드',
               style: TextStyle(
-                color: Color(0xFFE2E8F0),
+                color: const Color(0xFFE2E8F0),
                 fontWeight: FontWeight.w600,
-                fontSize: 14,
+                fontSize: TabletLayout.isWideTablet(context) ? 16 : 14,
               ),
             ),
             const SizedBox(height: 6),
-            const Text(
-              '빠른 응답: 이미지 한 번에 분석+유사 문제. 정확: 분석 후 문제 생성(두 단계).',
-              style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12, height: 1.4),
+            Text(
+              '모드를 고른 뒤 사진을 넣으면 자동으로 분석이 시작됩니다. 진행 상태는 아래 안내와 막대로 표시되며, 완료 후 「결과 보기」를 눌러 이동하세요.',
+              style: TextStyle(
+                color: const Color(0xFF94A3B8),
+                fontSize: TabletLayout.bodySmall(context),
+                height: 1.4,
+              ),
             ),
             const SizedBox(height: 10),
             SegmentedButton<AnalyzeQualityMode>(
@@ -286,21 +335,57 @@ class _UploadScreenState extends State<UploadScreen> {
               ],
               selected: {_qualityMode},
               onSelectionChanged: (Set<AnalyzeQualityMode> next) {
-                if (next.isEmpty || _loading) return;
+                if (next.isEmpty || _analysisBusy) return;
                 setState(() => _qualityMode = next.first);
               },
             ),
             const SizedBox(height: 14),
+            if (_analysisBusy && !_buttonSubmitLoading) ...[
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ClipRRect(
+                    borderRadius: BorderRadius.circular(4),
+                    child: const LinearProgressIndicator(minHeight: 4),
+                  ),
+                  const SizedBox(height: 10),
+                  Text(
+                    '분석 및 유사 문제 생성 중입니다. 잠시만 기다려 주세요.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: const Color(0xFF94A3B8),
+                      fontSize: TabletLayout.bodySmall(context),
+                      height: 1.35,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                ],
+              ),
+            ],
             FilledButton.icon(
-              onPressed: _loading ? null : _analyze,
-              icon: _loading
-                  ? const SizedBox(
+              onPressed: (_readyResult == null || _analysisBusy)
+                  ? null
+                  : _openResultScreen,
+              icon: const Icon(Icons.visibility_rounded),
+              label: const Text('결과 보기'),
+            ),
+            const SizedBox(height: 10),
+            OutlinedButton.icon(
+              onPressed: (_imageBytes == null || _analysisBusy || _buttonSubmitLoading)
+                  ? null
+                  : () => _runAnalyzeSequence(fromUserTap: true),
+              icon: _buttonSubmitLoading
+                  ? SizedBox(
                       width: 18,
                       height: 18,
-                      child: CircularProgressIndicator(strokeWidth: 2),
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Theme.of(context).colorScheme.primary,
+                      ),
                     )
                   : const Icon(Icons.auto_awesome_rounded),
-              label: Text(_loading ? 'Azure AI 분석 중...' : '분석하고 유사 문제 생성'),
+              label:
+                  Text(_buttonSubmitLoading ? '분석 중...' : '다시 분석'),
             ),
             if (_error != null) ...[
               const SizedBox(height: 14),
@@ -309,13 +394,14 @@ class _UploadScreenState extends State<UploadScreen> {
                 style: const TextStyle(color: Color(0xFFFCA5A5), height: 1.45),
               ),
             ],
-          ],
+            ],
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildPreviewDropZone() {
+  Widget _buildPreviewDropZone(BuildContext context) {
     final preview = DecoratedBox(
       decoration: BoxDecoration(
         color: const Color(0xFF0F172A),
@@ -327,7 +413,7 @@ class _UploadScreenState extends State<UploadScreen> {
           width: _dragHover ? 2 : 1,
         ),
       ),
-      child: _image == null
+      child: _imageBytes == null
           ? Center(
               child: Column(
                 mainAxisSize: MainAxisSize.min,
@@ -358,20 +444,22 @@ class _UploadScreenState extends State<UploadScreen> {
             )
           : ClipRRect(
               borderRadius: BorderRadius.circular(24),
-              child: Image.file(_image!, fit: BoxFit.contain),
+              child: Image.memory(_imageBytes!, fit: BoxFit.contain),
             ),
     );
 
+    final previewAr =
+        TabletLayout.isTablet(context) ? 1.02 : 0.78;
+
     if (!_supportsDesktopDrop) {
-      return AspectRatio(aspectRatio: 0.78, child: preview);
+      return AspectRatio(aspectRatio: previewAr, child: preview);
     }
 
     return AspectRatio(
-      aspectRatio: 0.78,
+      aspectRatio: previewAr,
       child: DropTarget(
-        enable: !_loading,
+        enable: true,
         onDragEntered: (_) {
-          if (_loading) return;
           setState(() => _dragHover = true);
         },
         onDragExited: (_) {
