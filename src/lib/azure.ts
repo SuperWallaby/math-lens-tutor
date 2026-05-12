@@ -5,10 +5,13 @@ import { sampleAnalysis, sampleProblemSet } from "./sample";
 import {
   generatedProblemSetSchema,
   solutionAnalysisSchema,
-  unifiedAnalyzeProblemSetSchema,
   type GeneratedProblemSet,
   type SolutionAnalysis,
 } from "./types";
+
+/** 모드는 배포(모델)만 바꾸고, temperature는 작업별로 고정합니다. */
+const ANALYZE_TEMPERATURE = 0.22;
+const GENERATE_TEMPERATURE = 0.45;
 
 function parseJsonFromText(text: string) {
   const fenced = text.match(/```(?:json)?\s*([\s\S]*?)```/);
@@ -140,26 +143,6 @@ async function azureChatCompletionJson(params: {
   return text;
 }
 
-function analyzeTemperature(mode: AnalyzeQualityMode): number {
-  if (mode === "accurate") {
-    return 0.12;
-  }
-  if (mode === "balanced") {
-    return 0.22;
-  }
-  return 0.28;
-}
-
-function generateTemperature(mode: AnalyzeQualityMode): number {
-  if (mode === "accurate") {
-    return 0.32;
-  }
-  if (mode === "balanced") {
-    return 0.45;
-  }
-  return 0.5;
-}
-
 export async function analyzeSolutionImage(
   file: File,
   options: { deploymentName: string; mode: AnalyzeQualityMode },
@@ -192,7 +175,7 @@ Set isLikelyCorrect to true when the student's answer and reasoning are substant
 
   const text = await azureChatCompletionJson({
     deploymentName: options.deploymentName,
-    temperature: analyzeTemperature(options.mode),
+    temperature: ANALYZE_TEMPERATURE,
     messages: [
       {
         role: "user",
@@ -259,7 +242,7 @@ Rules:
 
   const text = await azureChatCompletionJson({
     deploymentName: options.deploymentName,
-    temperature: generateTemperature(options.mode),
+    temperature: GENERATE_TEMPERATURE,
     messages: [{ role: "user", content: prompt }],
   });
 
@@ -267,23 +250,20 @@ Rules:
 }
 
 /**
- * 이미지 한 번만 보고 분석과 유사 문제 세트를 한 JSON으로 생성합니다.
- * 네트워크 왕복이 1회라 순차(분석→생성)보다 체감이 빠른 경우가 많습니다.
+ * 풀이 이미지만 보고 유사 문제 세트를 생성합니다.
+ * `/api/analyze`에서 분석(텍스트 피드백) 호출과 병렬로 실행합니다.
  */
-export async function analyzeAndGenerateProblemSetUnified(
+export async function generateSimilarProblemsFromImage(
   file: File,
   submissionId: string,
   problemSetId: string,
-  deploymentName: string,
-): Promise<{ analysis: SolutionAnalysis; problemSet: GeneratedProblemSet }> {
+  options: { deploymentName: string; mode: AnalyzeQualityMode },
+): Promise<GeneratedProblemSet> {
   if (!hasAzureOpenAiConfig()) {
     return {
-      analysis: sampleAnalysis,
-      problemSet: {
-        ...sampleProblemSet,
-        id: problemSetId,
-        submissionId,
-      },
+      ...sampleProblemSet,
+      id: problemSetId,
+      submissionId,
     };
   }
 
@@ -293,26 +273,9 @@ export async function analyzeAndGenerateProblemSetUnified(
 
   const prompt = `You are an expert Korean math tutor. Read the student's handwritten math solution image with multimodal reasoning.
 
-Do BOTH tasks in one response:
-1) Analyze the solution like a tutor.
-2) Create five similar Korean math practice problems based on that analysis.
+Infer likely mistakes and weak concepts from the image alone, then create five similar Korean math practice problems that help train those gaps.
 
-Return only JSON with exactly two top-level keys "analysis" and "problemSet".
-
-Shape for "analysis":
-{
-  "problemText": "string",
-  "extractedStudentAnswer": "string",
-  "inferredCorrectAnswer": "string",
-  "isLikelyCorrect": false,
-  "confidence": 0.0,
-  "solutionSteps": ["string"],
-  "errorSummary": "string",
-  "weakConcepts": ["string"],
-  "recommendedFocus": ["string"]
-}
-
-Shape for "problemSet" (use these exact id values):
+Return only JSON matching this exact shape:
 {
   "id": "${problemSetId}",
   "submissionId": "${submissionId}",
@@ -335,15 +298,18 @@ Shape for "problemSet" (use these exact id values):
 }
 
 Rules:
-- Use Korean for all human-readable strings in both parts.
-- Exactly 5 problems in problemSet.problems.
+- id must be exactly "${problemSetId}" and submissionId exactly "${submissionId}".
+- Exactly 5 problems.
 - Mix multiple_choice and free_response when useful.
-- For multiple_choice, correctAnswer must be the exact label text of the correct option.
-- problemSet.id must be exactly "${problemSetId}" and problemSet.submissionId exactly "${submissionId}".`;
+- Multiple choice problems must have choices numbered 1 through 5.
+- For multiple_choice, correctAnswer must be the **exact label text** of the correct option (same string as one choice's "label"), never only the choice id "1".."5".
+- If a graph is needed, set chart to a Chart.js-compatible JSON object with type, data, and options.
+- Use Korean text.
+- Make problems similar enough to train inferred weak concepts, but not identical to the photo.`;
 
   const text = await azureChatCompletionJson({
-    deploymentName,
-    temperature: 0.32,
+    deploymentName: options.deploymentName,
+    temperature: GENERATE_TEMPERATURE,
     maxTokens: 8192,
     messages: [
       {
@@ -356,15 +322,10 @@ Rules:
     ],
   });
 
-  const parsed = unifiedAnalyzeProblemSetSchema.parse(
-    parseJsonFromText(text),
-  );
-
-  const problemSet: GeneratedProblemSet = {
-    ...parsed.problemSet,
+  const parsed = generatedProblemSetSchema.parse(parseJsonFromText(text));
+  return {
+    ...parsed,
     id: problemSetId,
     submissionId,
   };
-
-  return { analysis: parsed.analysis, problemSet };
 }

@@ -2,9 +2,8 @@ import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { parseAnalyzeQualityMode } from "@/lib/analyze-mode";
 import {
-  analyzeAndGenerateProblemSetUnified,
   analyzeSolutionImage,
-  generateSimilarProblems,
+  generateSimilarProblemsFromImage,
   hasAzureOpenAiConfig,
   resolveAzureDeploymentName,
 } from "@/lib/azure";
@@ -15,6 +14,7 @@ import {
   saveSubmission,
   uploadSolutionImage,
 } from "@/lib/store";
+import { sampleAnalysis, sampleProblemSet } from "@/lib/sample";
 import type { GeneratedProblemSet, SolutionSubmission } from "@/lib/types";
 
 export const runtime = "nodejs";
@@ -51,38 +51,47 @@ export async function POST(request: Request) {
     }
 
     const submissionId = randomUUID();
+    const problemSetId = randomUUID();
     const deploymentName =
       resolveAzureDeploymentName(qualityMode) ?? "unused";
+
+    /** 각 분기에서 File.arrayBuffer()를 소비하므로 동일 바이트를 복제해 전달 */
+    const raw = await file.arrayBuffer();
+    const duplicateInputFile = () =>
+      new File([raw.slice(0)], file.name, {
+        type: file.type || "application/octet-stream",
+      });
 
     let imageUrl: string | null;
     let analysis: SolutionSubmission["analysis"];
     let problemSet: GeneratedProblemSet;
 
-    if (qualityMode === "fast") {
-      const problemSetId = randomUUID();
-      const [uploadedUrl, bundle] = await Promise.all([
-        uploadSolutionImage(file, userId),
-        analyzeAndGenerateProblemSetUnified(
-          file,
-          submissionId,
-          problemSetId,
-          deploymentName,
-        ),
-      ]);
-      imageUrl = uploadedUrl;
-      analysis = bundle.analysis;
-      problemSet = bundle.problemSet;
-    } else {
-      const [uploadedUrl, analysisResult] = await Promise.all([
-        uploadSolutionImage(file, userId),
-        analyzeSolutionImage(file, { deploymentName, mode: qualityMode }),
-      ]);
+    if (hasAzureOpenAiConfig()) {
+      const [uploadedUrl, analysisResult, problemSetResult] =
+        await Promise.all([
+          uploadSolutionImage(duplicateInputFile(), userId),
+          analyzeSolutionImage(duplicateInputFile(), {
+            deploymentName,
+            mode: qualityMode,
+          }),
+          generateSimilarProblemsFromImage(
+            duplicateInputFile(),
+            submissionId,
+            problemSetId,
+            { deploymentName, mode: qualityMode },
+          ),
+        ]);
       imageUrl = uploadedUrl;
       analysis = analysisResult;
-      problemSet = await generateSimilarProblems(analysis, submissionId, {
-        deploymentName,
-        mode: qualityMode,
-      });
+      problemSet = problemSetResult;
+    } else {
+      imageUrl = await uploadSolutionImage(duplicateInputFile(), userId);
+      analysis = sampleAnalysis;
+      problemSet = {
+        ...sampleProblemSet,
+        id: problemSetId,
+        submissionId,
+      };
     }
 
     const submission: SolutionSubmission = {
