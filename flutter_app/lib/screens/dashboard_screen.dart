@@ -1,21 +1,32 @@
 import 'package:fl_chart/fl_chart.dart';
 import 'package:flutter/material.dart';
 
+import '../layout/tablet_layout.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
 import '../widgets/app_card.dart';
+import '../widgets/mixed_math_text.dart';
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key, required this.apiClient});
+  const DashboardScreen({
+    super.key,
+    required this.apiClient,
+    this.demoInsight,
+  });
 
   final ApiClient apiClient;
+
+  /// 스토어 스크린샷 등 API 없이 고정 데이터를 보여줄 때만 사용합니다.
+  final LearningInsight? demoInsight;
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  late final Future<LearningInsight> _future = widget.apiClient.getInsight();
+  late final Future<LearningInsight> _future = widget.demoInsight != null
+      ? Future.value(widget.demoInsight!)
+      : widget.apiClient.getInsight();
 
   @override
   Widget build(BuildContext context) {
@@ -33,12 +44,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
             }
 
             final insight = snapshot.data!;
-            return ListView(
-              padding: const EdgeInsets.all(20),
-              children: [
-                const Text(
+            return TabletBody(
+              child: ListView(
+                padding: TabletLayout.pagePadding(context),
+                children: [
+                Text(
                   '사용자 수준 피드백',
-                  style: TextStyle(fontSize: 26, fontWeight: FontWeight.w900),
+                  style: TextStyle(
+                    fontSize: TabletLayout.titleSection(context),
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
                 const SizedBox(height: 16),
                 Row(
@@ -132,18 +147,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
                       for (final feedback in insight.recentFeedback)
                         Padding(
                           padding: const EdgeInsets.only(bottom: 10),
-                          child: Text(
-                            '• $feedback',
-                            style: const TextStyle(
-                              color: Color(0xFFCBD5E1),
-                              height: 1.5,
-                            ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                '• ',
+                                style: TextStyle(
+                                  color: Color(0xFFCBD5E1),
+                                  height: 1.5,
+                                ),
+                              ),
+                              Expanded(
+                                child: MixedMathText(
+                                  feedback,
+                                  style: const TextStyle(
+                                    color: Color(0xFFCBD5E1),
+                                    height: 1.5,
+                                  ),
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                     ],
                   ),
                 ),
               ],
+            ),
             );
           },
         ),

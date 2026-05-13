@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 
+import '../layout/tablet_layout.dart';
 import '../services/api_client.dart';
 import 'dashboard_screen.dart';
 import 'upload_screen.dart';
@@ -13,23 +14,28 @@ class HomeScreen extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(24),
-          children: [
-            const SizedBox(height: 24),
-            const Text(
-              'Math Lens Tutor',
-              style: TextStyle(
-                fontSize: 34,
-                fontWeight: FontWeight.w900,
-                height: 1.05,
+        child: TabletBody(
+          child: ListView(
+            padding: TabletLayout.pagePadding(context),
+            children: [
+              const SizedBox(height: 24),
+              Text(
+                '우열',
+                style: TextStyle(
+                  fontSize: TabletLayout.titleHero(context),
+                  fontWeight: FontWeight.w900,
+                  height: 1.05,
+                ),
               ),
-            ),
-            const SizedBox(height: 16),
-            const Text(
-              '풀이 사진을 찍으면 AI가 오답 원인과 부족 개념을 분석하고, 유사 문제 5개로 바로 훈련합니다.',
-              style: TextStyle(color: Color(0xFFCBD5E1), fontSize: 16, height: 1.55),
-            ),
+              SizedBox(height: TabletLayout.isWideTablet(context) ? 20 : 16),
+              Text(
+                '풀이 사진을 찍으면 AI가 오답 원인과 부족 개념을 분석하고, 유사 문제 5개로 바로 훈련합니다.',
+                style: TextStyle(
+                  color: const Color(0xFFCBD5E1),
+                  fontSize: TabletLayout.body(context),
+                  height: 1.55,
+                ),
+              ),
             const SizedBox(height: 28),
             FilledButton.icon(
               onPressed: () {
@@ -70,7 +76,8 @@ class HomeScreen extends StatelessWidget {
               title: '수준 피드백',
               body: 'MongoDB에 누적된 풀이 기록으로 약점과 정답률을 보여줍니다.',
             ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -108,12 +115,19 @@ class _FeatureTile extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w800),
+                  style: TextStyle(
+                    fontSize: TabletLayout.isWideTablet(context) ? 18 : 16,
+                    fontWeight: FontWeight.w800,
+                  ),
                 ),
                 const SizedBox(height: 6),
                 Text(
                   body,
-                  style: const TextStyle(color: Color(0xFF94A3B8), height: 1.45),
+                  style: TextStyle(
+                    color: const Color(0xFF94A3B8),
+                    height: 1.45,
+                    fontSize: TabletLayout.bodySmall(context),
+                  ),
                 ),
               ],
             ),

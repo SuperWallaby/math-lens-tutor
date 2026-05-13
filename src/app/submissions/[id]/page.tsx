@@ -2,6 +2,11 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
+import { MathMixedRich } from "@/components/MathMixedRich";
+import {
+  meaningfulRecommendedFocus,
+  meaningfulWeakConcepts,
+} from "@/lib/types";
 import { getProblemSetBySubmission, getSubmission } from "@/lib/store";
 
 export default async function SubmissionPage({
@@ -18,6 +23,11 @@ export default async function SubmissionPage({
 
   const problemSet = await getProblemSetBySubmission(submission.id);
   const { analysis } = submission;
+
+  const weakShown = meaningfulWeakConcepts(analysis.weakConcepts);
+  const focusShown = meaningfulRecommendedFocus(analysis.recommendedFocus);
+  const showTrainingSection =
+    weakShown.length > 0 || focusShown.length > 0;
 
   return (
     <AppShell>
@@ -68,58 +78,71 @@ export default async function SubmissionPage({
               </span>
             </div>
             <h2 className="mt-5 text-2xl font-black">AI 풀이 분석</h2>
-            <p className="mt-4 rounded-2xl bg-slate-900 p-4 leading-8 text-slate-200">
-              {analysis.problemText}
-            </p>
+            <div className="mt-4 rounded-2xl bg-slate-900 p-4 leading-8 text-slate-200">
+              <MathMixedRich text={analysis.problemText} />
+            </div>
             <dl className="mt-5 grid gap-4 sm:grid-cols-2">
               <div className="rounded-2xl bg-slate-900 p-4">
                 <dt className="text-sm text-slate-400">학생 답안</dt>
-                <dd className="mt-2 font-bold">{analysis.extractedStudentAnswer}</dd>
+                <dd className="mt-2 font-bold">
+                  <MathMixedRich text={analysis.extractedStudentAnswer} />
+                </dd>
               </div>
               <div className="rounded-2xl bg-slate-900 p-4">
                 <dt className="text-sm text-slate-400">추정 정답</dt>
-                <dd className="mt-2 font-bold">{analysis.inferredCorrectAnswer}</dd>
+                <dd className="mt-2 font-bold">
+                  <MathMixedRich
+                    text={analysis.inferredCorrectAnswer}
+                    softBreakExplanation
+                  />
+                </dd>
               </div>
             </dl>
           </div>
 
           <div className="rounded-3xl border border-white/10 bg-white/10 p-6">
-            <h2 className="text-xl font-bold">풀이 과정에서 보이는 문제</h2>
-            <ol className="mt-5 space-y-3">
-              {analysis.solutionSteps.map((step) => (
+            <h2 className="text-xl font-bold">풀이과정</h2>
+            <ol className="mt-5 list-decimal space-y-3 pl-5">
+              {analysis.solutionSteps.map((step, index) => (
                 <li
-                  key={step}
-                  className="rounded-2xl bg-slate-900 p-4 leading-7 text-slate-300"
+                  key={`${index}-${step.slice(0, 24)}`}
+                  className="rounded-2xl bg-slate-900 p-4 pl-4 leading-7 text-slate-300 marker:font-semibold"
                 >
-                  {step}
+                  <MathMixedRich text={step} />
                 </li>
               ))}
             </ol>
-            <p className="mt-5 rounded-2xl bg-red-500/15 p-4 leading-7 text-red-100">
-              {analysis.errorSummary}
-            </p>
+            <div className="mt-5 rounded-2xl bg-red-500/15 p-4 leading-7 text-red-100">
+              <MathMixedRich text={analysis.errorSummary} />
+            </div>
           </div>
 
-          <div className="rounded-3xl border border-white/10 bg-white/10 p-6">
-            <h2 className="text-xl font-bold">부족 개념과 추천 훈련</h2>
-            <div className="mt-5 flex flex-wrap gap-2">
-              {analysis.weakConcepts.map((concept) => (
-                <span
-                  key={concept}
-                  className="rounded-full bg-blue-500/20 px-3 py-1 text-sm text-blue-100"
-                >
-                  {concept}
-                </span>
-              ))}
+          {showTrainingSection ? (
+            <div className="rounded-3xl border border-white/10 bg-white/10 p-6">
+              <h2 className="text-xl font-bold">부족 개념과 추천 훈련</h2>
+              {weakShown.length > 0 ? (
+                <div className="mt-5 flex flex-wrap gap-2">
+                  {weakShown.map((concept) => (
+                    <div
+                      key={concept}
+                      className="inline-flex max-w-full items-center rounded-full bg-blue-500/20 px-3 py-1 text-sm text-blue-100"
+                    >
+                      <MathMixedRich text={concept} />
+                    </div>
+                  ))}
+                </div>
+              ) : null}
+              {focusShown.length > 0 ? (
+                <ul className="mt-5 space-y-3 text-sm leading-7 text-slate-300">
+                  {focusShown.map((focus) => (
+                    <li key={focus} className="rounded-2xl bg-slate-900 p-4">
+                      <MathMixedRich text={focus} />
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
             </div>
-            <ul className="mt-5 space-y-3 text-sm leading-7 text-slate-300">
-              {analysis.recommendedFocus.map((focus) => (
-                <li key={focus} className="rounded-2xl bg-slate-900 p-4">
-                  {focus}
-                </li>
-              ))}
-            </ul>
-          </div>
+          ) : null}
         </section>
       </div>
     </AppShell>

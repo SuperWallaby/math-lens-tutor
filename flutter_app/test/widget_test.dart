@@ -9,7 +9,7 @@ void main() {
 
     await tester.pump();
 
-    expect(find.text('Math Lens Tutor'), findsOneWidget);
+    expect(find.text('우열'), findsOneWidget);
     expect(find.text('풀이 사진 분석하기'), findsOneWidget);
   });
 }

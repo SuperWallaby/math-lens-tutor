@@ -61,7 +61,11 @@ Vercel 프로젝트 → **Settings** → **Environment Variables**에 아래를 
 | `AZURE_OPENAI_ENDPOINT` | 예: `https://<리소스명>.openai.azure.com` (끝 `/` 없어도 됨) |
 | `AZURE_OPENAI_API_KEY` | Azure 포털에서 발급한 키 |
 | `AZURE_OPENAI_DEPLOYMENT` | 배포 이름 (비전 가능 모델, 예: `gpt-4o`) |
+| `AZURE_OPENAI_DEPLOYMENT_*` | 선택. 빠름/밸런스/정확 모드별 배포 — 예시는 `.env.example` 참고 |
+| `AZURE_OPENAI_DEPLOYMENT_VISION` | 선택. 비선 시 밸런스 배포로 폴백 |
 | `AZURE_OPENAI_API_VERSION` | 선택. 미설정 시 코드 기본값 `2024-08-01-preview` |
+
+**한국 중부 리전:** 주 사용자가 한국이라면 Cognitive Services 계정을 `koreacentral`에 두고 엔드포인트만 바꿀 수 있습니다. 이 구독 예시에서는 `TestAzResourceAi`에 `trx-kr-gpt-4-1-mini`, `trx-kr-gpt-4-1-vision`, 정확 모드용 기존 `gpt-5.4` 배포가 사용 가능합니다(`gpt-5.4-pro`는 해당 리전 카탈로그에 없을 수 있음). 자세한 키·값 예시는 루트 `.env.example` 주석 블록을 따르세요.
 
 ### MongoDB (영구 저장)
 

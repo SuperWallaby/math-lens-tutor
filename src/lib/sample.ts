@@ -7,20 +7,21 @@ import type {
 } from "./types";
 
 export const sampleAnalysis: SolutionAnalysis = {
-  problemText: "이차함수 y = x^2 - 4x + 3의 최솟값을 구하시오.",
+  problemText:
+    "이차함수 $y = x^2 - 4x + 3$ 의 최솟값을 구하시오. (이차항 계수 $a \\ne 0$)",
   extractedStudentAnswer: "3번, 0",
-  inferredCorrectAnswer: "-1",
+  inferredCorrectAnswer: "$-1$",
   isLikelyCorrect: false,
   confidence: 0.82,
   solutionSteps: [
-    "학생은 x^2 - 4x + 3을 (x - 2)^2 + 3으로 완전제곱식 변형했습니다.",
-    "상수항 보정에서 -4 + 3 = -1을 반영하지 않아 최솟값을 3으로 판단했습니다.",
+    "학생은 $x^2 - 4x + 3$을 $(x - 2)^2 + 3$으로 완전제곱식 변형했습니다.",
+    "상수항 보정에서 $-4 + 3 = -1$을 반영하지 않아 최솟값을 $3$으로 판단했습니다.",
   ],
   errorSummary:
     "완전제곱식으로 바꿀 때 더하고 뺀 값의 보정이 빠져 최솟값을 잘못 읽었습니다.",
   weakConcepts: ["완전제곱식", "이차함수의 꼭짓점", "상수항 보정"],
   recommendedFocus: [
-    "x^2 + bx를 (x + b/2)^2 형태로 바꾼 뒤 보정항을 확인하기",
+    "$x^2 + bx$를 $\\bigl(x + \\frac{b}{2}\\bigr)^2$ 형태로 바꾼 뒤 보정항을 확인하기",
     "꼭짓점 좌표와 최솟값을 구분해서 쓰기",
   ],
 };
@@ -35,7 +36,7 @@ export const sampleProblemSet: GeneratedProblemSet = {
       id: "demo-problem-1",
       type: "multiple_choice",
       title: "최솟값 구하기",
-      prompt: "이차함수 y = x^2 - 6x + 5의 최솟값은?",
+      prompt: "이차함수 $y = x^2 - 6x + 5$ 의 최솟값은?",
       choices: [
         { id: "1", label: "-9" },
         { id: "2", label: "-4" },
@@ -44,10 +45,12 @@ export const sampleProblemSet: GeneratedProblemSet = {
         { id: "5", label: "9" },
       ],
       correctAnswer: "-4",
-      explanation: "x^2 - 6x + 5 = (x - 3)^2 - 4이므로 최솟값은 -4입니다.",
+      explanation:
+        "$x^2 - 6x + 5 = (x - 3)^2 - 4$ 이므로 최솟값은 $-4$입니다.",
       difficulty: "easy",
       conceptTags: ["완전제곱식", "최솟값"],
       chart: null,
+      jsxGraph: null,
     },
     {
       id: "demo-problem-2",
@@ -66,6 +69,7 @@ export const sampleProblemSet: GeneratedProblemSet = {
       difficulty: "easy",
       conceptTags: ["꼭짓점"],
       chart: null,
+      jsxGraph: null,
     },
     {
       id: "demo-problem-3",
@@ -77,6 +81,7 @@ export const sampleProblemSet: GeneratedProblemSet = {
       difficulty: "medium",
       conceptTags: ["완전제곱식", "상수항 보정"],
       chart: null,
+      jsxGraph: null,
     },
     {
       id: "demo-problem-4",
@@ -109,6 +114,7 @@ export const sampleProblemSet: GeneratedProblemSet = {
         },
         options: { responsive: true },
       },
+      jsxGraph: null,
     },
     {
       id: "demo-problem-5",
@@ -121,6 +127,46 @@ export const sampleProblemSet: GeneratedProblemSet = {
       difficulty: "hard",
       conceptTags: ["오류 분석", "상수항 보정"],
       chart: null,
+      jsxGraph: {
+        diagramNeeded: true,
+        captionKo: "예시: 좌표평면 삼각형 (JSXGraph 데모)",
+        rationaleKo: "기하 형태 확인용 데모입니다.",
+        board: {
+          boundingbox: [-2, 10, 12, -2],
+          axis: true,
+          keepaspectratio: true,
+        },
+        elements: [
+          {
+            id: "A",
+            elType: "point",
+            coord: [2, 6],
+            attrs: { name: "A", fixed: true, strokeColor: "#1d4ed8" },
+          },
+          {
+            id: "B",
+            elType: "point",
+            coord: [8, 6],
+            attrs: { name: "B", fixed: true, strokeColor: "#1d4ed8" },
+          },
+          {
+            id: "C",
+            elType: "point",
+            coord: [5, 2],
+            attrs: { name: "C", fixed: true, strokeColor: "#1d4ed8" },
+          },
+          {
+            elType: "polygon",
+            parents: ["A", "B", "C"],
+            attrs: {
+              borders: {
+                strokeWidth: 2,
+                strokeColor: "#2563eb",
+              },
+            },
+          },
+        ],
+      },
     },
   ],
 };

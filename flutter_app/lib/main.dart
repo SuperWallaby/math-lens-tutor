@@ -1,7 +1,13 @@
 import 'package:flutter/material.dart';
 
+import 'dev/store_screenshot_shell.dart';
 import 'screens/home_screen.dart';
 import 'services/api_client.dart';
+
+const _storeScreenshot = String.fromEnvironment(
+  'STORE_SCREENSHOT',
+  defaultValue: '',
+);
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,8 +22,19 @@ class MathLensTutorApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
-      title: 'Math Lens Tutor',
+      title: '우열',
       debugShowCheckedModeBanner: false,
+      builder: (context, child) {
+        if (child == null) {
+          return const SizedBox.shrink();
+        }
+        final mq = MediaQuery.of(context);
+        final scale = mq.size.shortestSide >= 600 ? 1.06 : 1.0;
+        return MediaQuery(
+          data: mq.copyWith(textScaler: TextScaler.linear(scale)),
+          child: child,
+        );
+      },
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
           seedColor: const Color(0xFF2563EB),
@@ -46,7 +63,12 @@ class MathLensTutorApp extends StatelessWidget {
           ),
         ),
       ),
-      home: HomeScreen(apiClient: apiClient),
+      home: _storeScreenshot.isEmpty
+          ? HomeScreen(apiClient: apiClient)
+          : StoreScreenshotShell(
+              screen: _storeScreenshot,
+              apiClient: apiClient,
+            ),
     );
   }
 }

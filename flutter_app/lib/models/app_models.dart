@@ -100,6 +100,7 @@ class GeneratedProblem {
     required this.difficulty,
     required this.conceptTags,
     required this.chart,
+    this.jsxGraph,
   });
 
   factory GeneratedProblem.fromJson(Map<String, dynamic> json) {
@@ -117,6 +118,7 @@ class GeneratedProblem {
       difficulty: json['difficulty'] as String? ?? 'medium',
       conceptTags: _stringList(json['conceptTags']),
       chart: (json['chart'] as Map?)?.cast<String, dynamic>(),
+      jsxGraph: (json['jsxGraph'] as Map?)?.cast<String, dynamic>(),
     );
   }
 
@@ -130,6 +132,7 @@ class GeneratedProblem {
   final String difficulty;
   final List<String> conceptTags;
   final Map<String, dynamic>? chart;
+  final Map<String, dynamic>? jsxGraph;
 
   bool get isMultipleChoice => type == 'multiple_choice' && choices.isNotEmpty;
 }

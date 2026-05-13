@@ -83,10 +83,12 @@ class _UploadScreenState extends State<UploadScreen> {
   final _picker = ImagePicker();
   Uint8List? _imageBytes;
   String _uploadFilename = 'upload.jpg';
-  /// 사진 선택 등으로 시작한 분석 진행 여부(UI만 바꿈, 메인 버튼 스피너 아님).
+  /// 서버 분석 요청 진행 중(이미지 등록 시 자동 시작). 화면에는 표시하지 않음.
   bool _analysisBusy = false;
-  /// 사용자가「다시 분석」만 눌렀을 때 해당 버튼에만 로딩 표시.
+  /// 메인 버튼에만 스피너: 사용자가 눌렀을 때만 true(추가 요청 없이 대기 UI).
   bool _buttonSubmitLoading = false;
+  /// 사용자가 메인 버튼을 눌러 분석 완료 시 결과 화면으로 자동 이동하도록 함.
+  bool _navigateWhenReady = false;
   AnalyzeResult? _readyResult;
   String? _error;
   bool _dragHover = false;
@@ -135,6 +137,8 @@ class _UploadScreenState extends State<UploadScreen> {
         _uploadFilename = name;
         _readyResult = null;
         _error = null;
+        _navigateWhenReady = false;
+        _buttonSubmitLoading = false;
       });
       _scheduleAnalyzeAfterImageSet();
     } catch (e) {
@@ -164,7 +168,7 @@ class _UploadScreenState extends State<UploadScreen> {
     final picked = await _picker.pickImage(
       source: source,
       imageQuality: 88,
-      maxWidth: 1800,
+      maxWidth: 1200,
     );
 
     if (picked == null) {
@@ -181,6 +185,8 @@ class _UploadScreenState extends State<UploadScreen> {
       _uploadFilename = name;
       _readyResult = null;
       _error = null;
+      _navigateWhenReady = false;
+      _buttonSubmitLoading = false;
     });
     _scheduleAnalyzeAfterImageSet();
   }
@@ -188,13 +194,13 @@ class _UploadScreenState extends State<UploadScreen> {
   void _scheduleAnalyzeAfterImageSet() {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      _runAnalyzeSequence(fromUserTap: false);
+      _runAnalyzeSequence(silent: true);
     });
   }
 
-  /// [fromUserTap] 이 true면「다시 분석」버튼에만 스피너를 표시합니다.
-  /// 완료 후 자동으로 분석 화면으로 넘기지 않고 `_readyResult`에 두며, 사용자가「결과 보기」에서 이동합니다.
-  Future<void> _runAnalyzeSequence({required bool fromUserTap}) async {
+  /// [silent] true: 이미지 등록 직후 백그라운드 분석(화면·버튼에 로딩 없음).
+  /// [isRetry] true: 오류 후『다시 시도』—실제 재요청, 완료 시 결과 화면으로 이동.
+  Future<void> _runAnalyzeSequence({bool silent = false, bool isRetry = false}) async {
     final bytes = _imageBytes;
     if (bytes == null) return;
 
@@ -203,7 +209,11 @@ class _UploadScreenState extends State<UploadScreen> {
     setState(() {
       _analysisBusy = true;
       _error = null;
-      if (fromUserTap) _buttonSubmitLoading = true;
+      if (isRetry) {
+        _readyResult = null;
+        _buttonSubmitLoading = true;
+        _navigateWhenReady = true;
+      }
     });
 
     try {
@@ -213,19 +223,62 @@ class _UploadScreenState extends State<UploadScreen> {
         qualityMode: _qualityMode,
       );
       if (!mounted || seq != _analyzeSeq) return;
+      final go = _navigateWhenReady;
       setState(() {
         _analysisBusy = false;
         _buttonSubmitLoading = false;
         _readyResult = result;
+        if (go) _navigateWhenReady = false;
       });
+      if (go && mounted) {
+        WidgetsBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) return;
+          Navigator.of(context).push(
+            MaterialPageRoute(
+              builder: (_) => AnalysisScreen(
+                apiClient: widget.apiClient,
+                result: result,
+              ),
+            ),
+          );
+        });
+      }
     } catch (error) {
       if (!mounted || seq != _analyzeSeq) return;
       setState(() {
         _analysisBusy = false;
         _buttonSubmitLoading = false;
+        _navigateWhenReady = false;
         _error = error.toString();
       });
     }
+  }
+
+  void _onPrimaryButton() {
+    if (_imageBytes == null || _buttonSubmitLoading) return;
+
+    if (_error != null) {
+      _runAnalyzeSequence(isRetry: true);
+      return;
+    }
+
+    if (_readyResult != null && !_analysisBusy) {
+      _openResultScreen();
+      return;
+    }
+
+    if (_analysisBusy) {
+      setState(() {
+        _buttonSubmitLoading = true;
+        _navigateWhenReady = true;
+      });
+      return;
+    }
+
+    setState(() {
+      _buttonSubmitLoading = true;
+      _navigateWhenReady = true;
+    });
   }
 
   void _openResultScreen() {
@@ -340,52 +393,25 @@ class _UploadScreenState extends State<UploadScreen> {
               },
             ),
             const SizedBox(height: 14),
-            if (_analysisBusy && !_buttonSubmitLoading) ...[
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  ClipRRect(
-                    borderRadius: BorderRadius.circular(4),
-                    child: const LinearProgressIndicator(minHeight: 4),
-                  ),
-                  const SizedBox(height: 10),
-                  Text(
-                    '분석 및 유사 문제 생성 중입니다. 잠시만 기다려 주세요.',
-                    textAlign: TextAlign.center,
-                    style: TextStyle(
-                      color: const Color(0xFF94A3B8),
-                      fontSize: TabletLayout.bodySmall(context),
-                      height: 1.35,
-                    ),
-                  ),
-                  const SizedBox(height: 14),
-                ],
-              ),
-            ],
             FilledButton.icon(
-              onPressed: (_readyResult == null || _analysisBusy)
+              onPressed: (_imageBytes == null || _buttonSubmitLoading)
                   ? null
-                  : _openResultScreen,
-              icon: const Icon(Icons.visibility_rounded),
-              label: const Text('결과 보기'),
-            ),
-            const SizedBox(height: 10),
-            OutlinedButton.icon(
-              onPressed: (_imageBytes == null || _analysisBusy || _buttonSubmitLoading)
-                  ? null
-                  : () => _runAnalyzeSequence(fromUserTap: true),
+                  : _onPrimaryButton,
               icon: _buttonSubmitLoading
                   ? SizedBox(
                       width: 18,
                       height: 18,
                       child: CircularProgressIndicator(
                         strokeWidth: 2,
-                        color: Theme.of(context).colorScheme.primary,
+                        color: Theme.of(context).colorScheme.onPrimary,
                       ),
                     )
                   : const Icon(Icons.auto_awesome_rounded),
-              label:
-                  Text(_buttonSubmitLoading ? '분석 중...' : '다시 분석'),
+              label: Text(
+                _error != null
+                    ? '다시 시도'
+                    : (_buttonSubmitLoading ? '분석 중...' : '분석하고 유사 문제 생성'),
+              ),
             ),
             if (_error != null) ...[
               const SizedBox(height: 14),

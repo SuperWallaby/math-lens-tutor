@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 
+import '../layout/tablet_layout.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
 import '../widgets/app_card.dart';
 import '../widgets/problem_chart.dart';
+import '../widgets/problem_jsx_graph.dart';
+import '../widgets/mixed_math_text.dart';
 import 'dashboard_screen.dart';
 
 class PracticeScreen extends StatefulWidget {
@@ -59,17 +62,25 @@ class _PracticeScreenState extends State<PracticeScreen> {
     return Scaffold(
       appBar: AppBar(title: const Text('유사 문제 훈련')),
       body: SafeArea(
-        child: ListView(
-          padding: const EdgeInsets.all(20),
-          children: [
-            Text(
+        child: TabletBody(
+          child: ListView(
+            padding: TabletLayout.pagePadding(context),
+            children: [
+            MixedMathText(
               widget.problemSet.title,
-              style: const TextStyle(fontSize: 24, fontWeight: FontWeight.w900),
+              style: TextStyle(
+                fontSize: TabletLayout.isWideTablet(context) ? 30 : 24,
+                fontWeight: FontWeight.w900,
+              ),
             ),
             const SizedBox(height: 8),
-            Text(
+            MixedMathText(
               widget.problemSet.learningGoal,
-              style: const TextStyle(color: Color(0xFFCBD5E1), height: 1.5),
+              style: TextStyle(
+                color: const Color(0xFFCBD5E1),
+                height: 1.5,
+                fontSize: TabletLayout.body(context),
+              ),
             ),
             if (_error != null) ...[
               const SizedBox(height: 12),
@@ -106,6 +117,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
               label: const Text('대시보드 보기'),
             ),
           ],
+        ),
         ),
       ),
     );
@@ -152,7 +164,7 @@ class _ProblemCard extends StatelessWidget {
             style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: 10),
-          Text(
+          MixedMathText(
             problem.prompt,
             style: const TextStyle(color: Color(0xFFCBD5E1), height: 1.55),
           ),
@@ -166,6 +178,24 @@ class _ProblemCard extends StatelessWidget {
               ),
               child: ProblemChart(chart: problem.chart!),
             ),
+          ],
+          if (jsxDiagramShows(problem.jsxGraph)) ...[
+            const SizedBox(height: 14),
+            if ((problem.jsxGraph!['captionKo'] as String?)
+                    ?.trim()
+                    .isNotEmpty ??
+                false)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 8),
+                child: Text(
+                  problem.jsxGraph!['captionKo'] as String,
+                  style: const TextStyle(
+                    color: Color(0xFF94A3B8),
+                    fontSize: 13,
+                  ),
+                ),
+              ),
+            ProblemJsxGraph(spec: problem.jsxGraph!),
           ],
           const SizedBox(height: 16),
           if (problem.isMultipleChoice)
@@ -197,7 +227,15 @@ class _ProblemCard extends StatelessWidget {
                           size: 20,
                         ),
                         const SizedBox(width: 10),
-                        Expanded(child: Text('${choice.id}. ${choice.label}')),
+                        Expanded(
+                          child: MixedMathText(
+                            '${choice.id}. ${choice.label}',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
                       ],
                     ),
                   ),
@@ -230,7 +268,14 @@ class _ProblemCard extends StatelessWidget {
                     : const Color(0xFF7F1D1D),
                 borderRadius: BorderRadius.circular(16),
               ),
-              child: Text(feedback!.feedback),
+              child: MixedMathText(
+                feedback!.feedback,
+                paragraphSoftBreak: true,
+                style: const TextStyle(
+                  color: Colors.white,
+                  height: 1.45,
+                ),
+              ),
             ),
           ],
         ],

@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { ChartRenderer } from "./ChartRenderer";
+import { JsxGraphRenderer } from "./JsxGraphRenderer";
+import { MathMixedRich } from "./MathMixedRich";
 import type { GeneratedProblemSet, ProblemAttempt } from "@/lib/types";
 
 type Answers = Record<string, string>;
@@ -60,13 +62,18 @@ export function PracticeRunner({ problemSet }: { problemSet: GeneratedProblemSet
             ))}
           </div>
           <h2 className="mt-4 text-xl font-bold">{problem.title}</h2>
-          <p className="mt-3 whitespace-pre-wrap leading-8 text-slate-200">
-            {problem.prompt}
-          </p>
+          <MathMixedRich
+            text={problem.prompt}
+            className="mt-3 leading-8 text-slate-200"
+          />
           {problem.chart ? (
             <div className="mt-5 rounded-2xl bg-white p-4">
               <ChartRenderer chart={problem.chart} />
             </div>
+          ) : null}
+
+          {problem.jsxGraph?.diagramNeeded ? (
+            <JsxGraphRenderer diagram={problem.jsxGraph} />
           ) : null}
 
           {problem.type === "multiple_choice" && problem.choices ? (
@@ -88,9 +95,10 @@ export function PracticeRunner({ problemSet }: { problemSet: GeneratedProblemSet
                       }))
                     }
                   />
-                  <span>
-                    {choice.id}. {choice.label}
-                  </span>
+                  <MathMixedRich
+                    text={`${choice.id}. ${choice.label}`}
+                    className="inline leading-7"
+                  />
                 </label>
               ))}
             </div>
@@ -124,7 +132,7 @@ export function PracticeRunner({ problemSet }: { problemSet: GeneratedProblemSet
                   : "bg-red-500/15 text-red-100"
               }`}
             >
-              {feedback[problem.id].feedback}
+              <MathMixedRich text={feedback[problem.id].feedback} />
             </div>
           ) : null}
         </section>

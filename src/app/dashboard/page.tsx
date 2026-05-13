@@ -1,5 +1,6 @@
 import { AppShell } from "@/components/AppShell";
 import { DashboardChart } from "@/components/DashboardChart";
+import { MathMixedRich } from "@/components/MathMixedRich";
 import { DEMO_USER_ID, getLearningInsight } from "@/lib/store";
 
 export default async function DashboardPage() {
@@ -63,7 +64,7 @@ export default async function DashboardPage() {
               key={feedback}
               className="rounded-2xl bg-slate-900 p-4 leading-7 text-slate-300"
             >
-              {feedback}
+              <MathMixedRich text={feedback} />
             </p>
           ))}
         </div>

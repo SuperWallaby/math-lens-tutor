@@ -1,5 +1,25 @@
 import { z } from "zod";
 
+import { jsxGraphDiagramSchema } from "./jsx-graph-spec";
+
+/** 과거 빈 배열 대신 들어가던 플레이스홀더 — UI에서 “내용 없음”으로 취급 */
+export const WEAK_CONCEPTS_PLACEHOLDER_LEGACY =
+  "사진만으로는 부족한 개념을 특정하기 어렵습니다.";
+export const RECOMMENDED_FOCUS_PLACEHOLDER_LEGACY =
+  "우선 동일 유형 문제를 조금 더 풀며 풀이 과정을 적는 연습을 권합니다.";
+
+export function meaningfulWeakConcepts(items: readonly string[]): string[] {
+  return items
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0 && s !== WEAK_CONCEPTS_PLACEHOLDER_LEGACY);
+}
+
+export function meaningfulRecommendedFocus(items: readonly string[]): string[] {
+  return items
+    .map((s) => s.trim())
+    .filter((s) => s.length > 0 && s !== RECOMMENDED_FOCUS_PLACEHOLDER_LEGACY);
+}
+
 /** LLM 이 빈 배열을 줄 때가 있어 파싱 단계에서 최소 1개 보장 */
 function stringArrayWithFallback(fallback: string) {
   return z
@@ -28,15 +48,26 @@ export const solutionAnalysisSchema = z.object({
     "이미지에서 풀이 단계를 명확히 구분하기 어렵습니다.",
   ),
   errorSummary: z.string(),
-  weakConcepts: stringArrayWithFallback(
-    "사진만으로는 부족한 개념을 특정하기 어렵습니다.",
-  ),
-  recommendedFocus: stringArrayWithFallback(
-    "우선 동일 유형 문제를 조금 더 풀며 풀이 과정을 적는 연습을 권합니다.",
-  ),
+  weakConcepts: z
+    .array(z.string())
+    .transform((arr) =>
+      arr.map((s) => s.trim()).filter(Boolean),
+    ),
+  recommendedFocus: z
+    .array(z.string())
+    .transform((arr) =>
+      arr.map((s) => s.trim()).filter(Boolean),
+    ),
 });
 
-export const generatedProblemSchema = z.object({
+export const generatedProblemSchema = z.preprocess((raw) => {
+  if (!raw || typeof raw !== "object") return raw;
+  const o = raw as Record<string, unknown>;
+  if (!("jsxGraph" in o)) {
+    return { ...o, jsxGraph: null };
+  }
+  return o;
+}, z.object({
   id: z.string(),
   type: z.enum(["multiple_choice", "free_response"]),
   title: z.string(),
@@ -54,7 +85,9 @@ export const generatedProblemSchema = z.object({
   difficulty: z.enum(["easy", "medium", "hard"]),
   conceptTags: z.array(z.string()).min(1),
   chart: chartConfigSchema,
-});
+  /** 필요할 때만: 좌표평면 도형 (JSXGraph). 불필요하면 null */
+  jsxGraph: jsxGraphDiagramSchema,
+}));
 
 export const generatedProblemSetSchema = z.object({
   id: z.string(),
@@ -73,6 +106,7 @@ export const unifiedAnalyzeProblemSetSchema = z.object({
 export type SolutionAnalysis = z.infer<typeof solutionAnalysisSchema>;
 export type GeneratedProblem = z.infer<typeof generatedProblemSchema>;
 export type GeneratedProblemSet = z.infer<typeof generatedProblemSetSchema>;
+export type { JsxGraphDiagram } from "./jsx-graph-spec";
 export type UnifiedAnalyzeProblemSet = z.infer<
   typeof unifiedAnalyzeProblemSetSchema
 >;

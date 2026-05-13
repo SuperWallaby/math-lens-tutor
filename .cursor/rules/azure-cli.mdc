@@ -1,0 +1,13 @@
+---
+description: Azure CLI is available in this repo’s dev environment for subscription and OpenAI deployment checks
+alwaysApply: true
+---
+
+# Azure in this workspace
+
+- The local shell often has **Azure CLI logged in** (`az account show`). Prefer running `az` to verify resources instead of guessing.
+- **Some reasoning deployments** reject **Chat Completions** for text JSON (400 unsupported); use **`POST /openai/v1/responses?api-version=preview`**. Configure exact names via **`AZURE_OPENAI_RESPONSES_DEPLOYMENTS`** (comma-separated); optional **`name*`** prefix match. If unset, `deploymentUsesResponsesApi()` falls back to names containing **`gpt-5`**. See `src/lib/azure.ts`.
+- Useful commands for this project’s OpenAI / AI Services setup:
+  - `az cognitiveservices account list`
+  - `az cognitiveservices account deployment list --name <account> --resource-group <rg>`
+- Primary resource in use has been `manag-mojrkejw-eastus2` (rg `test-az-sb-1`); confirm with `az` if it changes.
