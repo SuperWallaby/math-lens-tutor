@@ -1,0 +1,54 @@
+---
+description: Flutter iOS/Android 스토어 릴리스 빌드 — 반복 작업 시 이 스크립트 사용
+globs:
+  - flutter_app/**
+  - package.json
+---
+
+# Flutter 릴리스 빌드 (IPA / AAB / APK)
+
+사용자가 **새 버전 빌드**, **IPA**, **APK/AAB**, **스토어 제출용 바이너리**를 요청하면 **직접 `flutter build`를 여러 번 치지 말고** 아래 스크립트를 쓴다.
+
+## 한 줄 (권장)
+
+레포 루트에서:
+
+```bash
+yarn flutter:release              # iOS + Android, pubspec 버전 그대로
+yarn flutter:release:bump       # 빌드번호(+1) 올린 뒤 전부 빌드
+```
+
+또는:
+
+```bash
+./flutter_app/scripts/release.sh
+./flutter_app/scripts/release.sh --bump build   # 1.0.2+4 → 1.0.2+5
+./flutter_app/scripts/release.sh --bump patch   # 1.0.2+4 → 1.0.3+5
+./flutter_app/scripts/release.sh ios
+./flutter_app/scripts/release.sh android
+```
+
+## 산출물
+
+- 복사본: `flutter_app/releases/<versionName>/` (예: `wooyeol-1.0.2-build4.{ipa,aab,apk}`)
+- 빌드 끝나면 **절대 경로를 출력**하고 macOS에서는 **Finder로 해당 폴더를 연다** (`OPEN_FINDER=0` 으로 끌 수 있음)
+- 원본: `flutter_app/build/ios/ipa/`, `flutter_app/build/app/outputs/...`
+- `releases/` 는 gitignore — 커밋하지 않음
+
+## 버전
+
+- `flutter_app/pubspec.yaml` 의 `version: NAME+BUILD` 만 수정하면 iOS/Android 모두 반영된다.
+- 새 스토어 제출마다 최소 `--bump build` 로 빌드번호를 올린다.
+
+## 환경
+
+- **API**: 기본 `https://study-alpha-rosy.vercel.app` (`API_BASE_URL` 로 덮어쓰기)
+- **iOS**: 로컬 Mac + Xcode **Signing Team** (Bundle ID `com.neoproject.study`)
+- **Android**: `release.sh` 가 JAVA_HOME 깨짐 시 jdk-20 시도. Play 정식 출시 전 release keystore 설정 필요(현재 debug 서명일 수 있음)
+
+## 세부 스크립트 (필요 시만)
+
+- `flutter_app/scripts/build-ios-ipa-release.sh` — iOS만
+- `flutter_app/scripts/build-android-release.sh` — Android만
+
+문서: `docs/mobile-app-store-guide-ko.md`

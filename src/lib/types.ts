@@ -20,6 +20,9 @@ export function meaningfulRecommendedFocus(items: readonly string[]): string[] {
     .filter((s) => s.length > 0 && s !== RECOMMENDED_FOCUS_PLACEHOLDER_LEGACY);
 }
 
+export const SOLUTION_STEPS_EXTRACTION_FALLBACK =
+  "이미지에서 풀이 단계를 명확히 구분하기 어렵습니다.";
+
 /** LLM 이 빈 배열을 줄 때가 있어 파싱 단계에서 최소 1개 보장 */
 function stringArrayWithFallback(fallback: string) {
   return z
@@ -30,6 +33,12 @@ function stringArrayWithFallback(fallback: string) {
     });
 }
 
+/** 비전이 추출한 풀이 과정 배열 → 분석용 (빈 경우 단일 안내 문장) */
+export function normalizeVisionSolutionSteps(steps: readonly string[]): string[] {
+  const cleaned = steps.map((s) => s.trim()).filter(Boolean);
+  return cleaned.length > 0 ? cleaned : [SOLUTION_STEPS_EXTRACTION_FALLBACK];
+}
+
 export const chartConfigSchema = z
   .object({
     type: z.enum(["bar", "line", "pie", "doughnut", "radar", "scatter"]),
@@ -38,15 +47,29 @@ export const chartConfigSchema = z
   })
   .nullable();
 
-export const solutionAnalysisSchema = z.object({
+/**
+ * 풀이 사진 비전 단계 출력: 문제·손글씀 풀이(단계)·최종 답 형태 + 이미지 품질 지표.
+ * `solutionSteps` 는 사진에 보이는 학생 풀이를 줄·단계 순으로 OCR 한 것(튜터링 재서술 금지).
+ */
+export const visionSolutionExtractionSchema = z.object({
+  problemText: z.string(),
+  extractedStudentAnswer: z.string(),
+  /** 사진에 보이는 풀이 과정 한 줄씩(위→아래·왼→오 순; KaTeX 가능) */
+  solutionSteps: z
+    .array(z.string())
+    .transform((arr) => arr.map((s) => s.trim()).filter(Boolean)),
+  /** 1에 가까울수록 선명·읽기 쉬움, 낮으면 흐림·노출 부족 등 */
+  imageClarityScore: z.number().min(0).max(1),
+  /** 추출에 대한 확신도(가독성·완결성 포함) */
+  extractionConfidence: z.number().min(0).max(1),
+});
+
+/** 텍스트 튜터 2단계: 비전이 준 problem/solutionSteps 외 나머지만 채움 */
+export const tutorExpansionFromVisionSchema = z.object({
   problemText: z.string(),
   extractedStudentAnswer: z.string(),
   inferredCorrectAnswer: z.string(),
-  isLikelyCorrect: z.boolean(),
   confidence: z.number().min(0).max(1),
-  solutionSteps: stringArrayWithFallback(
-    "이미지에서 풀이 단계를 명확히 구분하기 어렵습니다.",
-  ),
   errorSummary: z.string(),
   weakConcepts: z
     .array(z.string())
@@ -58,6 +81,36 @@ export const solutionAnalysisSchema = z.object({
     .transform((arr) =>
       arr.map((s) => s.trim()).filter(Boolean),
     ),
+});
+
+export type TutorExpansionFromVision = z.infer<
+  typeof tutorExpansionFromVisionSchema
+>;
+
+export type VisionSolutionExtraction = z.infer<
+  typeof visionSolutionExtractionSchema
+>;
+
+export const solutionAnalysisSchema = z.object({
+  problemText: z.string(),
+  extractedStudentAnswer: z.string(),
+  inferredCorrectAnswer: z.string(),
+  confidence: z.number().min(0).max(1),
+  solutionSteps: stringArrayWithFallback(SOLUTION_STEPS_EXTRACTION_FALLBACK),
+  errorSummary: z.string(),
+  weakConcepts: z
+    .array(z.string())
+    .transform((arr) =>
+      arr.map((s) => s.trim()).filter(Boolean),
+    ),
+  recommendedFocus: z
+    .array(z.string())
+    .transform((arr) =>
+      arr.map((s) => s.trim()).filter(Boolean),
+    ),
+  imageQualityWarning: z.boolean().optional().default(false),
+  visionImageClarityScore: z.number().min(0).max(1).optional(),
+  visionExtractionConfidence: z.number().min(0).max(1).optional(),
 });
 
 export const generatedProblemSchema = z.preprocess((raw) => {

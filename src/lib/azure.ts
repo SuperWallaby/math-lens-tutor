@@ -4,10 +4,18 @@ import { env } from "./env";
 import { sampleAnalysis, sampleProblemSet } from "./sample";
 import {
   generatedProblemSetSchema,
+  normalizeVisionSolutionSteps,
   solutionAnalysisSchema,
+  tutorExpansionFromVisionSchema,
+  visionSolutionExtractionSchema,
   type GeneratedProblemSet,
   type SolutionAnalysis,
+  type TutorExpansionFromVision,
+  type VisionSolutionExtraction,
 } from "./types";
+
+/** 흐림·저자신감 배지: 이 값 미만이면 imageQualityWarning */
+const IMAGE_QUALITY_WARNING_THRESHOLD = 0.5;
 
 /** 비전 채팅 완료(멀티모달) — gpt-4.1 등 */
 const ANALYZE_TEMPERATURE = 0.22;
@@ -69,10 +77,20 @@ function matchesResponsesDeploymentRule(
   return deploymentName === rule;
 }
 
-function reasoningEffortForResponses():
-  | "low"
-  | "medium"
-  | "high" {
+/** 밸런스 모드 유사 문제 생성 등 별도 리전 Chat/Responses 호출 시 */
+export type AzureCredentialOverride = {
+  endpoint: string;
+  apiKey: string;
+};
+
+function resolveBalancedTextRegionalCredentials(): AzureCredentialOverride | null {
+  const rawEp = env.azureOpenAiBalancedRegionalEndpoint?.trim();
+  const rawKey = env.azureOpenAiBalancedRegionalApiKey?.trim();
+  if (!rawEp || !rawKey) return null;
+  return { endpoint: rawEp.replace(/\/$/, ""), apiKey: rawKey };
+}
+
+function reasoningEffortForResponses(): "low" | "medium" | "high" {
   const r = env.azureOpenAiReasoningEffort.trim().toLowerCase();
   if (r === "low" || r === "medium" || r === "high") return r;
   return "medium";
@@ -231,8 +249,13 @@ function extractResponsesApiAssistantText(data: Record<string, unknown>): string
 async function azureResponsesCompletionJson(params: {
   deploymentName: string;
   prompt: string;
+  credentialOverride?: AzureCredentialOverride;
 }): Promise<string> {
-  const base = env.azureOpenAiEndpoint!.replace(/\/$/, "");
+  const base = (
+    params.credentialOverride?.endpoint ?? env.azureOpenAiEndpoint!
+  ).replace(/\/$/, "");
+  const apiKey =
+    params.credentialOverride?.apiKey ?? env.azureOpenAiApiKey!;
   const apiVersion = encodeURIComponent(env.azureOpenAiResponsesApiVersion);
   const url = `${base}/openai/v1/responses?api-version=${apiVersion}`;
 
@@ -252,7 +275,7 @@ async function azureResponsesCompletionJson(params: {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
-      "api-key": env.azureOpenAiApiKey!,
+      "api-key": apiKey,
     },
     body: JSON.stringify(body),
   });
@@ -288,8 +311,13 @@ async function azureChatCompletionJson(params: {
   }>;
   temperature: number;
   maxTokens?: number;
+  credentialOverride?: AzureCredentialOverride;
 }): Promise<string> {
-  const base = env.azureOpenAiEndpoint!.replace(/\/$/, "");
+  const base = (
+    params.credentialOverride?.endpoint ?? env.azureOpenAiEndpoint!
+  ).replace(/\/$/, "");
+  const apiKey =
+    params.credentialOverride?.apiKey ?? env.azureOpenAiApiKey!;
   const deployment = encodeURIComponent(params.deploymentName);
   const apiVersion = encodeURIComponent(env.azureOpenAiApiVersion);
   const url = `${base}/openai/deployments/${deployment}/chat/completions?api-version=${apiVersion}`;
@@ -309,45 +337,74 @@ async function azureChatCompletionJson(params: {
     payload.response_format = { type: "json_object" };
   }
 
-  const res = await fetch(url, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "api-key": env.azureOpenAiApiKey!,
-    },
-    body: JSON.stringify(payload),
-  });
+  /** 멀티모달이 할당량·스로틀(429)에 자주 걸려 비전일 때만 재시도 */
+  const maxAttempts = usesVision ? 5 : 1;
+  let lastStatus = 0;
+  let lastErrBody = "";
 
-  if (!res.ok) {
-    const errBody = await res.text();
-    throw new Error(
-      `Azure OpenAI 오류 (${res.status}): ${errBody.slice(0, 500)}`,
-    );
+  for (let attempt = 0; attempt < maxAttempts; attempt++) {
+    const res = await fetch(url, {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "api-key": apiKey,
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (res.ok) {
+      const data = (await res.json()) as {
+        choices?: Array<{ message?: { content?: string | null } }>;
+      };
+      const text = data.choices?.[0]?.message?.content;
+      if (typeof text !== "string" || !text.trim()) {
+        throw new Error("Azure OpenAI 응답에 본문이 없습니다.");
+      }
+      return text;
+    }
+
+    lastStatus = res.status;
+    lastErrBody = await res.text();
+    const retryable =
+      (lastStatus === 429 || lastStatus === 503) && attempt < maxAttempts - 1;
+    if (!retryable) {
+      break;
+    }
+    const ra = res.headers.get("retry-after");
+    const fromHeader = ra ? parseInt(ra, 10) * 1000 : NaN;
+    const backoff = Number.isFinite(fromHeader)
+      ? Math.min(20_000, fromHeader)
+      : Math.min(12_000, 400 * 2 ** attempt);
+    await new Promise((r) => setTimeout(r, backoff));
   }
 
-  const data = (await res.json()) as {
-    choices?: Array<{ message?: { content?: string | null } }>;
-  };
-  const text = data.choices?.[0]?.message?.content;
-  if (typeof text !== "string" || !text.trim()) {
-    throw new Error("Azure OpenAI 응답에 본문이 없습니다.");
-  }
-  return text;
+  throw new Error(
+    `Azure OpenAI 오류 (${lastStatus}): ${lastErrBody.slice(0, 500)}`,
+  );
 }
 
 /**
- * 텍스트 전용 JSON 완료. gpt-5 배포명이면 Responses API, 아니면 Chat Completions.
+ * 텍스트 전용 JSON 완료.
+ *
+ * - **Chat Completions** (대부분 배포): `response_format: { type: "json_object" }` 로 응답을 JSON으로 제한
+ *   (단, 메시지에 `image_url` 이 있으면 비전 호환 이슈로 `json_object` 를 붙이지 않음 → `azureChatCompletionJson`)
+ * - **GPT-5 계열 Responses API**: `text.format.type: "json_object"` (`azureResponsesCompletionJson`)
+ *
+ * 따라서 `expandAnalysisFromVisionDraft` · `refineSolutionAnalysisForAccurateMode` 같은 **순수 텍스트** 호출은
+ * 이미 API 레벨에서 JSON만 나오도록 연결되어 있다.
  */
 async function completeTextOnlyJsonPrompt(params: {
   deploymentName: string;
   userPrompt: string;
   temperatureForChat: number;
   maxTokens: number;
+  credentialOverride?: AzureCredentialOverride;
 }): Promise<string> {
   if (deploymentUsesResponsesApi(params.deploymentName)) {
     return azureResponsesCompletionJson({
       deploymentName: params.deploymentName,
       prompt: params.userPrompt,
+      credentialOverride: params.credentialOverride,
     });
   }
   return azureChatCompletionJson({
@@ -355,41 +412,79 @@ async function completeTextOnlyJsonPrompt(params: {
     temperature: params.temperatureForChat,
     maxTokens: params.maxTokens,
     messages: [{ role: "user", content: params.userPrompt }],
+    credentialOverride: params.credentialOverride,
   });
 }
 
-export async function analyzeSolutionImage(
+function mergeVisionMetricsIntoAnalysis(
+  expansion: TutorExpansionFromVision,
+  vision: VisionSolutionExtraction,
+): SolutionAnalysis {
+  const warn =
+    vision.imageClarityScore < IMAGE_QUALITY_WARNING_THRESHOLD ||
+    vision.extractionConfidence < IMAGE_QUALITY_WARNING_THRESHOLD;
+  return {
+    ...expansion,
+    problemText: vision.problemText,
+    extractedStudentAnswer: vision.extractedStudentAnswer,
+    solutionSteps: normalizeVisionSolutionSteps(vision.solutionSteps),
+    imageQualityWarning: warn,
+    visionImageClarityScore: vision.imageClarityScore,
+    visionExtractionConfidence: vision.extractionConfidence,
+  };
+}
+
+/** 1단계: 이미지에서 문제·손글씀 풀이 단계·답 + 이미지 품질만 */
+export async function extractSolutionImageVision(
   file: File,
-  options: { deploymentName: string; mode: AnalyzeQualityMode },
-): Promise<SolutionAnalysis> {
+  options: { deploymentName: string },
+): Promise<VisionSolutionExtraction> {
   if (!hasAzureOpenAiConfig()) {
-    return sampleAnalysis;
+    return {
+      problemText: sampleAnalysis.problemText,
+      extractedStudentAnswer: sampleAnalysis.extractedStudentAnswer,
+      solutionSteps: [...sampleAnalysis.solutionSteps],
+      imageClarityScore: 1,
+      extractionConfidence: 1,
+    };
   }
 
   const buffer = Buffer.from(await file.arrayBuffer());
   const mime = normalizeImageMimeType(file);
   const dataUrl = `data:${mime};base64,${buffer.toString("base64")}`;
 
-  const prompt = `You are an expert Korean math tutor. Read the student's handwritten math solution image with multimodal reasoning, not OCR-only extraction.
+  const prompt = `You are a strict transcription model for Korean math worksheets. Look at ONE student solution photo.
 
-Return only JSON matching this shape:
+Extract only what is visibly written or strongly implied by the student's handwriting. You are not a math solver: do not tutor, infer the textbook answer, judge right/wrong, repair algebra, complete missing lines, normalize the student's math, or convert wrong work into a correct solution.
+
+Uncertainty policy:
+- For **problemText**, be conservative. If an important condition, number, symbol, or word is unclear, write [unclear] rather than guessing.
+- For the student's **extractedStudentAnswer** and **solutionSteps**, if the surrounding handwriting/math strongly suggests one reading, write your best guess followed by (?) — for example $x = 2(?)$ or $-\frac{1}{2}(?)$.
+- Use [unclear] only when there is no reasonable guess.
+- Lower extractionConfidence for every guessed symbol, guessed answer, or partially visible line.
+
+1) **problemText**: Full problem statement/instructions visible on the sheet (Korean; KaTeX $...$ for math where written). Preserve visible numbering and conditions.
+
+2) **extractedStudentAnswer**: Use the student's final/boxed/circled answer when marked. If the mark is unclear but a final answer is strongly suggested, include the best guess with (?). If no final answer is reasonably identifiable, return an empty string "". Do not infer the correct textbook answer.
+
+3) **solutionSteps**: Each visible line or logical step of the student's **handwritten work**, in reading order (top-to-bottom, left-to-right). One array element per step/line. Transcribe faithfully; use KaTeX $...$ for formulas as they appear. If only scratch with no clear order, keep the best visible reading order. Do not add teaching commentary.
+
+4) **imageClarityScore** (0.0–1.0):
+- 0.90–1.00: all text and symbols comfortably readable
+- 0.70–0.89: mostly readable, minor ambiguity
+- 0.50–0.69: some important symbols/lines ambiguous
+- below 0.50: blurry, low-resolution, dark, glare, or not comfortably readable
+
+5) **extractionConfidence** (0.0–1.0): Confidence that the strings above match what is on the paper. Lower this if any formula, sign, exponent, denominator, or final answer is uncertain.
+
+Return only JSON matching this exact shape:
 {
   "problemText": "string",
   "extractedStudentAnswer": "string",
-  "inferredCorrectAnswer": "string",
-  "isLikelyCorrect": false,
-  "confidence": 0.0,
-  "solutionSteps": ["string"],
-  "errorSummary": "string",
-  "weakConcepts": ["string"],
-  "recommendedFocus": ["string"]
-}
-
-Use Korean for all explanations. If the image is ambiguous, make the best careful inference and lower confidence.
-Set isLikelyCorrect to true when the student's answer and reasoning are substantially aligned with inferredCorrectAnswer; set false when clearly wrong, incomplete, or contradictory.
-
-Math typography (required): Wrap every mathematical expression in KaTeX-compatible LaTeX. Inline: $expression$ . Display/multi-line when helpful: $$ expression $$ . Prefer \\frac{a}{b}, ^, _. In JSON strings, escape backslashes per JSON rules (typically double \\\\ ). Do NOT use stray single $ for Korean won amounts—write amounts without wrapping in dollar fences.
-Every solutionSteps[i] item must ALSO wrap every LaTeX command cluster (examples: \\frac{}{}, \\sqrt{}, \\sin, \\cos, \\theta, \\angle, \\Rightarrow, \\times) in inline $…$ ; never emit raw backslash-LaTeX next to Korean without delimiters.`;
+  "solutionSteps": ["string", "..."],
+  "imageClarityScore": 0.0,
+  "extractionConfidence": 0.0
+}`;
 
   const text = await azureChatCompletionJson({
     deploymentName: options.deploymentName,
@@ -406,11 +501,85 @@ Every solutionSteps[i] item must ALSO wrap every LaTeX command cluster (examples
     ],
   });
 
-  return solutionAnalysisSchema.parse(parseJsonFromText(text));
+  return visionSolutionExtractionSchema.parse(parseJsonFromText(text));
+}
+
+/** 2단계: 텍스트 전용 튜터 모델 — 나머지 분석 채우기 */
+export async function expandAnalysisFromVisionDraft(
+  vision: VisionSolutionExtraction,
+  options: { deploymentName: string; mode: AnalyzeQualityMode },
+): Promise<SolutionAnalysis> {
+  if (!hasAzureOpenAiConfig()) {
+    const expansion: TutorExpansionFromVision = {
+      problemText: sampleAnalysis.problemText,
+      extractedStudentAnswer: sampleAnalysis.extractedStudentAnswer,
+      inferredCorrectAnswer: sampleAnalysis.inferredCorrectAnswer,
+      confidence: sampleAnalysis.confidence,
+      errorSummary: sampleAnalysis.errorSummary,
+      weakConcepts: sampleAnalysis.weakConcepts,
+      recommendedFocus: sampleAnalysis.recommendedFocus,
+    };
+    return mergeVisionMetricsIntoAnalysis(expansion, vision);
+  }
+
+  const prompt = `You are an expert Korean mathematics tutor — **text-only**. You do not see the photo.
+
+Vision already OCR'd the problem, each line of the student's handwritten work (solutionSteps in the JSON below), and their answer string. Treat the vision JSON as a possibly imperfect transcription. Your job is everything else: reference answer, diagnosis, and study tips—not rewriting the student's work as tutoring steps.
+
+Vision extraction JSON:
+${JSON.stringify(vision, null, 2)}
+
+Your tasks from this text ONLY:
+1) State inferredCorrectAnswer — the correct result for the printed problem (KaTeX), for teaching context.
+2) Write errorSummary (short, Korean) comparing the student's approach (from solutionSteps / extractedStudentAnswer) to sound reasoning. If the diagnosis depends on [unclear] or likely OCR ambiguity, mention that uncertainty briefly.
+3) List weakConcepts and recommendedFocus (Korean); empty arrays if truly unknown.
+4) Set confidence ∈ [0,1] for your judgment **of tutoring/diagnosis** — NOT for photo clarity and NOT for whether the student is correct.
+
+RULES:
+- Repeat problemText and extractedStudentAnswer in your JSON **exactly verbatim** character-for-character as in the vision JSON (same strings).
+- Do not overwrite, repair, or reinterpret OCR text by mathematical expectation alone.
+- Treat any '(?)' marker in extractedStudentAnswer or solutionSteps as an OCR guess. Use it as evidence cautiously and reduce confidence when it affects the diagnosis.
+- Do NOT output solutionSteps — the student's process is taken only from vision.
+
+Return a single JSON object with exactly these keys:
+problemText, extractedStudentAnswer, inferredCorrectAnswer, confidence, errorSummary, weakConcepts, recommendedFocus
+
+Math typography where YOUR fields contain math: inline $expression$ ; display $$ ... $$ where helpful. Escape backslashes in JSON.
+
+Use Korean for prose explanations.`;
+
+  // 위 프롬프트와 별개로, 출력 형식은 completeTextOnlyJsonPrompt 안에서
+  // Chat: response_format=json_object / Responses: text.format=json_object 로 이미 강제됨.
+  const raw = await completeTextOnlyJsonPrompt({
+    deploymentName: options.deploymentName,
+    userPrompt: prompt,
+    temperatureForChat: ANALYZE_TEMPERATURE,
+    maxTokens: 8192,
+  });
+
+  const expansion = tutorExpansionFromVisionSchema.parse(parseJsonFromText(raw));
+  return mergeVisionMetricsIntoAnalysis(expansion, vision);
+}
+
+export async function analyzeSolutionImage(
+  file: File,
+  options: {
+    deploymentName: string;
+    textDeploymentName: string;
+    mode: AnalyzeQualityMode;
+  },
+): Promise<SolutionAnalysis> {
+  const vision = await extractSolutionImageVision(file, {
+    deploymentName: options.deploymentName,
+  });
+  return expandAnalysisFromVisionDraft(vision, {
+    deploymentName: options.textDeploymentName,
+    mode: options.mode,
+  });
 }
 
 /**
- * 정확 모드 전용: 비전 모델 초안 분석을 추론 모델로 재검증·교정합니다.
+ * 정확 모드 전용: 텍스트 모델이 채운 분석을 추론 모델로 재검증·교정합니다.
  */
 export async function refineSolutionAnalysisForAccurateMode(
   draft: SolutionAnalysis,
@@ -428,18 +597,21 @@ export async function refineSolutionAnalysisForAccurateMode(
 
   const prompt = `You are an expert Korean mathematics tutor conducting a careful second-pass review.
 
-The JSON below was extracted from a student's handwritten solution photo using a vision model. Your tasks:
-1) Sanity-check OCR-like errors (digits, minus signs, fractions) and reasoning gaps.
-2) Improve correctness of inferredCorrectAnswer and justification in solutionSteps (step-by-step, in Korean).
-3) Sharpen errorSummary, weakConcepts, and recommendedFocus for learning impact.
-4) Adjust confidence ∈ [0,1] appropriately.
-5) Keep factual alignment with what the draft plausibly saw in the photo; prefer fixing internal inconsistencies.
+The JSON below blends (A) **vision-only OCR** (problem, handwriting solution steps, final answer) plus image-quality scores, and (B) a **subsequent text-only** tutor pass. Treat the OCR fields as photo evidence, not as text you can freely rewrite. **풀이 단계(solutionSteps)는 비전 전용**이라 이 단계에서는 바꾸지 않는다(서버가 유지).
+
+Your tasks:
+1) Keep problemText and extractedStudentAnswer verbatim unless the draft contains obvious formatting/JSON corruption. Do not correct OCR based on mathematical expectation alone.
+2) Improve correctness of inferredCorrectAnswer and tie errorSummary / weakConcepts / recommendedFocus to the student's work shown in the draft's solutionSteps (read-only context).
+3) Adjust confidence ∈ [0,1] appropriately.
+4) Keep factual alignment with what was transcribed from the photo.
 
 Draft JSON to refine:
 ${JSON.stringify(draft, null, 2)}
 
-Return a single JSON object with exactly these keys: problemText, extractedStudentAnswer, inferredCorrectAnswer, isLikelyCorrect, confidence, solutionSteps, errorSummary, weakConcepts, recommendedFocus.
-Keep readable LaTeX: inline formulas in $ ... $ and display formulas in $$ ... $$ wherever math appears. Preserve JSON escaping rules for backslashes. Each solutionSteps line must wrap every cluster of LaTeX commands (e.g. \\frac{}{}, \\sqrt{}, \\cos, \\theta, \\angle)—never attach raw command text to Korean without $ delimiters.`;
+Return a single JSON object with these keys: problemText, extractedStudentAnswer, inferredCorrectAnswer, confidence, errorSummary, weakConcepts, recommendedFocus.
+(Omit solutionSteps from your reply—it will be taken from the draft server-side.)
+Copy problemText and extractedStudentAnswer exactly from the draft unless the exception in task (1) applies.
+Keep readable LaTeX: inline formulas in $ ... $ and display formulas in $$ ... $$ wherever math appears. Preserve JSON escaping rules for backslashes.`;
   const raw = await completeTextOnlyJsonPrompt({
     deploymentName: options.deploymentName,
     userPrompt: prompt,
@@ -447,7 +619,22 @@ Keep readable LaTeX: inline formulas in $ ... $ and display formulas in $$ ... $
     maxTokens: 8192,
   });
 
-  return solutionAnalysisSchema.parse(parseJsonFromText(raw));
+  const parsedJson = parseJsonFromText(raw);
+  if (
+    typeof parsedJson !== "object" ||
+    parsedJson === null ||
+    Array.isArray(parsedJson)
+  ) {
+    throw new Error("정확 모드 재검토 응답이 JSON 객체가 아닙니다.");
+  }
+  const refined = solutionAnalysisSchema.parse({
+    ...(parsedJson as Record<string, unknown>),
+    solutionSteps: draft.solutionSteps,
+    imageQualityWarning: draft.imageQualityWarning,
+    visionImageClarityScore: draft.visionImageClarityScore,
+    visionExtractionConfidence: draft.visionExtractionConfidence,
+  });
+  return refined;
 }
 
 export async function generateSimilarProblems(
@@ -473,6 +660,8 @@ export async function generateSimilarProblems(
 
 Analysis:
 ${JSON.stringify(analysis, null, 2)}
+
+Use only the learning-relevant fields: problemText, inferredCorrectAnswer, errorSummary, weakConcepts, recommendedFocus, and the student's transcribed solutionSteps. Ignore imageQualityWarning, visionImageClarityScore, and visionExtractionConfidence except to avoid over-trusting ambiguous OCR.
 
 Return JSON only matching this exact shape:
 {
@@ -517,11 +706,19 @@ point 는 coord 또는 parents 로 좌표 전달 가능. 다른 요소 parents �
 
 Make the problems similar enough to train the missing concept, but not identical.`;
 
+  const balancedRegionalCredential =
+    options.mode === "balanced"
+      ? resolveBalancedTextRegionalCredentials()
+      : null;
+
   const text = await completeTextOnlyJsonPrompt({
     deploymentName: options.deploymentName,
     userPrompt: prompt,
     temperatureForChat: GENERATE_TEMPERATURE,
     maxTokens: 8192,
+    ...(balancedRegionalCredential
+      ? { credentialOverride: balancedRegionalCredential }
+      : {}),
   });
 
   const parsed = generatedProblemSetSchema.parse(parseJsonFromText(text));

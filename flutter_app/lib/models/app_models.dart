@@ -10,12 +10,14 @@ class SolutionAnalysis {
     required this.problemText,
     required this.extractedStudentAnswer,
     required this.inferredCorrectAnswer,
-    required this.isLikelyCorrect,
     required this.confidence,
     required this.solutionSteps,
     required this.errorSummary,
     required this.weakConcepts,
     required this.recommendedFocus,
+    this.imageQualityWarning = false,
+    this.visionImageClarityScore,
+    this.visionExtractionConfidence,
   });
 
   factory SolutionAnalysis.fromJson(Map<String, dynamic> json) {
@@ -23,24 +25,30 @@ class SolutionAnalysis {
       problemText: json['problemText'] as String? ?? '',
       extractedStudentAnswer: json['extractedStudentAnswer'] as String? ?? '',
       inferredCorrectAnswer: json['inferredCorrectAnswer'] as String? ?? '',
-      isLikelyCorrect: _readBool(json['isLikelyCorrect']),
       confidence: (json['confidence'] as num? ?? 0).toDouble(),
       solutionSteps: _stringList(json['solutionSteps']),
       errorSummary: json['errorSummary'] as String? ?? '',
       weakConcepts: _stringList(json['weakConcepts']),
       recommendedFocus: _stringList(json['recommendedFocus']),
+      imageQualityWarning: _readBool(json['imageQualityWarning']),
+      visionImageClarityScore:
+          (json['visionImageClarityScore'] as num?)?.toDouble(),
+      visionExtractionConfidence:
+          (json['visionExtractionConfidence'] as num?)?.toDouble(),
     );
   }
 
   final String problemText;
   final String extractedStudentAnswer;
   final String inferredCorrectAnswer;
-  final bool isLikelyCorrect;
   final double confidence;
   final List<String> solutionSteps;
   final String errorSummary;
   final List<String> weakConcepts;
   final List<String> recommendedFocus;
+  final bool imageQualityWarning;
+  final double? visionImageClarityScore;
+  final double? visionExtractionConfidence;
 }
 
 class SolutionSubmission {

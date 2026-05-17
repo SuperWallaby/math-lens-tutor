@@ -62,10 +62,22 @@ Vercel 프로젝트 → **Settings** → **Environment Variables**에 아래를 
 | `AZURE_OPENAI_API_KEY` | Azure 포털에서 발급한 키 |
 | `AZURE_OPENAI_DEPLOYMENT` | 배포 이름 (비전 가능 모델, 예: `gpt-4o`) |
 | `AZURE_OPENAI_DEPLOYMENT_*` | 선택. 빠름/밸런스/정확 모드별 배포 — 예시는 `.env.example` 참고 |
-| `AZURE_OPENAI_DEPLOYMENT_VISION` | 선택. 비선 시 밸런스 배포로 폴백 |
+| `AZURE_OPENAI_DEPLOYMENT_VISION` | 권장. 풀이 사진 비전 전용 배포 이름 (예: Azure에 `gpt-4o` 로 배포한 값). 미설정 시 밸런스 배포로 폴백 |
+| `AZURE_OPENAI_VISION_DEPLOYMENT_OPTIONS` | 선택. 웹 `/settings` 에서 고를 비전 배포 이름(쉼표). 서버가 허용 목록으로 검증 |
+| `AZURE_OPENAI_TEXT_DEPLOYMENT_OPTIONS` | 선택. 설정 탭에서 고를 텍스트 배포 이름(쉼표). `o4-mini` 등 |
 | `AZURE_OPENAI_API_VERSION` | 선택. 미설정 시 코드 기본값 `2024-08-01-preview` |
 
-**한국 중부 리전:** 주 사용자가 한국이라면 Cognitive Services 계정을 `koreacentral`에 두고 엔드포인트만 바꿀 수 있습니다. 이 구독 예시에서는 `TestAzResourceAi`에 `trx-kr-gpt-4-1-mini`, `trx-kr-gpt-4-1-vision`, 정확 모드용 기존 `gpt-5.4` 배포가 사용 가능합니다(`gpt-5.4-pro`는 해당 리전 카탈로그에 없을 수 있음). 자세한 키·값 예시는 루트 `.env.example` 주석 블록을 따르세요.
+**gpt-4o 비전 배포 (Azure CLI 예):** 계정에 모델 `gpt-4o` **2024-11-20** 이catalog에 GenerallyAvailable로 있어야 합니다(2024-08-06 등은 *Deprecating* 이면 신규 배포가 거절될 수 있음).
+
+```bash
+az cognitiveservices account deployment create \
+  -g <리소스그룹> -n <CognitiveServices계정이름> \
+  --deployment-name gpt-4o \
+  --model-name gpt-4o --model-version 2024-11-20 --model-format OpenAI \
+  --sku-name GlobalStandard --sku-capacity 30
+```
+
+그 다음 Vercel에 `AZURE_OPENAI_DEPLOYMENT_VISION=gpt-4o`(배포 이름과 동일) 를 넣습니다.
 
 ### MongoDB (영구 저장)
 
@@ -86,8 +98,9 @@ Vercel 서버리스는 고정 IP가 아닙니다. Atlas 사용 시 **Network Acc
 
 1. **메인 페이지**: `/`
 2. **업로드·분석**: `/upload` — 풀이 사진 업로드 후 분석이 되는지
-3. **개인정보 처리방침**: `/privacy` — 스토어 제출용 URL로 사용 가능
-4. **대시보드**: `/dashboard` — MongoDB 연결 시 기기/사용자별 데이터 정책에 맞게 동작하는지
+3. **설정**: `/settings` — 비전·텍스트 Azure 배포 후보(환경 변수 허용 목록 기준)
+4. **개인정보 처리방침**: `/privacy` — 스토어 제출용 URL로 사용 가능
+5. **대시보드**: `/dashboard` — MongoDB 연결 시 기기/사용자별 데이터 정책에 맞게 동작하는지
 
 서버 오류 시 MongoDB가 연결되어 있으면 **`api_error_logs`** 컬렉션에 에러 로그가 남을 수 있습니다.
 

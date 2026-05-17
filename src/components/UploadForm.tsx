@@ -2,6 +2,11 @@
 
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { STUDY_RETURN_USER_KEY } from "@/components/HomeReturnRedirect";
+
+/** `src/app/settings/page.tsx` 와 동일 키 */
+const STORAGE_VISION = "study_vision_deployment";
+const STORAGE_TEXT = "study_text_deployment";
 
 export function UploadForm() {
   const router = useRouter();
@@ -9,17 +14,9 @@ export function UploadForm() {
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [qualityMode, setQualityMode] = useState<
-    "fast" | "balanced" | "accurate"
-  >("balanced");
   const previewUrlRef = useRef<string | null>(null);
-  const qualityModeRef = useRef(qualityMode);
   /** 새 선택·언마운트 시 증가 → 진행 중 요청 결과 무시 */
   const analyzeSeqRef = useRef(0);
-
-  useEffect(() => {
-    qualityModeRef.current = qualityMode;
-  }, [qualityMode]);
 
   useEffect(() => {
     return () => {
@@ -37,7 +34,15 @@ export function UploadForm() {
 
     const formData = new FormData();
     formData.append("image", uploadFile);
-    formData.append("qualityMode", qualityModeRef.current);
+    formData.append("qualityMode", "balanced");
+    try {
+      const v = localStorage.getItem(STORAGE_VISION)?.trim();
+      if (v) formData.append("visionDeployment", v);
+      const t = localStorage.getItem(STORAGE_TEXT)?.trim();
+      if (t) formData.append("textDeployment", t);
+    } catch {
+      /* ignore */
+    }
 
     try {
       const response = await fetch("/api/analyze", {
@@ -58,6 +63,11 @@ export function UploadForm() {
         return;
       }
 
+      try {
+        localStorage.setItem(STUDY_RETURN_USER_KEY, "1");
+      } catch {
+        /* ignore */
+      }
       router.push(`/submissions/${payload.submissionId}`);
     } catch {
       if (seq !== analyzeSeqRef.current) return;
@@ -109,7 +119,7 @@ export function UploadForm() {
         />
       </label>
       <p className="mt-2 text-xs text-slate-400">
-        파일을 선택하면 바로 분석이 시작됩니다. 응답 모드는 이미지 선택 전에 고르세요.
+        파일을 선택하면 바로 분석이 시작됩니다.
       </p>
       {previewUrl ? (
         <div className="mt-5 overflow-hidden rounded-2xl border border-white/10 bg-slate-900">
@@ -124,42 +134,6 @@ export function UploadForm() {
           />
         </div>
       ) : null}
-      <fieldset className="mt-5" disabled={isLoading}>
-        <legend className="text-sm font-medium text-slate-200">
-          응답 모드
-        </legend>
-        <p className="mt-1 text-xs text-slate-400">
-          분석 피드백과 유사 문제 세트는 서버에서 서로 병렬로 생성합니다. 모드는 사용하는
-          Azure 배포(모델)만 바꿉니다.
-        </p>
-        <div className="mt-3 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
-          {(
-            [
-              { value: "fast" as const, label: "빠른 응답" },
-              { value: "balanced" as const, label: "밸런스" },
-              { value: "accurate" as const, label: "정확한 응답" },
-            ] as const
-          ).map((opt) => (
-            <label
-              key={opt.value}
-              className={`flex cursor-pointer items-center gap-2 rounded-2xl border px-4 py-2.5 text-sm transition ${
-                qualityMode === opt.value
-                  ? "border-blue-400 bg-blue-500/20 text-white"
-                  : "border-white/10 bg-slate-900/60 text-slate-300 hover:border-white/20"
-              }`}
-            >
-              <input
-                type="radio"
-                name="qualityModeUi"
-                checked={qualityMode === opt.value}
-                onChange={() => setQualityMode(opt.value)}
-                className="h-4 w-4 accent-blue-500"
-              />
-              {opt.label}
-            </label>
-          ))}
-        </div>
-      </fieldset>
       {error ? <p className="mt-4 text-sm text-red-300">{error}</p> : null}
       <button
         type="button"

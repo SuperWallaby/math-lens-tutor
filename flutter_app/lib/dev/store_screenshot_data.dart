@@ -7,7 +7,6 @@ AnalyzeResult storeScreenshotAnalyzeResult() {
         '함수 f(x) = x² − 4x + 3 의 최솟값을 구하고, 그때의 x 값을 구하시오.',
     extractedStudentAnswer: '최솟값 −1, x = 2',
     inferredCorrectAnswer: '최솟값 −1, x = 2',
-    isLikelyCorrect: true,
     confidence: 0.88,
     solutionSteps: [
       '완전제곱식으로 f(x) = (x − 2)² − 1 로 정리했습니다.',
@@ -19,6 +18,7 @@ AnalyzeResult storeScreenshotAnalyzeResult() {
       '매개변수가 있는 이차함수 최댓값·최솟값',
       '닫힌 구간에서의 최댓·최솟',
     ],
+    imageQualityWarning: false,
   );
 
   final submission = SolutionSubmission(

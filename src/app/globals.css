@@ -19,6 +19,17 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+@media print {
+  body {
+    background: #fff !important;
+    color: #000 !important;
+  }
+
+  .no-print {
+    display: none !important;
+  }
+}
+
 /* 한국어 본문 색 상속 — KaTeX 기본 검정 덮음 */
 .math-mixed-root .katex {
   color: inherit;

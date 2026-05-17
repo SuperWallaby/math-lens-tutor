@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../layout/tablet_layout.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
+import '../utils/problem_set_pdf.dart';
 import '../widgets/app_card.dart';
 import '../widgets/mixed_math_text.dart';
 import 'practice_screen.dart';
@@ -64,13 +65,12 @@ class AnalysisScreen extends StatelessWidget {
                 spacing: 8,
                 runSpacing: 8,
                 children: [
-                  TagChip(
-                    analysis.isLikelyCorrect ? '정답 가능성 높음' : '오답 가능성 높음',
-                    color: analysis.isLikelyCorrect
-                        ? const Color(0xFF16A34A)
-                        : const Color(0xFFDC2626),
-                  ),
                   TagChip('신뢰도 ${(analysis.confidence * 100).round()}%'),
+                  if (analysis.imageQualityWarning)
+                    const TagChip(
+                      '이미지가 흐린 것 같아요',
+                      color: Color(0xFFF59E0B),
+                    ),
                 ],
               ),
               const SizedBox(height: 16),
@@ -179,6 +179,21 @@ class AnalysisScreen extends StatelessWidget {
                 ),
               ],
               const SizedBox(height: 18),
+              OutlinedButton.icon(
+                onPressed: () async {
+                  try {
+                    await openSimilarProblemsPdf(result.problemSet);
+                  } catch (e) {
+                    if (!context.mounted) return;
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(content: Text('PDF를 만들지 못했습니다: $e')),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.picture_as_pdf_outlined),
+                label: const Text('유사문제 PDF로 받기'),
+              ),
+              const SizedBox(height: 12),
               FilledButton.icon(
                 onPressed: () {
                   Navigator.of(context).push(

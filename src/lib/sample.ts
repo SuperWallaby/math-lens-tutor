@@ -11,7 +11,6 @@ export const sampleAnalysis: SolutionAnalysis = {
     "이차함수 $y = x^2 - 4x + 3$ 의 최솟값을 구하시오. (이차항 계수 $a \\ne 0$)",
   extractedStudentAnswer: "3번, 0",
   inferredCorrectAnswer: "$-1$",
-  isLikelyCorrect: false,
   confidence: 0.82,
   solutionSteps: [
     "학생은 $x^2 - 4x + 3$을 $(x - 2)^2 + 3$으로 완전제곱식 변형했습니다.",
@@ -24,6 +23,9 @@ export const sampleAnalysis: SolutionAnalysis = {
     "$x^2 + bx$를 $\\bigl(x + \\frac{b}{2}\\bigr)^2$ 형태로 바꾼 뒤 보정항을 확인하기",
     "꼭짓점 좌표와 최솟값을 구분해서 쓰기",
   ],
+  imageQualityWarning: false,
+  visionImageClarityScore: 0.92,
+  visionExtractionConfidence: 0.9,
 };
 
 export const sampleProblemSet: GeneratedProblemSet = {

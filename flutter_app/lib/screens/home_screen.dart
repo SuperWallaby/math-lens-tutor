@@ -1,14 +1,44 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../layout/tablet_layout.dart';
 import '../services/api_client.dart';
 import 'dashboard_screen.dart';
 import 'upload_screen.dart';
 
-class HomeScreen extends StatelessWidget {
+const _kStudyReturnUser = 'study_return_user';
+
+class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key, required this.apiClient});
 
   final ApiClient apiClient;
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  bool _redirectChecked = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeRedirectToUpload());
+  }
+
+  Future<void> _maybeRedirectToUpload() async {
+    if (_redirectChecked || !mounted) return;
+    _redirectChecked = true;
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    if (prefs.getBool(_kStudyReturnUser) ?? false) {
+      await Navigator.of(context).pushReplacement(
+        MaterialPageRoute(
+          builder: (_) => UploadScreen(apiClient: widget.apiClient),
+        ),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -36,46 +66,46 @@ class HomeScreen extends StatelessWidget {
                   height: 1.55,
                 ),
               ),
-            const SizedBox(height: 28),
-            FilledButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => UploadScreen(apiClient: apiClient),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.camera_alt_rounded),
-              label: const Text('풀이 사진 분석하기'),
-            ),
-            const SizedBox(height: 12),
-            OutlinedButton.icon(
-              onPressed: () {
-                Navigator.of(context).push(
-                  MaterialPageRoute(
-                    builder: (_) => DashboardScreen(apiClient: apiClient),
-                  ),
-                );
-              },
-              icon: const Icon(Icons.insights_rounded),
-              label: const Text('학습 대시보드'),
-            ),
-            const SizedBox(height: 32),
-            const _FeatureTile(
-              icon: Icons.image_search_rounded,
-              title: '사진 기반 분석',
-              body: 'Azure OpenAI는 서버에서만 호출하고 앱에는 API 키를 넣지 않습니다.',
-            ),
-            const _FeatureTile(
-              icon: Icons.quiz_rounded,
-              title: '네이티브 문제풀이',
-              body: '객관식 1~5번과 주관식 답안을 Flutter 화면에서 제출합니다.',
-            ),
-            const _FeatureTile(
-              icon: Icons.bar_chart_rounded,
-              title: '수준 피드백',
-              body: 'MongoDB에 누적된 풀이 기록으로 약점과 정답률을 보여줍니다.',
-            ),
+              const SizedBox(height: 28),
+              FilledButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => UploadScreen(apiClient: widget.apiClient),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.camera_alt_rounded),
+                label: const Text('풀이 사진 분석하기'),
+              ),
+              const SizedBox(height: 12),
+              OutlinedButton.icon(
+                onPressed: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(
+                      builder: (_) => DashboardScreen(apiClient: widget.apiClient),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.insights_rounded),
+                label: const Text('학습 대시보드'),
+              ),
+              const SizedBox(height: 32),
+              const _FeatureTile(
+                icon: Icons.image_search_rounded,
+                title: '사진 기반 분석',
+                body: 'Azure OpenAI는 서버에서만 호출하고 앱에는 API 키를 넣지 않습니다.',
+              ),
+              const _FeatureTile(
+                icon: Icons.quiz_rounded,
+                title: '네이티브 문제풀이',
+                body: '객관식 1~5번과 주관식 답안을 Flutter 화면에서 제출합니다.',
+              ),
+              const _FeatureTile(
+                icon: Icons.bar_chart_rounded,
+                title: '수준 피드백',
+                body: 'MongoDB에 누적된 풀이 기록으로 약점과 정답률을 보여줍니다.',
+              ),
             ],
           ),
         ),

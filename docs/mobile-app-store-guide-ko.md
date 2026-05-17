@@ -28,10 +28,27 @@ flutter build ipa --dart-define=API_BASE_URL=https://study-alpha-rosy.vercel.app
 flutter build appbundle --dart-define=API_BASE_URL=https://study-alpha-rosy.vercel.app
 ```
 
-같은 내용 한 줄 스크립트:
+**일괄 빌드 (IPA + AAB + APK, `releases/` 에 복사):**
+
+```bash
+# 레포 루트
+yarn flutter:release              # 현재 pubspec 버전으로 전부
+yarn flutter:release:bump         # 빌드번호 +1 후 전부 (스토어 제출용)
+
+# 또는
+./flutter_app/scripts/release.sh
+./flutter_app/scripts/release.sh --bump build
+./flutter_app/scripts/release.sh ios      # iOS만
+./flutter_app/scripts/release.sh android  # Android만
+```
+
+빌드가 끝나면 `flutter_app/releases/<버전>/` **절대 경로**를 출력하고, macOS에서는 **Finder로 그 폴더를 자동으로 엽니다**. 끄려면 `OPEN_FINDER=0 yarn flutter:release`.
+
+플랫폼만:
 
 ```bash
 ./flutter_app/scripts/build-ios-ipa-release.sh
+./flutter_app/scripts/build-android-release.sh
 ```
 
 **코드 서명:** Xcode에서 `Runner` 타깃 → Signing & Capabilities → **Team** 을 선택해야 `flutter build ipa` 가 된다. (본인 Mac; 에이전트/서버에는 보통 인증서 없음)

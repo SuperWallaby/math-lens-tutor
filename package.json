@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "smoke:accurate": "node --env-file=.env.local scripts/smoke-accurate-pipeline.mjs",
+    "smoke:env": "node --env-file=.env.local scripts/smoke-env.mjs",
     "integration:accurate": "node --env-file=.env.local scripts/integration-analyze-accurate.mjs",
     "integration:accurate:local": "bash scripts/run-integration-accurate-local.sh",
     "flutter:pub-get": "flutter pub get --directory=flutter_app",
@@ -19,6 +20,10 @@
     "flutter:run:chrome": "npm run flutter:web",
     "flutter:run:macos": "cd flutter_app && flutter run -d macos --dart-define=API_BASE_URL=http://localhost:3000",
     "flutter:run:ios": "bash scripts/flutter-run-ios-simulator.sh",
+    "flutter:release": "bash -lc 'source flutter_app/scripts/env-java.sh && bash flutter_app/scripts/release.sh'",
+    "flutter:release:bump": "bash -lc 'source flutter_app/scripts/env-java.sh && bash flutter_app/scripts/release.sh --bump build'",
+    "flutter:release:ios": "bash -lc 'source flutter_app/scripts/env-java.sh && bash flutter_app/scripts/release.sh ios'",
+    "flutter:release:android": "bash -lc 'source flutter_app/scripts/env-java.sh && bash flutter_app/scripts/release.sh android'",
     "mobile:expo": "npm run start --prefix mobile",
     "capture:ipad-screens": "node scripts/capture-ipad-store-screens.mjs",
     "smoke:gpt5-kr": "node scripts/smoke-gpt5-vision-kr.mjs"
@@ -33,6 +38,7 @@
     "react": "19.2.4",
     "react-chartjs-2": "^5.3.1",
     "react-dom": "19.2.4",
+    "react-to-print": "^3.3.0",
     "zod": "^4.3.6"
   },
   "devDependencies": {

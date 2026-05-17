@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AppShell } from "@/components/AppShell";
 import { MathMixedRich } from "@/components/MathMixedRich";
+import { ProblemSetPrintPdfButton } from "@/components/ProblemSetPrintPdfButton";
 import {
   meaningfulRecommendedFocus,
   meaningfulWeakConcepts,
@@ -52,30 +53,32 @@ export default async function SubmissionPage({
             )}
           </section>
           {problemSet ? (
-            <Link
-              href={`/practice/${problemSet.id}`}
-              className="block rounded-2xl bg-emerald-500 px-6 py-4 text-center font-bold text-white hover:bg-emerald-400"
-            >
-              유사 문제 5개 풀기
-            </Link>
+            <div className="space-y-3">
+              <Link
+                href={`/practice/${problemSet.id}`}
+                className="block rounded-2xl bg-emerald-500 px-6 py-4 text-center font-bold text-white hover:bg-emerald-400"
+              >
+                유사 문제 5개 풀기
+              </Link>
+              <ProblemSetPrintPdfButton
+                problemSet={problemSet}
+                className="block w-full rounded-2xl border border-white/15 px-6 py-3 text-center text-sm font-semibold text-slate-100 hover:bg-white/10"
+              />
+            </div>
           ) : null}
         </aside>
 
         <section className="space-y-6">
           <div className="rounded-3xl border border-white/10 bg-white/10 p-6">
             <div className="flex flex-wrap items-center gap-3">
-              <span
-                className={`rounded-full px-3 py-1 text-sm ${
-                  analysis.isLikelyCorrect
-                    ? "bg-emerald-500/20 text-emerald-100"
-                    : "bg-red-500/20 text-red-100"
-                }`}
-              >
-                {analysis.isLikelyCorrect ? "정답 가능성 높음" : "오답 가능성 높음"}
-              </span>
               <span className="rounded-full bg-white/10 px-3 py-1 text-sm text-slate-300">
                 신뢰도 {Math.round(analysis.confidence * 100)}%
               </span>
+              {analysis.imageQualityWarning ? (
+                <span className="rounded-full bg-amber-500/25 px-3 py-1 text-sm font-semibold text-amber-100">
+                  이미지가 흐린 것 같아요
+                </span>
+              ) : null}
             </div>
             <h2 className="mt-5 text-2xl font-black">AI 풀이 분석</h2>
             <div className="mt-4 rounded-2xl bg-slate-900 p-4 leading-8 text-slate-200">

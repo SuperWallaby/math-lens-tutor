@@ -2,6 +2,7 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 import '../io_compat/read_path_bytes.dart';
 import '../layout/tablet_layout.dart';
@@ -22,6 +23,8 @@ bool get _supportsDesktopDrop =>
     (defaultTargetPlatform == TargetPlatform.macOS ||
         defaultTargetPlatform == TargetPlatform.windows ||
         defaultTargetPlatform == TargetPlatform.linux);
+
+const _kStudyReturnUser = 'study_return_user';
 
 /// macOS·Windows·Linux 에서 `ImageSource.gallery` 는 사진 앱이 아니라 파일 선택 패널입니다.
 String get _galleryButtonLabel =>
@@ -92,7 +95,6 @@ class _UploadScreenState extends State<UploadScreen> {
   AnalyzeResult? _readyResult;
   String? _error;
   bool _dragHover = false;
-  AnalyzeQualityMode _qualityMode = AnalyzeQualityMode.balanced;
   /// 증가시키면 이전 분석 요청 완료 콜백 무시(새 이미지 등).
   int _analyzeSeq = 0;
 
@@ -220,9 +222,11 @@ class _UploadScreenState extends State<UploadScreen> {
       final AnalyzeResult result = await widget.apiClient.analyzeImageBytes(
         bytes,
         filename: _uploadFilename,
-        qualityMode: _qualityMode,
+        qualityMode: AnalyzeQualityMode.balanced,
       );
       if (!mounted || seq != _analyzeSeq) return;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool(_kStudyReturnUser, true);
       final go = _navigateWhenReady;
       setState(() {
         _analysisBusy = false;
@@ -349,48 +353,6 @@ class _UploadScreenState extends State<UploadScreen> {
                   ),
                 ],
               ],
-            ),
-            const SizedBox(height: 14),
-            Text(
-              '응답 모드',
-              style: TextStyle(
-                color: const Color(0xFFE2E8F0),
-                fontWeight: FontWeight.w600,
-                fontSize: TabletLayout.isWideTablet(context) ? 16 : 14,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              '분석·유사 문제 생성 요청 시 서버가 사용할 응답 모드를 고릅니다.',
-              style: TextStyle(
-                color: const Color(0xFF94A3B8),
-                fontSize: TabletLayout.bodySmall(context),
-                height: 1.4,
-              ),
-            ),
-            const SizedBox(height: 10),
-            SegmentedButton<AnalyzeQualityMode>(
-              segments: const [
-                ButtonSegment<AnalyzeQualityMode>(
-                  value: AnalyzeQualityMode.fast,
-                  label: Text('빠른'),
-                  tooltip: '빠른 응답',
-                ),
-                ButtonSegment<AnalyzeQualityMode>(
-                  value: AnalyzeQualityMode.balanced,
-                  label: Text('밸런스'),
-                ),
-                ButtonSegment<AnalyzeQualityMode>(
-                  value: AnalyzeQualityMode.accurate,
-                  label: Text('정확'),
-                  tooltip: '정확한 응답',
-                ),
-              ],
-              selected: {_qualityMode},
-              onSelectionChanged: (Set<AnalyzeQualityMode> next) {
-                if (next.isEmpty || _analysisBusy) return;
-                setState(() => _qualityMode = next.first);
-              },
             ),
             const SizedBox(height: 14),
             FilledButton.icon(

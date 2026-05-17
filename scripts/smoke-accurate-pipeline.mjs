@@ -65,7 +65,6 @@ const draft = {
   problemText: "1+1=?",
   extractedStudentAnswer: "3",
   inferredCorrectAnswer: "2",
-  isLikelyCorrect: false,
   confidence: 0.4,
   solutionSteps: ["잘못 더함"],
   errorSummary: "산술 오류",
@@ -75,7 +74,7 @@ const draft = {
 
 const j2 = await post({
   model,
-  input: `Refine this student solution analysis JSON. Return a single json object with keys: problemText, extractedStudentAnswer, inferredCorrectAnswer, isLikelyCorrect, confidence, solutionSteps, errorSummary, weakConcepts, recommendedFocus.
+  input: `Refine this student solution analysis JSON. Return a single json object with keys: problemText, extractedStudentAnswer, inferredCorrectAnswer, confidence, solutionSteps, errorSummary, weakConcepts, recommendedFocus.
 Draft: ${JSON.stringify(draft)}`,
   reasoning: { effort },
   text: { format: { type: "json_object" } },
@@ -87,7 +86,6 @@ const keys = [
   "problemText",
   "extractedStudentAnswer",
   "inferredCorrectAnswer",
-  "isLikelyCorrect",
   "confidence",
   "solutionSteps",
   "errorSummary",

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../layout/tablet_layout.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
+import '../utils/problem_set_pdf.dart';
 import '../widgets/app_card.dart';
 import '../widgets/problem_chart.dart';
 import '../widgets/problem_jsx_graph.dart';
@@ -28,6 +29,17 @@ class _PracticeScreenState extends State<PracticeScreen> {
   final Map<String, ProblemAttempt> _feedback = {};
   String? _submittingProblemId;
   String? _error;
+
+  Future<void> _exportPdf() async {
+    try {
+      await openSimilarProblemsPdf(widget.problemSet);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('PDF를 만들지 못했습니다: $e')),
+      );
+    }
+  }
 
   Future<void> _submit(GeneratedProblem problem) async {
     final answer = _answers[problem.id];
@@ -87,6 +99,12 @@ class _PracticeScreenState extends State<PracticeScreen> {
               Text(_error!, style: const TextStyle(color: Color(0xFFFCA5A5))),
             ],
             const SizedBox(height: 18),
+            OutlinedButton.icon(
+              onPressed: _exportPdf,
+              icon: const Icon(Icons.picture_as_pdf_outlined),
+              label: const Text('유사문제 PDF로 받기'),
+            ),
+            const SizedBox(height: 16),
             for (var i = 0; i < widget.problemSet.problems.length; i++)
               Padding(
                 padding: const EdgeInsets.only(bottom: 16),

@@ -1,9 +1,11 @@
 import Link from "next/link";
 import { AppShell } from "@/components/AppShell";
+import { HomeReturnRedirect } from "@/components/HomeReturnRedirect";
 
 export default function Home() {
   return (
     <AppShell>
+      <HomeReturnRedirect />
       <section className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
         <div>
           <p className="mb-4 inline-flex rounded-full bg-blue-500/15 px-4 py-2 text-sm text-blue-200">

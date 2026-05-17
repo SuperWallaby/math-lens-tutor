@@ -4,6 +4,7 @@ import { useState } from "react";
 import { ChartRenderer } from "./ChartRenderer";
 import { JsxGraphRenderer } from "./JsxGraphRenderer";
 import { MathMixedRich } from "./MathMixedRich";
+import { ProblemSetPrintPdfButton } from "./ProblemSetPrintPdfButton";
 import type { GeneratedProblemSet, ProblemAttempt } from "@/lib/types";
 
 type Answers = Record<string, string>;
@@ -40,6 +41,9 @@ export function PracticeRunner({ problemSet }: { problemSet: GeneratedProblemSet
 
   return (
     <div className="space-y-6">
+      <div className="no-print flex flex-wrap gap-3">
+        <ProblemSetPrintPdfButton problemSet={problemSet} />
+      </div>
       {problemSet.problems.map((problem, index) => (
         <section
           key={problem.id}
