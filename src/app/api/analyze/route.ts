@@ -15,6 +15,7 @@ import {
   pickAllowedDeployment,
 } from "@/lib/model-deployment-options";
 import { GENERIC_ANALYZE_ERROR, logApiError } from "@/lib/api-errors";
+import { isDevEnvironment } from "@/lib/is-dev";
 import { getRequestUserId } from "@/lib/request";
 import {
   saveProblemSet,
@@ -259,6 +260,7 @@ export async function POST(request: Request) {
       };
     }
 
+    const usedSample = !hasAzureOpenAiConfig();
     const submission: SolutionSubmission = {
       id: submissionId,
       userId,
@@ -266,6 +268,16 @@ export async function POST(request: Request) {
       imageName: file.name,
       createdAt: new Date().toISOString(),
       analysis,
+      ...(isDevEnvironment()
+        ? {
+            devMeta: {
+              visionModel: usedSample ? "(샘플)" : visionDeploymentName,
+              textModel: usedSample ? "(샘플)" : deploymentName,
+              qualityMode,
+              isSample: usedSample,
+            },
+          }
+        : {}),
     };
 
     try {

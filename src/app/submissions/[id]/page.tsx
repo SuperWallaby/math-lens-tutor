@@ -1,9 +1,11 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import { AnalysisDevModelInfo } from "@/components/AnalysisDevModelInfo";
 import { AppShell } from "@/components/AppShell";
 import { MathMixedRich } from "@/components/MathMixedRich";
 import { ProblemSetPrintPdfButton } from "@/components/ProblemSetPrintPdfButton";
+import { isDevEnvironment } from "@/lib/is-dev";
 import {
   meaningfulRecommendedFocus,
   meaningfulWeakConcepts,
@@ -45,12 +47,7 @@ export default async function SubmissionPage({
                 height={600}
                 className="mt-5 rounded-2xl object-cover"
               />
-            ) : (
-              <div className="mt-5 rounded-2xl bg-slate-900 p-6 text-sm leading-6 text-slate-400">
-                MongoDB가 연결되지 않아 데모 모드로 분석 결과만
-                표시합니다.
-              </div>
-            )}
+            ) : null}
           </section>
           {problemSet ? (
             <div className="space-y-3">
@@ -80,7 +77,12 @@ export default async function SubmissionPage({
                 </span>
               ) : null}
             </div>
-            <h2 className="mt-5 text-2xl font-black">AI 풀이 분석</h2>
+            {isDevEnvironment() && submission.devMeta ? (
+              <div className="mt-4">
+                <AnalysisDevModelInfo meta={submission.devMeta} />
+              </div>
+            ) : null}
+            <h2 className="mt-5 text-2xl font-black">풀이 분석</h2>
             <div className="mt-4 rounded-2xl bg-slate-900 p-4 leading-8 text-slate-200">
               <MathMixedRich text={analysis.problemText} />
             </div>

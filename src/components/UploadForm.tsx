@@ -141,11 +141,8 @@ export function UploadForm() {
         onClick={() => file && runAnalyze(file)}
         className="mt-6 w-full rounded-2xl bg-blue-500 px-5 py-3 font-semibold text-white transition hover:bg-blue-400 disabled:cursor-not-allowed disabled:opacity-60"
       >
-        {isLoading ? "Azure AI가 풀이를 분석 중..." : "다시 분석"}
+        {isLoading ? "풀이를 분석 중..." : "다시 분석"}
       </button>
-      <p className="mt-4 text-xs leading-6 text-slate-400">
-        Azure OpenAI 환경 변수가 없으면 샘플 분석으로, MongoDB가 없으면 메모리 저장소로 데모 흐름이 실행됩니다.
-      </p>
     </div>
   );
 }

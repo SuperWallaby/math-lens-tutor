@@ -88,7 +88,7 @@ export default function SettingsPage() {
     <AppShell>
       <div className="mx-auto max-w-xl space-y-8">
         <div>
-          <p className="text-sm text-slate-400">분석에 쓸 Azure 배포 후보</p>
+          <p className="text-sm text-slate-400">개발 — 분석 모델 선택</p>
           <h1 className="mt-2 text-3xl font-black">설정</h1>
           <p className="mt-3 text-sm leading-relaxed text-slate-300">
             사진 분석 요청 시 이 브라우저에만 저장됩니다. 선택한 이름은 서버
@@ -101,7 +101,7 @@ export default function SettingsPage() {
         </div>
 
         <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm leading-relaxed text-amber-100">
-          <strong className="font-semibold">o1 / o3-mini:</strong> Azure는 해당
+          <strong className="font-semibold">o1 / o3-mini:</strong> 해당
           버전을 Deprecating 처리해 <strong>신규 배포가 거절</strong>되는 경우가
           많습니다. 같은 리소스에는 <strong>o4-mini</strong>(텍스트·추론 후보)를
           배포해 두었습니다. 카탈로그에 <code className="text-xs">o3</code>{" "}
@@ -110,8 +110,7 @@ export default function SettingsPage() {
 
         {!configured && loaded ? (
           <p className="text-sm text-slate-400">
-            Azure 환경 변수가 없어 후보 목록을 불러오지 못했습니다. 로컬 데모만
-            쓰는 경우 이 페이지는 비워 둘 수 있습니다.
+            서버에 모델 설정이 없어 후보 목록을 불러오지 못했습니다.
           </p>
         ) : null}
 

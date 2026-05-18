@@ -15,8 +15,8 @@ export default function Home() {
             풀이 사진을 읽고, 약점을 잡고, 비슷한 문제 5개로 다시 훈련합니다.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
-            Azure OpenAI 비전 모델로 풀이 과정과 선택 답안을 분석하고,
-            MongoDB에 학습 데이터를 누적해 사용자 수준 피드백을 제공합니다.
+            풀이 과정과 선택 답안을 분석하고, 부족한 개념을 짚어 유사 문제로
+            다시 훈련할 수 있습니다.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link

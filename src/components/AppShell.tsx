@@ -1,7 +1,9 @@
 import Link from "next/link";
 import type { ReactNode } from "react";
+import { isDevEnvironment } from "@/lib/is-dev";
 
 export function AppShell({ children }: { children: ReactNode }) {
+  const showDevNav = isDevEnvironment();
   return (
     <div className="min-h-screen bg-slate-950 text-slate-100">
       <header className="print:hidden border-b border-white/10 bg-slate-950/80 backdrop-blur">
@@ -14,14 +16,16 @@ export function AppShell({ children }: { children: ReactNode }) {
               사진 분석
             </Link>
             <Link href="/practice/demo-set" className="hover:text-white">
-              데모 문제
+              샘플 문제
             </Link>
             <Link href="/dashboard" className="hover:text-white">
               대시보드
             </Link>
-            <Link href="/settings" className="hover:text-white">
-              설정
-            </Link>
+            {showDevNav ? (
+              <Link href="/settings" className="hover:text-white">
+                설정
+              </Link>
+            ) : null}
             <Link href="/privacy" className="hover:text-white">
               개인정보
             </Link>
