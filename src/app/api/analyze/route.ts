@@ -15,8 +15,8 @@ import {
   pickAllowedDeployment,
 } from "@/lib/model-deployment-options";
 import { GENERIC_ANALYZE_ERROR, logApiError } from "@/lib/api-errors";
-import { isDevEnvironment } from "@/lib/is-dev";
 import { getRequestUserId } from "@/lib/request";
+import { studyLog } from "@/lib/server-log";
 import {
   saveProblemSet,
   saveSubmission,
@@ -27,37 +27,46 @@ import type { GeneratedProblemSet, SolutionSubmission } from "@/lib/types";
 
 export const runtime = "nodejs";
 
-// #region agent log
-function agentLog(
-  location: string,
-  message: string,
-  data: Record<string, unknown>,
-  hypothesisId: string,
-) {
-  fetch("http://127.0.0.1:7389/ingest/73396ec2-fca1-4017-a12e-5c91c133bd12", {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      "X-Debug-Session-Id": "786fd5",
-    },
-    body: JSON.stringify({
-      sessionId: "786fd5",
-      location,
-      message,
-      data,
-      timestamp: Date.now(),
-      hypothesisId,
-    }),
-  }).catch(() => {});
-}
-
 function errText(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
 }
-// #endregion
+
+function normalizeForCompare(s: string) {
+  return s.replace(/\s+/g, "").replace(/\u2212/g, "-").toLowerCase();
+}
+
+function logAnalysisResult(
+  scope: string,
+  analysis: SolutionSubmission["analysis"],
+) {
+  const student = analysis.extractedStudentAnswer.trim();
+  const inferred = analysis.inferredCorrectAnswer.trim();
+  const normMatch =
+    student.length > 0 &&
+    inferred.length > 0 &&
+    normalizeForCompare(student) === normalizeForCompare(inferred);
+
+  studyLog(scope, "analysis result", {
+    extractedStudentAnswer: student.slice(0, 200),
+    inferredCorrectAnswer: inferred.slice(0, 200),
+    normalizedMatch: normMatch,
+    confidence: analysis.confidence,
+    imageQualityWarning: analysis.imageQualityWarning,
+    visionExtractionConfidence: analysis.visionExtractionConfidence,
+    solutionStepsCount: analysis.solutionSteps.length,
+  });
+}
 
 export async function POST(request: Request) {
   const userId = getRequestUserId(request);
+  const azureConfigured = hasAzureOpenAiConfig();
+
+  studyLog("analyze", "POST start", {
+    userId: userId.slice(0, 24),
+    azureConfigured,
+    nodeEnv: process.env.NODE_ENV,
+    vercelEnv: process.env.VERCEL_ENV ?? null,
+  });
 
   try {
     const formData = (await request.formData()) as unknown as {
@@ -73,13 +82,12 @@ export async function POST(request: Request) {
     }
 
     const qualityMode = parseAnalyzeQualityMode(formData.get("qualityMode"));
-
     const visionCandidates = buildVisionDeploymentCandidateList();
     const textCandidates = buildTextDeploymentCandidateList();
     const textFallback = resolveAzureDeploymentName(qualityMode);
     const visionFallback = resolveVisionDeploymentName();
 
-    if (hasAzureOpenAiConfig()) {
+    if (azureConfigured) {
       if (!textFallback) {
         return NextResponse.json(
           {
@@ -113,25 +121,19 @@ export async function POST(request: Request) {
         visionFallback,
       ) ?? deploymentName;
 
-    // #region agent log
-    agentLog(
-      "analyze/route.ts:deployments",
-      "resolved deployments",
-      {
-        qualityMode,
-        visionDeploymentName,
-        textDeploymentName: deploymentName,
-        visionCandidatesLen: visionCandidates.length,
-        textCandidatesLen: textCandidates.length,
-      },
-      "H1",
-    );
-    // #endregion
+    studyLog("analyze", "deployments resolved", {
+      qualityMode,
+      visionDeploymentName,
+      textDeploymentName: deploymentName,
+      textDeploymentFromForm: String(formData.get("textDeployment") ?? ""),
+      visionDeploymentFromForm: String(formData.get("visionDeployment") ?? ""),
+      visionCandidatesLen: visionCandidates.length,
+      textCandidatesLen: textCandidates.length,
+    });
 
     const submissionId = randomUUID();
     const problemSetId = randomUUID();
 
-    /** 각 분기에서 File.arrayBuffer()를 소비하므로 동일 바이트를 복제해 전달 */
     const raw = await file.arrayBuffer();
     const duplicateInputFile = () =>
       new File([raw.slice(0)], file.name, {
@@ -142,7 +144,7 @@ export async function POST(request: Request) {
     let analysis: SolutionSubmission["analysis"];
     let problemSet: GeneratedProblemSet;
 
-    if (hasAzureOpenAiConfig()) {
+    if (azureConfigured) {
       const settled = await Promise.allSettled([
         uploadSolutionImage(duplicateInputFile(), userId),
         analyzeSolutionImage(duplicateInputFile(), {
@@ -152,105 +154,47 @@ export async function POST(request: Request) {
         }),
       ]);
 
-      // #region agent log
       if (settled[0].status === "rejected") {
-        agentLog(
-          "analyze/route.ts:upload",
-          "uploadSolutionImage rejected",
-          { error: errText(settled[0].reason) },
-          "H4",
-        );
-      } else {
-        agentLog(
-          "analyze/route.ts:upload",
-          "uploadSolutionImage fulfilled",
-          { hasUrl: Boolean(settled[0].value) },
-          "H4",
-        );
+        studyLog("analyze", "uploadSolutionImage failed", {
+          error: errText(settled[0].reason),
+        });
+        throw settled[0].reason;
       }
       if (settled[1].status === "rejected") {
-        agentLog(
-          "analyze/route.ts:analyze",
-          "analyzeSolutionImage rejected",
-          { error: errText(settled[1].reason) },
-          "H1",
-        );
-      } else {
-        agentLog(
-          "analyze/route.ts:analyze",
-          "analyzeSolutionImage fulfilled",
-          {
-            hasProblemText: Boolean(
-              settled[1].value && settled[1].value.problemText,
-            ),
-          },
-          "H1",
-        );
+        studyLog("analyze", "analyzeSolutionImage failed", {
+          error: errText(settled[1].reason),
+        });
+        throw settled[1].reason;
       }
-      // #endregion
 
-      if (settled[0].status === "rejected") throw settled[0].reason;
-      if (settled[1].status === "rejected") throw settled[1].reason;
       imageUrl = settled[0].value;
       analysis = settled[1].value;
+      logAnalysisResult("analyze", analysis);
 
       if (qualityMode === "accurate") {
-        try {
-          analysis = await refineSolutionAnalysisForAccurateMode(analysis, {
-            deploymentName,
-            mode: qualityMode,
-          });
-          // #region agent log
-          agentLog(
-            "analyze/route.ts:refine",
-            "refineSolutionAnalysisForAccurateMode ok",
-            {},
-            "H2",
-          );
-          // #endregion
-        } catch (refineErr) {
-          // #region agent log
-          agentLog(
-            "analyze/route.ts:refine",
-            "refineSolutionAnalysisForAccurateMode rejected",
-            { error: errText(refineErr) },
-            "H2",
-          );
-          // #endregion
-          throw refineErr;
-        }
+        analysis = await refineSolutionAnalysisForAccurateMode(analysis, {
+          deploymentName,
+          mode: qualityMode,
+        });
+        studyLog("analyze", "accurate refine done", {});
+        logAnalysisResult("analyze:refined", analysis);
       }
 
-      try {
-        problemSet = await generateSimilarProblems(
-          analysis,
-          submissionId,
-          {
-            deploymentName,
-            mode: qualityMode,
-            problemSetId,
-          },
-        );
-        // #region agent log
-        agentLog(
-          "analyze/route.ts:similar",
-          "generateSimilarProblems ok",
-          { problemCount: problemSet.problems?.length ?? 0 },
-          "H3",
-        );
-        // #endregion
-      } catch (similarErr) {
-        // #region agent log
-        agentLog(
-          "analyze/route.ts:similar",
-          "generateSimilarProblems rejected",
-          { error: errText(similarErr) },
-          "H3",
-        );
-        // #endregion
-        throw similarErr;
-      }
+      problemSet = await generateSimilarProblems(analysis, submissionId, {
+        deploymentName,
+        mode: qualityMode,
+        problemSetId,
+      });
+      studyLog("analyze", "similar problems generated", {
+        problemCount: problemSet.problems.length,
+        firstCorrectAnswers: problemSet.problems.map((p) => ({
+          id: p.id,
+          correctAnswer: p.correctAnswer.slice(0, 80),
+          type: p.type,
+        })),
+      });
     } else {
+      studyLog("analyze", "using sample analysis (no Azure config)", {});
       imageUrl = await uploadSolutionImage(duplicateInputFile(), userId);
       analysis = sampleAnalysis;
       problemSet = {
@@ -258,9 +202,17 @@ export async function POST(request: Request) {
         id: problemSetId,
         submissionId,
       };
+      logAnalysisResult("analyze:sample", analysis);
     }
 
-    const usedSample = !hasAzureOpenAiConfig();
+    const usedSample = !azureConfigured;
+    const modelMeta = {
+      visionModel: usedSample ? "(샘플)" : visionDeploymentName,
+      textModel: usedSample ? "(샘플)" : deploymentName,
+      qualityMode,
+      isSample: usedSample,
+    };
+
     const submission: SolutionSubmission = {
       id: submissionId,
       userId,
@@ -268,40 +220,17 @@ export async function POST(request: Request) {
       imageName: file.name,
       createdAt: new Date().toISOString(),
       analysis,
-      ...(isDevEnvironment()
-        ? {
-            devMeta: {
-              visionModel: usedSample ? "(샘플)" : visionDeploymentName,
-              textModel: usedSample ? "(샘플)" : deploymentName,
-              qualityMode,
-              isSample: usedSample,
-            },
-          }
-        : {}),
+      modelMeta,
     };
 
-    try {
-      await saveSubmission(submission);
-      await saveProblemSet(problemSet);
-      // #region agent log
-      agentLog(
-        "analyze/route.ts:persist",
-        "saveSubmission+saveProblemSet ok",
-        { submissionId: submission.id },
-        "H5",
-      );
-      // #endregion
-    } catch (persistErr) {
-      // #region agent log
-      agentLog(
-        "analyze/route.ts:persist",
-        "save rejected",
-        { error: errText(persistErr) },
-        "H5",
-      );
-      // #endregion
-      throw persistErr;
-    }
+    await saveSubmission(submission);
+    await saveProblemSet(problemSet);
+
+    studyLog("analyze", "saved", {
+      submissionId: submission.id,
+      problemSetId: problemSet.id,
+      modelMeta,
+    });
 
     return NextResponse.json({
       submissionId: submission.id,
@@ -311,14 +240,7 @@ export async function POST(request: Request) {
       problemSet,
     });
   } catch (error) {
-    // #region agent log
-    agentLog(
-      "analyze/route.ts:catch",
-      "POST failed",
-      { error: errText(error) },
-      "H1",
-    );
-    // #endregion
+    studyLog("analyze", "POST failed", { error: errText(error) });
     const errorId = await logApiError({
       request,
       route: "/api/analyze",

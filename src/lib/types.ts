@@ -164,13 +164,16 @@ export type UnifiedAnalyzeProblemSet = z.infer<
   typeof unifiedAnalyzeProblemSetSchema
 >;
 
-/** 개발 환경에서만 저장·표시 (프로덕션 빌드에서는 설정하지 않음) */
-export type SubmissionDevMeta = {
+/** 분석 요청에 사용된 모델(결과 화면 표시·디버깅) */
+export type SubmissionModelMeta = {
   visionModel: string;
   textModel: string;
   qualityMode: string;
   isSample: boolean;
 };
+
+/** @deprecated SubmissionModelMeta 사용 */
+export type SubmissionDevMeta = SubmissionModelMeta;
 
 export type SolutionSubmission = {
   id: string;
@@ -179,7 +182,9 @@ export type SolutionSubmission = {
   imageName: string;
   createdAt: string;
   analysis: SolutionAnalysis;
-  devMeta?: SubmissionDevMeta;
+  modelMeta?: SubmissionModelMeta;
+  /** @deprecated modelMeta */
+  devMeta?: SubmissionModelMeta;
 };
 
 export type ProblemAttempt = {

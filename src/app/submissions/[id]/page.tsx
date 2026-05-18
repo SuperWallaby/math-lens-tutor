@@ -1,11 +1,10 @@
 import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AnalysisDevModelInfo } from "@/components/AnalysisDevModelInfo";
+import { AnalysisModelInfo } from "@/components/AnalysisModelInfo";
 import { AppShell } from "@/components/AppShell";
 import { MathMixedRich } from "@/components/MathMixedRich";
 import { ProblemSetPrintPdfButton } from "@/components/ProblemSetPrintPdfButton";
-import { isDevEnvironment } from "@/lib/is-dev";
 import {
   meaningfulRecommendedFocus,
   meaningfulWeakConcepts,
@@ -26,6 +25,7 @@ export default async function SubmissionPage({
 
   const problemSet = await getProblemSetBySubmission(submission.id);
   const { analysis } = submission;
+  const modelMeta = submission.modelMeta ?? submission.devMeta;
 
   const weakShown = meaningfulWeakConcepts(analysis.weakConcepts);
   const focusShown = meaningfulRecommendedFocus(analysis.recommendedFocus);
@@ -77,9 +77,9 @@ export default async function SubmissionPage({
                 </span>
               ) : null}
             </div>
-            {isDevEnvironment() && submission.devMeta ? (
+            {modelMeta ? (
               <div className="mt-4">
-                <AnalysisDevModelInfo meta={submission.devMeta} />
+                <AnalysisModelInfo meta={modelMeta} />
               </div>
             ) : null}
             <h2 className="mt-5 text-2xl font-black">풀이 분석</h2>

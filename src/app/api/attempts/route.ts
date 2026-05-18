@@ -2,6 +2,7 @@ import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { GENERIC_SUBMIT_ERROR, logApiError } from "@/lib/api-errors";
 import { getRequestUserId } from "@/lib/request";
+import { studyLog } from "@/lib/server-log";
 import { getProblemSet, saveAttempt } from "@/lib/store";
 import type { GeneratedProblem, ProblemAttempt } from "@/lib/types";
 
@@ -67,8 +68,22 @@ export async function POST(request: Request) {
     );
     const submittedAnswer = chosenChoice?.label ?? body.answer;
     const expected = expectedAnswerForProblem(problem);
-    const isCorrect =
-      normalizeAnswer(submittedAnswer) === normalizeAnswer(expected);
+    const normalizedSubmitted = normalizeAnswer(submittedAnswer);
+    const normalizedExpected = normalizeAnswer(expected);
+    const isCorrect = normalizedSubmitted === normalizedExpected;
+
+    studyLog("attempts", "grade", {
+      setId: body.setId,
+      problemId: body.problemId,
+      problemType: problem.type,
+      rawCorrectAnswer: problem.correctAnswer,
+      expectedAfterResolve: expected,
+      bodyAnswer: body.answer,
+      submittedAnswer,
+      normalizedSubmitted,
+      normalizedExpected,
+      isCorrect,
+    });
 
     const attempt: ProblemAttempt = {
       id: randomUUID(),

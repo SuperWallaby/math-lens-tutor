@@ -572,10 +572,26 @@ export async function analyzeSolutionImage(
   const vision = await extractSolutionImageVision(file, {
     deploymentName: options.deploymentName,
   });
-  return expandAnalysisFromVisionDraft(vision, {
+  const analysis = await expandAnalysisFromVisionDraft(vision, {
     deploymentName: options.textDeploymentName,
     mode: options.mode,
   });
+  if (typeof console !== "undefined") {
+    console.log("[study:azure:vision]", {
+      deployment: options.deploymentName,
+      extractedStudentAnswer: vision.extractedStudentAnswer.slice(0, 120),
+      solutionStepsCount: vision.solutionSteps.length,
+      imageClarityScore: vision.imageClarityScore,
+      extractionConfidence: vision.extractionConfidence,
+    });
+    console.log("[study:azure:expand]", {
+      deployment: options.textDeploymentName,
+      mode: options.mode,
+      inferredCorrectAnswer: analysis.inferredCorrectAnswer.slice(0, 120),
+      confidence: analysis.confidence,
+    });
+  }
+  return analysis;
 }
 
 /**
