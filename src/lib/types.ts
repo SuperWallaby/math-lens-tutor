@@ -1,6 +1,11 @@
 import { z } from "zod";
 
 import { jsxGraphDiagramSchema } from "./jsx-graph-spec";
+import {
+  coerceLlmString,
+  llmConfidenceField,
+  llmStringField,
+} from "./zod-llm";
 
 /** 과거 빈 배열 대신 들어가던 플레이스홀더 — UI에서 “내용 없음”으로 취급 */
 export const WEAK_CONCEPTS_PLACEHOLDER_LEGACY =
@@ -52,8 +57,8 @@ export const chartConfigSchema = z
  * `solutionSteps` 는 사진에 보이는 학생 풀이를 줄·단계 순으로 OCR 한 것(튜터링 재서술 금지).
  */
 export const visionSolutionExtractionSchema = z.object({
-  problemText: z.string(),
-  extractedStudentAnswer: z.string(),
+  problemText: llmStringField(),
+  extractedStudentAnswer: llmStringField(),
   /** 사진에 보이는 풀이 과정 한 줄씩(위→아래·왼→오 순; KaTeX 가능) */
   solutionSteps: z
     .array(z.string())
@@ -64,13 +69,28 @@ export const visionSolutionExtractionSchema = z.object({
   extractionConfidence: z.number().min(0).max(1),
 });
 
+/** 인쇄된 problemText 만으로 정답·모범 풀이 (학생 손글씨 OCR 과 분리) */
+export const problemSolveResultSchema = z.object({
+  inferredCorrectAnswer: llmStringField(),
+  referenceSolutionSteps: z
+    .array(z.string())
+    .transform((arr) => {
+      const cleaned = arr.map((s) => s.trim()).filter(Boolean);
+      return cleaned.length > 0
+        ? cleaned
+        : ["단계별 풀이를 생성하지 못했습니다."];
+    }),
+});
+
+export type ProblemSolveResult = z.infer<typeof problemSolveResultSchema>;
+
 /** 텍스트 튜터 2단계: 비전이 준 problem/solutionSteps 외 나머지만 채움 */
 export const tutorExpansionFromVisionSchema = z.object({
-  problemText: z.string(),
-  extractedStudentAnswer: z.string(),
-  inferredCorrectAnswer: z.string(),
-  confidence: z.number().min(0).max(1),
-  errorSummary: z.string(),
+  problemText: llmStringField(),
+  extractedStudentAnswer: llmStringField(),
+  inferredCorrectAnswer: llmStringField(),
+  confidence: llmConfidenceField(),
+  errorSummary: llmStringField(),
   weakConcepts: z
     .array(z.string())
     .transform((arr) =>
@@ -87,26 +107,43 @@ export type TutorExpansionFromVision = z.infer<
   typeof tutorExpansionFromVisionSchema
 >;
 
+/** 비전 OCR 후 정답 풀이 + 진단을 한 번에 (서버 타임아웃 절감) */
+export const tutorSolveAndExpandFromVisionSchema =
+  tutorExpansionFromVisionSchema.extend({
+    referenceSolutionSteps: problemSolveResultSchema.shape
+      .referenceSolutionSteps,
+  });
+
+export type TutorSolveAndExpandFromVision = z.infer<
+  typeof tutorSolveAndExpandFromVisionSchema
+>;
+
 export type VisionSolutionExtraction = z.infer<
   typeof visionSolutionExtractionSchema
 >;
 
 export const solutionAnalysisSchema = z.object({
-  problemText: z.string(),
-  extractedStudentAnswer: z.string(),
-  inferredCorrectAnswer: z.string(),
-  confidence: z.number().min(0).max(1),
+  problemText: llmStringField(),
+  extractedStudentAnswer: llmStringField(),
+  inferredCorrectAnswer: llmStringField(),
+  confidence: llmConfidenceField(),
+  /** 사진에서 OCR 한 학생 손글씨·메모 */
   solutionSteps: stringArrayWithFallback(SOLUTION_STEPS_EXTRACTION_FALLBACK),
-  errorSummary: z.string(),
-  weakConcepts: z
+  /** 모델이 문제만 보고 푼 모범 풀이 단계 */
+  referenceSolutionSteps: z
     .array(z.string())
+    .optional()
+    .default([]),
+  errorSummary: llmStringField(),
+  weakConcepts: z
+    .array(z.unknown())
     .transform((arr) =>
-      arr.map((s) => s.trim()).filter(Boolean),
+      arr.map((s) => coerceLlmString(s)).filter(Boolean),
     ),
   recommendedFocus: z
-    .array(z.string())
+    .array(z.unknown())
     .transform((arr) =>
-      arr.map((s) => s.trim()).filter(Boolean),
+      arr.map((s) => coerceLlmString(s)).filter(Boolean),
     ),
   imageQualityWarning: z.boolean().optional().default(false),
   visionImageClarityScore: z.number().min(0).max(1).optional(),

@@ -2,15 +2,21 @@ import { randomUUID } from "crypto";
 import type { AnalyzeQualityMode } from "./analyze-mode";
 import { env } from "./env";
 import { sampleAnalysis, sampleProblemSet } from "./sample";
+import type { AnalyzeProgressStep } from "./analyze-steps";
+import { partialAnalysisFromVision } from "./analyze-partial";
 import {
   generatedProblemSetSchema,
   normalizeVisionSolutionSteps,
+  problemSolveResultSchema,
   solutionAnalysisSchema,
   tutorExpansionFromVisionSchema,
+  tutorSolveAndExpandFromVisionSchema,
   visionSolutionExtractionSchema,
   type GeneratedProblemSet,
+  type ProblemSolveResult,
   type SolutionAnalysis,
   type TutorExpansionFromVision,
+  type TutorSolveAndExpandFromVision,
   type VisionSolutionExtraction,
 } from "./types";
 
@@ -419,6 +425,7 @@ async function completeTextOnlyJsonPrompt(params: {
 function mergeVisionMetricsIntoAnalysis(
   expansion: TutorExpansionFromVision,
   vision: VisionSolutionExtraction,
+  solved: ProblemSolveResult,
 ): SolutionAnalysis {
   const warn =
     vision.imageClarityScore < IMAGE_QUALITY_WARNING_THRESHOLD ||
@@ -427,11 +434,62 @@ function mergeVisionMetricsIntoAnalysis(
     ...expansion,
     problemText: vision.problemText,
     extractedStudentAnswer: vision.extractedStudentAnswer,
+    inferredCorrectAnswer: solved.inferredCorrectAnswer,
+    referenceSolutionSteps: solved.referenceSolutionSteps,
     solutionSteps: normalizeVisionSolutionSteps(vision.solutionSteps),
     imageQualityWarning: warn,
     visionImageClarityScore: vision.imageClarityScore,
     visionExtractionConfidence: vision.extractionConfidence,
   };
+}
+
+/**
+ * 2단계-A: 인쇄된 문제 지문만으로 정답·모범 풀이 (학생 손글씨 OCR 은 보지 않음).
+ * 추정 정답은 이 결과를 우선한다.
+ */
+export async function solveProblemFromVisionText(
+  problemText: string,
+  options: { deploymentName: string },
+): Promise<ProblemSolveResult> {
+  if (!hasAzureOpenAiConfig()) {
+    return {
+      inferredCorrectAnswer: sampleAnalysis.inferredCorrectAnswer,
+      referenceSolutionSteps: [...sampleAnalysis.solutionSteps],
+    };
+  }
+
+  const prompt = `You are an expert Korean middle/high school mathematics solver.
+
+Solve ONLY from the printed problem below. You do NOT see any student handwriting.
+
+Problem (from OCR of the worksheet):
+${problemText}
+
+Tasks:
+1) Solve completely with rigorous case analysis. For "가능한 a의 개수", "몇 개", "총 몇" questions, the final answer must be ONE non-negative integer (or simplified fraction if the problem asks for a fraction).
+2) List referenceSolutionSteps: 4–12 short steps in Korean showing YOUR correct reasoning (KaTeX $...$ for math). These are the model answer steps, not student work.
+3) Set inferredCorrectAnswer to the final answer only (compact; KaTeX allowed). For counting problems use digits like "17" not prose.
+
+Rules:
+- Do not copy numbers from any student notes (you were not given any).
+- Check absolute value inequalities carefully (e.g. $|a| \\le a$ forces $a \\ge 0$).
+- Divisor-count conditions: enumerate all cases, then count distinct valid values.
+- Double-check the final count before responding.
+
+Return JSON only:
+{
+  "inferredCorrectAnswer": "string",
+  "referenceSolutionSteps": ["string", "..."]
+}`;
+
+  const raw = await completeTextOnlyJsonPrompt({
+    deploymentName: options.deploymentName,
+    userPrompt: prompt,
+    temperatureForChat: ANALYZE_TEMPERATURE,
+    maxTokens: 8192,
+  });
+
+  return problemSolveResultSchema.parse(parseJsonFromText(raw));
 }
 
 /** 1단계: 이미지에서 문제·손글씀 풀이 단계·답 + 이미지 품질만 */
@@ -507,46 +565,53 @@ Return only JSON matching this exact shape:
 /** 2단계: 텍스트 전용 튜터 모델 — 나머지 분석 채우기 */
 export async function expandAnalysisFromVisionDraft(
   vision: VisionSolutionExtraction,
-  options: { deploymentName: string; mode: AnalyzeQualityMode },
+  options: {
+    deploymentName: string;
+    mode: AnalyzeQualityMode;
+    solved: ProblemSolveResult;
+  },
 ): Promise<SolutionAnalysis> {
   if (!hasAzureOpenAiConfig()) {
     const expansion: TutorExpansionFromVision = {
       problemText: sampleAnalysis.problemText,
       extractedStudentAnswer: sampleAnalysis.extractedStudentAnswer,
-      inferredCorrectAnswer: sampleAnalysis.inferredCorrectAnswer,
+      inferredCorrectAnswer: options.solved.inferredCorrectAnswer,
       confidence: sampleAnalysis.confidence,
       errorSummary: sampleAnalysis.errorSummary,
       weakConcepts: sampleAnalysis.weakConcepts,
       recommendedFocus: sampleAnalysis.recommendedFocus,
     };
-    return mergeVisionMetricsIntoAnalysis(expansion, vision);
+    return mergeVisionMetricsIntoAnalysis(expansion, vision, options.solved);
   }
 
   const prompt = `You are an expert Korean mathematics tutor — **text-only**. You do not see the photo.
 
-Vision already OCR'd the problem, each line of the student's handwritten work (solutionSteps in the JSON below), and their answer string. Treat the vision JSON as a possibly imperfect transcription. Your job is everything else: reference answer, diagnosis, and study tips—not rewriting the student's work as tutoring steps.
+A separate solver already computed the **authoritative correct answer** from the printed problem only:
+- inferredCorrectAnswer (authoritative): ${JSON.stringify(options.solved.inferredCorrectAnswer)}
+- referenceSolutionSteps (model solution): ${JSON.stringify(options.solved.referenceSolutionSteps, null, 2)}
 
-Vision extraction JSON:
+Vision OCR JSON (student photo — may include scratch notes, prime lists, etc.):
 ${JSON.stringify(vision, null, 2)}
 
-Your tasks from this text ONLY:
-1) State inferredCorrectAnswer — the correct result for the printed problem (KaTeX), for teaching context.
-2) Write errorSummary (short, Korean) comparing the student's approach (from solutionSteps / extractedStudentAnswer) to sound reasoning. If the diagnosis depends on [unclear] or likely OCR ambiguity, mention that uncertainty briefly.
-3) List weakConcepts and recommendedFocus (Korean); empty arrays if truly unknown.
-4) Set confidence ∈ [0,1] for your judgment **of tutoring/diagnosis** — NOT for photo clarity and NOT for whether the student is correct.
+IMPORTANT:
+- vision.solutionSteps are **student handwriting / scratch notes**, NOT the model solution. Numbers in solutionSteps (e.g. lists of primes) are NOT automatically the student's final answer.
+- The student's final answer is **only** vision.extractedStudentAnswer.
+- Compare the student to the authoritative answer and referenceSolutionSteps above.
+
+Your tasks:
+1) Copy inferredCorrectAnswer **exactly** as given above (same string).
+2) Write errorSummary (short, Korean): is the student correct? What went wrong?
+3) List weakConcepts and recommendedFocus (Korean); empty arrays if unknown.
+4) Set confidence ∈ [0,1] for your diagnosis quality.
 
 RULES:
-- Repeat problemText and extractedStudentAnswer in your JSON **exactly verbatim** character-for-character as in the vision JSON (same strings).
-- Do not overwrite, repair, or reinterpret OCR text by mathematical expectation alone.
-- Treat any '(?)' marker in extractedStudentAnswer or solutionSteps as an OCR guess. Use it as evidence cautiously and reduce confidence when it affects the diagnosis.
-- Do NOT output solutionSteps — the student's process is taken only from vision.
+- Repeat problemText and extractedStudentAnswer **verbatim** from the vision JSON.
+- Do NOT output solutionSteps or referenceSolutionSteps (server attaches them).
 
-Return a single JSON object with exactly these keys:
+Return JSON with exactly these keys:
 problemText, extractedStudentAnswer, inferredCorrectAnswer, confidence, errorSummary, weakConcepts, recommendedFocus
 
-Math typography where YOUR fields contain math: inline $expression$ ; display $$ ... $$ where helpful. Escape backslashes in JSON.
-
-Use Korean for prose explanations.`;
+Use Korean for prose. KaTeX $...$ for math in errorSummary.`;
 
   // 위 프롬프트와 별개로, 출력 형식은 completeTextOnlyJsonPrompt 안에서
   // Chat: response_format=json_object / Responses: text.format=json_object 로 이미 강제됨.
@@ -558,7 +623,82 @@ Use Korean for prose explanations.`;
   });
 
   const expansion = tutorExpansionFromVisionSchema.parse(parseJsonFromText(raw));
-  return mergeVisionMetricsIntoAnalysis(expansion, vision);
+  return mergeVisionMetricsIntoAnalysis(expansion, vision, options.solved);
+}
+
+/**
+ * 정답 풀이 + 진단을 한 번의 텍스트 호출로 처리 (정확도 유지, 왕복 1회 절감).
+ */
+export async function solveAndExpandFromVision(
+  vision: VisionSolutionExtraction,
+  options: {
+    deploymentName: string;
+    mode: AnalyzeQualityMode;
+  },
+): Promise<SolutionAnalysis> {
+  if (!hasAzureOpenAiConfig()) {
+    const solved: ProblemSolveResult = {
+      inferredCorrectAnswer: sampleAnalysis.inferredCorrectAnswer,
+      referenceSolutionSteps: sampleAnalysis.referenceSolutionSteps ?? [
+        ...sampleAnalysis.solutionSteps,
+      ],
+    };
+    return expandAnalysisFromVisionDraft(vision, {
+      deploymentName: options.deploymentName,
+      mode: options.mode,
+      solved,
+    });
+  }
+
+  const prompt = `You are an expert Korean middle/high school mathematics tutor — **text-only**. You do not see the photo.
+
+Vision OCR JSON (student photo — may include scratch notes):
+${JSON.stringify(vision, null, 2)}
+
+Work in two strict phases in one response:
+
+**Phase A — Solve (printed problem only)**
+- Use ONLY vision.problemText. Ignore vision.solutionSteps and any student scratch lists (e.g. prime lists) for solving.
+- Solve completely with rigorous case analysis. For counting questions ("가능한 a의 개수", "몇 개"), inferredCorrectAnswer must be ONE non-negative integer (or simplified fraction if asked).
+- referenceSolutionSteps: 4–12 short Korean steps with KaTeX $...$ for YOUR model solution (not student handwriting).
+- Check absolute value inequalities (e.g. $|a| \\le a$ forces $a \\ge 0$) and divisor-count cases.
+
+**Phase B — Diagnose (student vs your answer)**
+- vision.solutionSteps are **student handwriting / scratch**, NOT your solution.
+- The student's final answer is **only** vision.extractedStudentAnswer.
+- Compare the student to your Phase A answer.
+- problemText and extractedStudentAnswer: copy **verbatim** from the vision JSON.
+- errorSummary (Korean): correct or what went wrong. weakConcepts, recommendedFocus (Korean arrays; empty if none).
+- confidence ∈ [0,1] for diagnosis quality.
+
+Return JSON only with exactly these keys:
+problemText, extractedStudentAnswer, inferredCorrectAnswer, referenceSolutionSteps, confidence, errorSummary, weakConcepts, recommendedFocus
+
+Use Korean for prose. KaTeX $...$ in errorSummary and steps.`;
+
+  const raw = await completeTextOnlyJsonPrompt({
+    deploymentName: options.deploymentName,
+    userPrompt: prompt,
+    temperatureForChat: ANALYZE_TEMPERATURE,
+    maxTokens: 8192,
+  });
+
+  const combined: TutorSolveAndExpandFromVision =
+    tutorSolveAndExpandFromVisionSchema.parse(parseJsonFromText(raw));
+  const solved: ProblemSolveResult = {
+    inferredCorrectAnswer: combined.inferredCorrectAnswer,
+    referenceSolutionSteps: combined.referenceSolutionSteps,
+  };
+  const expansion: TutorExpansionFromVision = {
+    problemText: combined.problemText,
+    extractedStudentAnswer: combined.extractedStudentAnswer,
+    inferredCorrectAnswer: combined.inferredCorrectAnswer,
+    confidence: combined.confidence,
+    errorSummary: combined.errorSummary,
+    weakConcepts: combined.weakConcepts,
+    recommendedFocus: combined.recommendedFocus,
+  };
+  return mergeVisionMetricsIntoAnalysis(expansion, vision, solved);
 }
 
 export async function analyzeSolutionImage(
@@ -567,15 +707,27 @@ export async function analyzeSolutionImage(
     deploymentName: string;
     textDeploymentName: string;
     mode: AnalyzeQualityMode;
+    onProgress?: (step: Extract<AnalyzeProgressStep, "vision" | "tutor">) => void;
+    onPartial?: (payload: {
+      step: "vision" | "tutor";
+      analysis: SolutionAnalysis;
+    }) => void;
   },
 ): Promise<SolutionAnalysis> {
+  options.onProgress?.("vision");
   const vision = await extractSolutionImageVision(file, {
     deploymentName: options.deploymentName,
   });
-  const analysis = await expandAnalysisFromVisionDraft(vision, {
+  options.onPartial?.({
+    step: "vision",
+    analysis: partialAnalysisFromVision(vision),
+  });
+  options.onProgress?.("tutor");
+  const analysis = await solveAndExpandFromVision(vision, {
     deploymentName: options.textDeploymentName,
     mode: options.mode,
   });
+  options.onPartial?.({ step: "tutor", analysis });
   if (typeof console !== "undefined") {
     console.log("[study:azure:vision]", {
       deployment: options.deploymentName,
@@ -584,10 +736,11 @@ export async function analyzeSolutionImage(
       imageClarityScore: vision.imageClarityScore,
       extractionConfidence: vision.extractionConfidence,
     });
-    console.log("[study:azure:expand]", {
+    console.log("[study:azure:tutor]", {
       deployment: options.textDeploymentName,
       mode: options.mode,
       inferredCorrectAnswer: analysis.inferredCorrectAnswer.slice(0, 120),
+      referenceStepsCount: analysis.referenceSolutionSteps?.length ?? 0,
       confidence: analysis.confidence,
     });
   }
@@ -646,6 +799,7 @@ Keep readable LaTeX: inline formulas in $ ... $ and display formulas in $$ ... $
   const refined = solutionAnalysisSchema.parse({
     ...(parsedJson as Record<string, unknown>),
     solutionSteps: draft.solutionSteps,
+    referenceSolutionSteps: draft.referenceSolutionSteps ?? [],
     imageQualityWarning: draft.imageQualityWarning,
     visionImageClarityScore: draft.visionImageClarityScore,
     visionExtractionConfidence: draft.visionExtractionConfidence,
@@ -660,6 +814,8 @@ export async function generateSimilarProblems(
     deploymentName: string;
     mode: AnalyzeQualityMode;
     problemSetId?: string;
+    /** 비전 OCR 직후(튜터 병렬) — problemText·학생 풀이만으로 유사 유형 생성 */
+    fromVisionOcrOnly?: boolean;
   },
 ): Promise<GeneratedProblemSet> {
   if (!hasAzureOpenAiConfig()) {
@@ -672,12 +828,23 @@ export async function generateSimilarProblems(
   }
 
   const setId = options.problemSetId ?? randomUUID();
-  const prompt = `Create five similar Korean math practice problems based on this student's mistake analysis.
+  const visionOnly = options.fromVisionOcrOnly === true;
+  const promptIntro = visionOnly
+    ? `Create five similar Korean math practice problems from this worksheet photo OCR (tutor diagnosis may still be running in parallel).
+
+OCR snapshot:
+${JSON.stringify(analysis, null, 2)}
+
+Use problemText, extractedStudentAnswer, and solutionSteps (student handwriting). inferredCorrectAnswer or errorSummary may be empty — infer the likely weak concept from the problem type and visible student work. Do not wait for a full diagnosis.
+Ignore imageQualityWarning, visionImageClarityScore, and visionExtractionConfidence except to avoid over-trusting ambiguous OCR.`
+    : `Create five similar Korean math practice problems based on this student's mistake analysis.
 
 Analysis:
 ${JSON.stringify(analysis, null, 2)}
 
-Use only the learning-relevant fields: problemText, inferredCorrectAnswer, errorSummary, weakConcepts, recommendedFocus, and the student's transcribed solutionSteps. Ignore imageQualityWarning, visionImageClarityScore, and visionExtractionConfidence except to avoid over-trusting ambiguous OCR.
+Use only the learning-relevant fields: problemText, inferredCorrectAnswer, errorSummary, weakConcepts, recommendedFocus, and the student's transcribed solutionSteps. Ignore imageQualityWarning, visionImageClarityScore, and visionExtractionConfidence except to avoid over-trusting ambiguous OCR.`;
+
+  const prompt = `${promptIntro}
 
 Return JSON only matching this exact shape:
 {

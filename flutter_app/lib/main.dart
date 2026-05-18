@@ -1,6 +1,8 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import 'dev/store_screenshot_shell.dart';
+import 'services/api_base_url.dart';
 import 'screens/home_screen.dart';
 import 'services/api_client.dart';
 
@@ -11,6 +13,9 @@ const _storeScreenshot = String.fromEnvironment(
 
 void main() {
   WidgetsFlutterBinding.ensureInitialized();
+  if (kDebugMode) {
+    debugPrint('[study] API baseUrl=${resolveApiBaseUrl()}');
+  }
   runApp(MathLensTutorApp(apiClient: ApiClient()));
 }
 

@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 
+import '../utils/format_readable_solution_text.dart';
 import '../utils/soft_break_korean_math_text.dart';
 
 /// 웹 KaTeX(`MathMixedRich`)와 동일: `$…$`, `$$…$$`, `\( … \)`, `\[ … \]`
@@ -173,19 +174,24 @@ class MixedMathText extends StatelessWidget {
     this.textAlign = TextAlign.start,
     /// 웹 추정 정답과 같이 긴 안내 문자열 단락 구분 보강
     this.paragraphSoftBreak = false,
+    /// 정답 풀이·학생 풀이 단계 — 한글·수식 띄어쓰기·단락
+    this.readableSolutionStep = false,
   });
 
   final String text;
   final TextStyle style;
   final TextAlign textAlign;
   final bool paragraphSoftBreak;
+  final bool readableSolutionStep;
 
   @override
   Widget build(BuildContext context) {
     final normalized = text.replaceAll('\r\n', '\n');
-    final source = paragraphSoftBreak
-        ? softBreakAnswerExplanation(normalized)
-        : normalized;
+    final source = readableSolutionStep
+        ? formatReadableSolutionText(normalized)
+        : paragraphSoftBreak
+            ? softBreakAnswerExplanation(normalized)
+            : normalized;
     final segs = _parseMathMixed(source);
     final children = <Widget>[];
     var buffer = <InlineSpan>[];

@@ -35,20 +35,7 @@ export default async function SubmissionPage({
   return (
     <AppShell>
       <div className="grid gap-8 lg:grid-cols-[0.85fr_1.15fr]">
-        <aside className="space-y-6">
-          <section className="rounded-3xl border border-white/10 bg-white/10 p-6">
-            <p className="text-sm text-slate-400">업로드 파일</p>
-            <h1 className="mt-2 text-2xl font-black">{submission.imageName}</h1>
-            {submission.imageUrl ? (
-              <Image
-                src={submission.imageUrl}
-                alt="업로드한 풀이 사진"
-                width={800}
-                height={600}
-                className="mt-5 rounded-2xl object-cover"
-              />
-            ) : null}
-          </section>
+        <aside className="hidden space-y-6 lg:block">
           {problemSet ? (
             <div className="space-y-3">
               <Link
@@ -66,6 +53,21 @@ export default async function SubmissionPage({
         </aside>
 
         <section className="space-y-6">
+          <section className="rounded-3xl border border-white/10 bg-white/10 p-6">
+            <p className="text-sm text-slate-400">제출한 풀이 사진</p>
+            {submission.imageUrl ? (
+              <Image
+                src={submission.imageUrl}
+                alt="업로드한 풀이 사진"
+                width={800}
+                height={600}
+                className="mt-3 max-h-[min(280px,40vh)] w-full rounded-2xl object-contain"
+              />
+            ) : (
+              <p className="mt-3 text-sm text-slate-500">이미지를 불러올 수 없습니다.</p>
+            )}
+          </section>
+
           <div className="rounded-3xl border border-white/10 bg-white/10 p-6">
             <div className="flex flex-wrap items-center gap-3">
               <span className="rounded-full bg-white/10 px-3 py-1 text-sm text-slate-300">
@@ -84,13 +86,16 @@ export default async function SubmissionPage({
             ) : null}
             <h2 className="mt-5 text-2xl font-black">풀이 분석</h2>
             <div className="mt-4 rounded-2xl bg-slate-900 p-4 leading-8 text-slate-200">
-              <MathMixedRich text={analysis.problemText} />
+              <MathMixedRich text={analysis.problemText} readableSolutionStep />
             </div>
             <dl className="mt-5 grid gap-4 sm:grid-cols-2">
               <div className="rounded-2xl bg-slate-900 p-4">
                 <dt className="text-sm text-slate-400">학생 답안</dt>
                 <dd className="mt-2 font-bold">
-                  <MathMixedRich text={analysis.extractedStudentAnswer} />
+                  <MathMixedRich
+                    text={analysis.extractedStudentAnswer}
+                    readableSolutionStep
+                  />
                 </dd>
               </div>
               <div className="rounded-2xl bg-slate-900 p-4">
@@ -99,26 +104,49 @@ export default async function SubmissionPage({
                   <MathMixedRich
                     text={analysis.inferredCorrectAnswer}
                     softBreakExplanation
+                    readableSolutionStep
                   />
                 </dd>
               </div>
             </dl>
           </div>
 
+          {(analysis.referenceSolutionSteps?.length ?? 0) > 0 ? (
+            <div className="rounded-3xl border border-white/10 bg-white/10 p-6">
+              <h2 className="text-xl font-bold">정답 풀이</h2>
+              <p className="mt-2 text-sm text-slate-400">
+                문제 지문만 보고 푼 모범 풀이입니다.
+              </p>
+              <ol className="mt-5 list-decimal space-y-4 pl-5">
+                {analysis.referenceSolutionSteps!.map((step, index) => (
+                  <li
+                    key={`ref-${index}-${step.slice(0, 24)}`}
+                    className="rounded-2xl bg-emerald-500/10 p-4 pl-4 leading-8 text-slate-200 marker:font-semibold"
+                  >
+                    <MathMixedRich text={step} readableSolutionStep />
+                  </li>
+                ))}
+              </ol>
+            </div>
+          ) : null}
+
           <div className="rounded-3xl border border-white/10 bg-white/10 p-6">
-            <h2 className="text-xl font-bold">풀이과정</h2>
-            <ol className="mt-5 list-decimal space-y-3 pl-5">
+            <h2 className="text-xl font-bold">사진에서 읽은 학생 풀이·메모</h2>
+            <p className="mt-2 text-sm text-slate-400">
+              손글씨 OCR입니다. 소수 나열 등은 정답 풀이가 아닐 수 있습니다.
+            </p>
+            <ol className="mt-5 list-decimal space-y-4 pl-5">
               {analysis.solutionSteps.map((step, index) => (
                 <li
                   key={`${index}-${step.slice(0, 24)}`}
-                  className="rounded-2xl bg-slate-900 p-4 pl-4 leading-7 text-slate-300 marker:font-semibold"
+                  className="rounded-2xl bg-slate-900 p-4 pl-4 leading-8 text-slate-300 marker:font-semibold"
                 >
-                  <MathMixedRich text={step} />
+                  <MathMixedRich text={step} readableSolutionStep />
                 </li>
               ))}
             </ol>
-            <div className="mt-5 rounded-2xl bg-red-500/15 p-4 leading-7 text-red-100">
-              <MathMixedRich text={analysis.errorSummary} />
+            <div className="mt-5 rounded-2xl bg-red-500/15 p-4 leading-8 text-red-100">
+              <MathMixedRich text={analysis.errorSummary} readableSolutionStep />
             </div>
           </div>
 
@@ -146,6 +174,21 @@ export default async function SubmissionPage({
                   ))}
                 </ul>
               ) : null}
+            </div>
+          ) : null}
+
+          {problemSet ? (
+            <div className="space-y-3 lg:hidden">
+              <Link
+                href={`/practice/${problemSet.id}`}
+                className="block rounded-2xl bg-emerald-500 px-6 py-4 text-center font-bold text-white hover:bg-emerald-400"
+              >
+                유사 문제 5개 풀기
+              </Link>
+              <ProblemSetPrintPdfButton
+                problemSet={problemSet}
+                className="block w-full rounded-2xl border border-white/15 px-6 py-3 text-center text-sm font-semibold text-slate-100 hover:bg-white/10"
+              />
             </div>
           ) : null}
         </section>

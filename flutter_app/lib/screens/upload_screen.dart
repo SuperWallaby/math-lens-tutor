@@ -2,11 +2,8 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import '../io_compat/read_path_bytes.dart';
 import '../layout/tablet_layout.dart';
-import '../models/app_models.dart';
 import '../services/api_client.dart';
 import 'analysis_screen.dart';
 
@@ -23,8 +20,6 @@ bool get _supportsDesktopDrop =>
     (defaultTargetPlatform == TargetPlatform.macOS ||
         defaultTargetPlatform == TargetPlatform.windows ||
         defaultTargetPlatform == TargetPlatform.linux);
-
-const _kStudyReturnUser = 'study_return_user';
 
 /// macOS·Windows·Linux 에서 `ImageSource.gallery` 는 사진 앱이 아니라 파일 선택 패널입니다.
 String get _galleryButtonLabel =>
@@ -86,17 +81,21 @@ class _UploadScreenState extends State<UploadScreen> {
   final _picker = ImagePicker();
   Uint8List? _imageBytes;
   String _uploadFilename = 'upload.jpg';
-  /// 서버 분석 요청 진행 중(이미지 등록 시 자동 시작). 화면에는 표시하지 않음.
-  bool _analysisBusy = false;
-  /// 메인 버튼에만 스피너: 사용자가 눌렀을 때만 true(추가 요청 없이 대기 UI).
-  bool _buttonSubmitLoading = false;
-  /// 사용자가 메인 버튼을 눌러 분석 완료 시 결과 화면으로 자동 이동하도록 함.
-  bool _navigateWhenReady = false;
-  AnalyzeResult? _readyResult;
   String? _error;
   bool _dragHover = false;
-  /// 증가시키면 이전 분석 요청 완료 콜백 무시(새 이미지 등).
-  int _analyzeSeq = 0;
+
+  void _openStreamingAnalysis(Uint8List bytes, String filename) {
+    if (!mounted) return;
+    Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AnalysisScreen(
+          apiClient: widget.apiClient,
+          imageBytes: bytes,
+          uploadFilename: filename,
+        ),
+      ),
+    );
+  }
 
   Future<void> _onDropDone(DropDoneDetails detail) async {
     if (!mounted) return;
@@ -137,12 +136,9 @@ class _UploadScreenState extends State<UploadScreen> {
       setState(() {
         _imageBytes = bytes;
         _uploadFilename = name;
-        _readyResult = null;
         _error = null;
-        _navigateWhenReady = false;
-        _buttonSubmitLoading = false;
       });
-      _scheduleAnalyzeAfterImageSet();
+      _openStreamingAnalysis(bytes, name);
     } catch (e) {
       if (!mounted) return;
       setState(() => _error = '파일을 불러오지 못했습니다: $e');
@@ -185,123 +181,15 @@ class _UploadScreenState extends State<UploadScreen> {
     setState(() {
       _imageBytes = bytes;
       _uploadFilename = name;
-      _readyResult = null;
       _error = null;
-      _navigateWhenReady = false;
-      _buttonSubmitLoading = false;
     });
-    _scheduleAnalyzeAfterImageSet();
-  }
-
-  void _scheduleAnalyzeAfterImageSet() {
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (!mounted) return;
-      _runAnalyzeSequence(silent: true);
-    });
-  }
-
-  /// [silent] true: 이미지 등록 직후 백그라운드 분석(화면·버튼에 로딩 없음).
-  /// [isRetry] true: 오류 후『다시 시도』—실제 재요청, 완료 시 결과 화면으로 이동.
-  Future<void> _runAnalyzeSequence({bool silent = false, bool isRetry = false}) async {
-    final bytes = _imageBytes;
-    if (bytes == null) return;
-
-    final seq = ++_analyzeSeq;
-    if (!mounted) return;
-    setState(() {
-      _analysisBusy = true;
-      _error = null;
-      if (isRetry) {
-        _readyResult = null;
-        _buttonSubmitLoading = true;
-        _navigateWhenReady = true;
-      }
-    });
-
-    try {
-      final AnalyzeResult result = await widget.apiClient.analyzeImageBytes(
-        bytes,
-        filename: _uploadFilename,
-        qualityMode: AnalyzeQualityMode.balanced,
-      );
-      if (!mounted || seq != _analyzeSeq) return;
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setBool(_kStudyReturnUser, true);
-      final go = _navigateWhenReady;
-      setState(() {
-        _analysisBusy = false;
-        _buttonSubmitLoading = false;
-        _readyResult = result;
-        if (go) _navigateWhenReady = false;
-      });
-      if (go && mounted) {
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          if (!mounted) return;
-          Navigator.of(context).push(
-            MaterialPageRoute(
-              builder: (_) => AnalysisScreen(
-                apiClient: widget.apiClient,
-                result: result,
-              ),
-            ),
-          );
-        });
-      }
-    } catch (error) {
-      if (!mounted || seq != _analyzeSeq) return;
-      setState(() {
-        _analysisBusy = false;
-        _buttonSubmitLoading = false;
-        _navigateWhenReady = false;
-        _error = error.toString();
-      });
-    }
+    _openStreamingAnalysis(bytes, name);
   }
 
   void _onPrimaryButton() {
-    if (_imageBytes == null || _buttonSubmitLoading) return;
-
-    if (_error != null) {
-      _runAnalyzeSequence(isRetry: true);
-      return;
-    }
-
-    if (_readyResult != null && !_analysisBusy) {
-      _openResultScreen();
-      return;
-    }
-
-    if (_analysisBusy) {
-      setState(() {
-        _buttonSubmitLoading = true;
-        _navigateWhenReady = true;
-      });
-      return;
-    }
-
-    setState(() {
-      _buttonSubmitLoading = true;
-      _navigateWhenReady = true;
-    });
-  }
-
-  void _openResultScreen() {
-    final r = _readyResult;
-    if (r == null) return;
-    Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => AnalysisScreen(
-          apiClient: widget.apiClient,
-          result: r,
-        ),
-      ),
-    );
-  }
-
-  @override
-  void dispose() {
-    _analyzeSeq++;
-    super.dispose();
+    final bytes = _imageBytes;
+    if (bytes == null) return;
+    _openStreamingAnalysis(bytes, _uploadFilename);
   }
 
   @override
@@ -356,24 +244,9 @@ class _UploadScreenState extends State<UploadScreen> {
             ),
             const SizedBox(height: 14),
             FilledButton.icon(
-              onPressed: (_imageBytes == null || _buttonSubmitLoading)
-                  ? null
-                  : _onPrimaryButton,
-              icon: _buttonSubmitLoading
-                  ? SizedBox(
-                      width: 18,
-                      height: 18,
-                      child: CircularProgressIndicator(
-                        strokeWidth: 2,
-                        color: Theme.of(context).colorScheme.onPrimary,
-                      ),
-                    )
-                  : const Icon(Icons.auto_awesome_rounded),
-              label: Text(
-                _error != null
-                    ? '다시 시도'
-                    : (_buttonSubmitLoading ? '분석 중...' : '분석하고 유사 문제 생성'),
-              ),
+              onPressed: _imageBytes == null ? null : _onPrimaryButton,
+              icon: const Icon(Icons.auto_awesome_rounded),
+              label: const Text('분석하고 유사 문제 생성'),
             ),
             if (_error != null) ...[
               const SizedBox(height: 14),

@@ -4,6 +4,7 @@ import katex from "katex";
 import { Fragment, useMemo } from "react";
 
 import { augmentMathDelimiters } from "@/lib/augment-math-delimiters";
+import { formatReadableSolutionText } from "@/lib/format-readable-solution-text";
 import { parseMathMixed } from "@/lib/parse-math-mixed";
 import { softBreakAnswerExplanation } from "@/lib/soft-break-korean-math-text";
 
@@ -11,18 +12,21 @@ export function MathMixedRich({
   text,
   className,
   softBreakExplanation = false,
+  readableSolutionStep = false,
 }: {
   text: string;
   className?: string;
   /** 한 줄로 이어진 "정답·오답 문장 + 풀이"에 설명 앞 줄바꿈을 삽입 (예: inferredCorrectAnswer) */
   softBreakExplanation?: boolean;
+  /** 정답 풀이·학생 풀이 단계 등 — 한글·수식 띄어쓰기·단락 나눔 */
+  readableSolutionStep?: boolean;
 }) {
   const raw = text ?? "";
-  const withBreaks = useMemo(
-    () =>
-      softBreakExplanation ? softBreakAnswerExplanation(raw) : raw.replace(/\r\n/g, "\n"),
-    [raw, softBreakExplanation],
-  );
+  const withBreaks = useMemo(() => {
+    if (readableSolutionStep) return formatReadableSolutionText(raw);
+    if (softBreakExplanation) return softBreakAnswerExplanation(raw);
+    return raw.replace(/\r\n/g, "\n");
+  }, [raw, softBreakExplanation, readableSolutionStep]);
   const normalized = useMemo(() => augmentMathDelimiters(withBreaks), [withBreaks]);
   const segments = useMemo(() => parseMathMixed(normalized), [normalized]);
 

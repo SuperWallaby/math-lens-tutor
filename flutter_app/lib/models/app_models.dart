@@ -15,6 +15,7 @@ class SolutionAnalysis {
     required this.errorSummary,
     required this.weakConcepts,
     required this.recommendedFocus,
+    this.referenceSolutionSteps = const [],
     this.imageQualityWarning = false,
     this.visionImageClarityScore,
     this.visionExtractionConfidence,
@@ -27,6 +28,7 @@ class SolutionAnalysis {
       inferredCorrectAnswer: json['inferredCorrectAnswer'] as String? ?? '',
       confidence: (json['confidence'] as num? ?? 0).toDouble(),
       solutionSteps: _stringList(json['solutionSteps']),
+      referenceSolutionSteps: _stringList(json['referenceSolutionSteps']),
       errorSummary: json['errorSummary'] as String? ?? '',
       weakConcepts: _stringList(json['weakConcepts']),
       recommendedFocus: _stringList(json['recommendedFocus']),
@@ -43,12 +45,21 @@ class SolutionAnalysis {
   final String inferredCorrectAnswer;
   final double confidence;
   final List<String> solutionSteps;
+  final List<String> referenceSolutionSteps;
   final String errorSummary;
   final List<String> weakConcepts;
   final List<String> recommendedFocus;
   final bool imageQualityWarning;
   final double? visionImageClarityScore;
   final double? visionExtractionConfidence;
+
+  bool get hasVisionData =>
+      problemText.trim().isNotEmpty ||
+      extractedStudentAnswer.trim().isNotEmpty ||
+      solutionSteps.isNotEmpty;
+
+  bool get hasTutorData =>
+      inferredCorrectAnswer.trim().isNotEmpty && errorSummary.trim().isNotEmpty;
 }
 
 class SolutionSubmission {

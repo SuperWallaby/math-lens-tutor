@@ -1,11 +1,7 @@
-import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { parseAnalyzeQualityMode } from "@/lib/analyze-mode";
 import {
-  analyzeSolutionImage,
-  generateSimilarProblems,
   hasAzureOpenAiConfig,
-  refineSolutionAnalysisForAccurateMode,
   resolveAzureDeploymentName,
   resolveVisionDeploymentName,
 } from "@/lib/azure";
@@ -16,16 +12,19 @@ import {
 } from "@/lib/model-deployment-options";
 import { GENERIC_ANALYZE_ERROR, logApiError } from "@/lib/api-errors";
 import { getRequestUserId } from "@/lib/request";
-import { studyLog } from "@/lib/server-log";
+import { encodeAnalyzePartialLine } from "@/lib/analyze-partial";
+import type { AnalyzePartialPayload } from "@/lib/analyze-partial";
 import {
-  saveProblemSet,
-  saveSubmission,
-  uploadSolutionImage,
-} from "@/lib/store";
-import { sampleAnalysis, sampleProblemSet } from "@/lib/sample";
-import type { GeneratedProblemSet, SolutionSubmission } from "@/lib/types";
+  encodeAnalyzeNdjsonLine,
+  progressNdjsonLine,
+  runAnalyzeJob,
+} from "@/lib/run-analyze-job";
+import { studyLog } from "@/lib/server-log";
+import type { SolutionSubmission } from "@/lib/types";
 
 export const runtime = "nodejs";
+/** Pro/Enterprise: 최대 300s. Hobby는 플랫폼 상한(~10s)이 더 짧을 수 있음. */
+export const maxDuration = 300;
 
 function errText(e: unknown): string {
   return e instanceof Error ? e.message : String(e);
@@ -54,7 +53,13 @@ function logAnalysisResult(
     imageQualityWarning: analysis.imageQualityWarning,
     visionExtractionConfidence: analysis.visionExtractionConfidence,
     solutionStepsCount: analysis.solutionSteps.length,
+    referenceStepsCount: analysis.referenceSolutionSteps?.length ?? 0,
   });
+}
+
+function wantsProgressStream(formData: FormData): boolean {
+  const v = formData.get("streamProgress");
+  return v === "1" || v === "true";
 }
 
 export async function POST(request: Request) {
@@ -69,9 +74,7 @@ export async function POST(request: Request) {
   });
 
   try {
-    const formData = (await request.formData()) as unknown as {
-      get(name: string): FormDataEntryValue | null;
-    };
+    const formData = await request.formData();
     const file = formData.get("image");
 
     if (!(file instanceof File) || file.size === 0) {
@@ -82,6 +85,7 @@ export async function POST(request: Request) {
     }
 
     const qualityMode = parseAnalyzeQualityMode(formData.get("qualityMode"));
+    const streamProgress = wantsProgressStream(formData);
     const visionCandidates = buildVisionDeploymentCandidateList();
     const textCandidates = buildTextDeploymentCandidateList();
     const textFallback = resolveAzureDeploymentName(qualityMode);
@@ -123,121 +127,87 @@ export async function POST(request: Request) {
 
     studyLog("analyze", "deployments resolved", {
       qualityMode,
+      streamProgress,
       visionDeploymentName,
       textDeploymentName: deploymentName,
-      textDeploymentFromForm: String(formData.get("textDeployment") ?? ""),
-      visionDeploymentFromForm: String(formData.get("visionDeployment") ?? ""),
-      visionCandidatesLen: visionCandidates.length,
-      textCandidatesLen: textCandidates.length,
     });
 
-    const submissionId = randomUUID();
-    const problemSetId = randomUUID();
+    const jobParams = {
+      file,
+      userId,
+      qualityMode,
+      visionDeploymentName,
+      textDeploymentName: deploymentName,
+    };
 
-    const raw = await file.arrayBuffer();
-    const duplicateInputFile = () =>
-      new File([raw.slice(0)], file.name, {
-        type: file.type || "application/octet-stream",
+    if (streamProgress) {
+      const stream = new ReadableStream({
+        async start(controller) {
+          try {
+            const result = await runAnalyzeJob({
+              ...jobParams,
+              stream: {
+                onProgress: (step) => {
+                  controller.enqueue(progressNdjsonLine(step));
+                },
+                onPartial: (payload: AnalyzePartialPayload) => {
+                  controller.enqueue(encodeAnalyzePartialLine(payload));
+                },
+              },
+            });
+            logAnalysisResult("analyze", result.submission.analysis);
+            studyLog("analyze", "saved (stream)", {
+              submissionId: result.submissionId,
+              problemSetId: result.problemSetId,
+            });
+            controller.enqueue(
+              encodeAnalyzeNdjsonLine({ type: "result", ...result }),
+            );
+            controller.close();
+          } catch (error) {
+            studyLog("analyze", "POST failed (stream)", {
+              error: errText(error),
+            });
+            const errorId = await logApiError({
+              request,
+              route: "/api/analyze",
+              userId,
+              error,
+            });
+            controller.enqueue(
+              encodeAnalyzeNdjsonLine({
+                type: "error",
+                error: GENERIC_ANALYZE_ERROR,
+                errorId,
+              }),
+            );
+            controller.close();
+          }
+        },
       });
 
-    let imageUrl: string | null;
-    let analysis: SolutionSubmission["analysis"];
-    let problemSet: GeneratedProblemSet;
-
-    if (azureConfigured) {
-      const settled = await Promise.allSettled([
-        uploadSolutionImage(duplicateInputFile(), userId),
-        analyzeSolutionImage(duplicateInputFile(), {
-          deploymentName: visionDeploymentName,
-          textDeploymentName: deploymentName,
-          mode: qualityMode,
-        }),
-      ]);
-
-      if (settled[0].status === "rejected") {
-        studyLog("analyze", "uploadSolutionImage failed", {
-          error: errText(settled[0].reason),
-        });
-        throw settled[0].reason;
-      }
-      if (settled[1].status === "rejected") {
-        studyLog("analyze", "analyzeSolutionImage failed", {
-          error: errText(settled[1].reason),
-        });
-        throw settled[1].reason;
-      }
-
-      imageUrl = settled[0].value;
-      analysis = settled[1].value;
-      logAnalysisResult("analyze", analysis);
-
-      if (qualityMode === "accurate") {
-        analysis = await refineSolutionAnalysisForAccurateMode(analysis, {
-          deploymentName,
-          mode: qualityMode,
-        });
-        studyLog("analyze", "accurate refine done", {});
-        logAnalysisResult("analyze:refined", analysis);
-      }
-
-      problemSet = await generateSimilarProblems(analysis, submissionId, {
-        deploymentName,
-        mode: qualityMode,
-        problemSetId,
+      return new Response(stream, {
+        headers: {
+          "Content-Type": "application/x-ndjson; charset=utf-8",
+          "Cache-Control": "no-cache, no-transform",
+          Connection: "keep-alive",
+        },
       });
-      studyLog("analyze", "similar problems generated", {
-        problemCount: problemSet.problems.length,
-        firstCorrectAnswers: problemSet.problems.map((p) => ({
-          id: p.id,
-          correctAnswer: p.correctAnswer.slice(0, 80),
-          type: p.type,
-        })),
-      });
-    } else {
-      studyLog("analyze", "using sample analysis (no Azure config)", {});
-      imageUrl = await uploadSolutionImage(duplicateInputFile(), userId);
-      analysis = sampleAnalysis;
-      problemSet = {
-        ...sampleProblemSet,
-        id: problemSetId,
-        submissionId,
-      };
-      logAnalysisResult("analyze:sample", analysis);
     }
 
-    const usedSample = !azureConfigured;
-    const modelMeta = {
-      visionModel: usedSample ? "(샘플)" : visionDeploymentName,
-      textModel: usedSample ? "(샘플)" : deploymentName,
-      qualityMode,
-      isSample: usedSample,
-    };
-
-    const submission: SolutionSubmission = {
-      id: submissionId,
-      userId,
-      imageUrl,
-      imageName: file.name,
-      createdAt: new Date().toISOString(),
-      analysis,
-      modelMeta,
-    };
-
-    await saveSubmission(submission);
-    await saveProblemSet(problemSet);
-
+    const result = await runAnalyzeJob({ ...jobParams });
+    logAnalysisResult("analyze", result.submission.analysis);
     studyLog("analyze", "saved", {
-      submissionId: submission.id,
-      problemSetId: problemSet.id,
-      modelMeta,
+      submissionId: result.submissionId,
+      problemSetId: result.problemSetId,
     });
 
     return NextResponse.json({
-      submissionId: submission.id,
-      problemSetId: problemSet.id,
-      qualityMode,
-      submission,
-      problemSet,
+      submissionId: result.submissionId,
+      problemSetId: result.problemSetId,
+      qualityMode: result.qualityMode,
+      submission: result.submission,
+      problemSet: result.problemSet,
     });
   } catch (error) {
     studyLog("analyze", "POST failed", { error: errText(error) });
