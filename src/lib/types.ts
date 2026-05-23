@@ -68,6 +68,7 @@ export const visionSolutionExtractionSchema = z.object({
   /** 추출에 대한 확신도(가독성·완결성 포함) */
   extractionConfidence: z.number().min(0).max(1),
 });
+//** 1212 */
 
 /** 인쇄된 problemText 만으로 정답·모범 풀이 (학생 손글씨 OCR 과 분리) */
 export const problemSolveResultSchema = z.object({
