@@ -1,0 +1,1505 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>우열 優劣 — 최종 프로토타입</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700;800;900&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #09090F;
+  --surface: #111118;
+  --surface2: #18181F;
+  --surface3: #202028;
+  --primary: #7C6FF7;
+  --primary-d: #5B50D4;
+  --primary-light: rgba(124,111,247,0.12);
+  --accent: #FF6B6B;
+  --accent-light: rgba(255,107,107,0.12);
+  --green: #34D399;
+  --green-light: rgba(52,211,153,0.12);
+  --yellow: #FBBF24;
+  --yellow-light: rgba(251,191,36,0.12);
+  --orange: #FB923C;
+  --orange-light: rgba(251,146,60,0.12);
+  --teacher: #06B6D4;
+  --teacher-light: rgba(6,182,212,0.12);
+  --text: #F1F1F8;
+  --text-sub: #7878A0;
+  --text-muted: #44445A;
+  --border: rgba(255,255,255,0.05);
+  --border2: rgba(255,255,255,0.08);
+  --r: 14px;
+  --r-sm: 10px;
+}
+
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent;}
+
+body{
+  font-family:'Noto Sans KR',sans-serif;
+  background:#05050A;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  padding:16px 0 40px;
+  gap:16px;
+}
+
+/* 상단 네비 */
+.top-nav{
+  width:100%;max-width:500px;
+  display:flex;gap:5px;padding:0 12px;
+  flex-wrap:wrap;justify-content:center;
+}
+.nav-group{display:flex;gap:4px;align-items:center;flex-wrap:wrap;justify-content:center;}
+.nav-label{font-size:10px;font-weight:800;color:var(--text-muted);padding:0 4px;text-transform:uppercase;letter-spacing:1px;}
+.nb{
+  padding:6px 11px;border-radius:16px;font-size:11px;font-weight:700;
+  cursor:pointer;border:1.5px solid var(--border2);background:var(--surface);
+  color:var(--text-muted);transition:all .2s;font-family:'Noto Sans KR',sans-serif;
+  white-space:nowrap;
+}
+.nb.s{background:var(--primary);color:#fff;border-color:var(--primary);}
+.nb.p{background:#10B981;color:#fff;border-color:#10B981;}
+.nb.t{background:var(--teacher);color:#fff;border-color:var(--teacher);}
+
+/* 폰 */
+.phone{
+  width:375px;background:var(--bg);
+  border-radius:44px;
+  box-shadow:0 32px 80px rgba(0,0,0,0.6),inset 0 0 0 1px rgba(255,255,255,0.07);
+  overflow:hidden;
+}
+.notch{
+  background:#000;height:44px;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 20px;
+}
+.notch::after{
+  content:'';position:absolute;top:0;left:50%;transform:translateX(-50%);
+  width:120px;height:34px;background:#000;border-radius:0 0 20px 20px;
+}
+.n-time{color:#fff;font-size:13px;font-weight:700;position:relative;z-index:1;}
+.n-icons{color:#fff;font-size:10px;position:relative;z-index:1;letter-spacing:1px;}
+
+/* 화면 */
+.sc{display:none;flex-direction:column;height:780px;overflow:hidden;}
+.sc.on{display:flex;}
+.inner{flex:1;overflow-y:auto;overflow-x:hidden;scrollbar-width:none;padding-bottom:80px;}
+.inner::-webkit-scrollbar{display:none;}
+
+/* 하단 네비 */
+.bnav{display:flex;background:var(--surface);border-top:1px solid var(--border);padding:10px 0 20px;flex-shrink:0;}
+.bi{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;}
+.bi-ic{font-size:13px;font-weight:800;color:var(--text-muted);height:24px;display:flex;align-items:center;justify-content:center;}
+.bi-lb{font-size:10px;color:var(--text-muted);font-weight:500;}
+.bi.on .bi-lb{color:var(--primary);font-weight:700;}
+.bi.on-g .bi-lb{color:#10B981;font-weight:700;}
+.bi.on-t .bi-lb{color:var(--teacher);font-weight:700;}
+
+/* 공통 */
+.card{background:var(--surface);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;margin:0 16px 10px;}
+.crow{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);}
+.crow:last-child{border-bottom:none;}
+.slabel{font-size:11px;font-weight:700;color:var(--text-muted);text-transform:uppercase;letter-spacing:.6px;padding:14px 20px 8px;}
+.tag{display:inline-flex;padding:3px 9px;border-radius:8px;font-size:11px;font-weight:700;}
+.pbtn{
+  background:var(--primary);border:none;border-radius:var(--r);
+  padding:15px;width:calc(100% - 32px);margin:0 16px;
+  color:#fff;font-size:15px;font-weight:700;font-family:'Noto Sans KR',sans-serif;
+  cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;
+  box-shadow:0 8px 24px rgba(124,111,247,0.3);
+}
+.sbtn{
+  background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);
+  padding:13px;width:calc(100% - 32px);margin:8px 16px 0;
+  color:var(--text);font-size:13px;font-weight:600;font-family:'Noto Sans KR',sans-serif;cursor:pointer;
+}
+.pbar{height:6px;background:var(--surface3);border-radius:99px;overflow:hidden;}
+.pbar-f{height:100%;border-radius:99px;}
+.avatar{width:36px;height:36px;border-radius:11px;display:flex;align-items:center;justify-content:center;font-size:15px;font-weight:800;flex-shrink:0;}
+.pill{display:inline-flex;align-items:center;gap:4px;padding:4px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+
+/* ━━━━━━━━━━━━━━━
+   온보딩
+━━━━━━━━━━━━━━━ */
+.ob-wrap{height:780px;display:flex;flex-direction:column;overflow:hidden;}
+.ob-slides{display:flex;width:300%;transition:transform .4s cubic-bezier(.4,0,.2,1);}
+.ob-slide{width:33.333%;flex-shrink:0;height:780px;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:40px 32px;text-align:center;gap:0;}
+.ob-emoji{font-size:72px;margin-bottom:24px;}
+.ob-title{font-size:26px;font-weight:900;color:var(--text);letter-spacing:-1px;margin-bottom:12px;line-height:1.2;}
+.ob-sub{font-size:14px;color:var(--text-sub);line-height:1.7;margin-bottom:32px;}
+.ob-dots{display:flex;gap:6px;margin-bottom:28px;}
+.ob-dot{width:6px;height:6px;border-radius:50%;background:var(--surface3);transition:all .3s;}
+.ob-dot.on{width:20px;background:var(--primary);}
+.ob-next{
+  background:var(--primary);border:none;border-radius:var(--r);padding:16px 40px;
+  color:#fff;font-size:15px;font-weight:700;font-family:'Noto Sans KR',sans-serif;
+  cursor:pointer;box-shadow:0 8px 24px rgba(124,111,247,0.3);width:100%;
+}
+.ob-skip{margin-top:12px;font-size:13px;color:var(--text-muted);cursor:pointer;background:none;border:none;font-family:'Noto Sans KR',sans-serif;}
+
+/* ━━━━━━━━━━━━━━━
+   로그인
+━━━━━━━━━━━━━━━ */
+.login-hero{text-align:center;padding:36px 20px 28px;}
+.login-logo{font-size:40px;font-weight:900;color:var(--text);letter-spacing:-2px;}
+.login-sub{font-size:12px;color:var(--text-sub);margin-top:6px;line-height:1.6;}
+.type-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;padding:0 20px;margin-bottom:20px;}
+.type-btn{
+  padding:14px 8px;border-radius:var(--r);border:1.5px solid var(--border2);
+  background:var(--surface2);color:var(--text-sub);font-size:12px;font-weight:700;
+  font-family:'Noto Sans KR',sans-serif;cursor:pointer;text-align:center;transition:all .2s;
+}
+.type-btn .type-ic{font-size:22px;display:block;margin-bottom:6px;}
+.type-btn.as{border-color:var(--primary);color:var(--primary);background:var(--primary-light);}
+.type-btn.ap{border-color:#10B981;color:#10B981;background:rgba(16,185,129,.1);}
+.type-btn.at{border-color:var(--teacher);color:var(--teacher);background:var(--teacher-light);}
+.igroup{padding:0 20px;margin-bottom:10px;}
+.ilabel{font-size:12px;font-weight:700;color:var(--text-sub);margin-bottom:6px;}
+.ifield{
+  width:100%;background:var(--surface2);border:1px solid var(--border2);
+  border-radius:var(--r-sm);padding:13px 16px;color:var(--text);
+  font-size:14px;font-family:'Noto Sans KR',sans-serif;outline:none;
+}
+.hint-box{margin:0 20px 16px;background:var(--green-light);border-radius:var(--r-sm);padding:12px;border:1px solid rgba(52,211,153,.2);}
+.hint-box p{font-size:12px;color:var(--green);font-weight:600;line-height:1.6;}
+
+/* ━━━━━━━━━━━━━━━
+   학생 홈
+━━━━━━━━━━━━━━━ */
+.s-hero{
+  background:linear-gradient(135deg,#13132A 0%,#1A1535 50%,#0D1F4A 100%);
+  padding:20px 20px 24px;position:relative;overflow:hidden;
+}
+.s-hero::before{
+  content:'';position:absolute;top:-60px;right:-60px;
+  width:220px;height:220px;
+  background:radial-gradient(circle,rgba(124,111,247,.25) 0%,transparent 70%);
+  border-radius:50%;
+}
+.s-hero-greeting{font-size:13px;color:rgba(255,255,255,.5);margin-bottom:3px;}
+.s-hero-name{font-size:22px;font-weight:800;color:#fff;margin-bottom:16px;letter-spacing:-.5px;}
+
+/* 오늘의 미션 카드 */
+.mission-card{
+  margin:0 16px 12px;
+  background:linear-gradient(135deg,var(--primary),var(--primary-d));
+  border-radius:var(--r);padding:18px;position:relative;overflow:hidden;
+  box-shadow:0 8px 32px rgba(124,111,247,.3);
+}
+.mission-card::after{content:'🎯';position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:48px;opacity:.15;}
+.mission-label{font-size:11px;color:rgba(255,255,255,.7);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:6px;}
+.mission-title{font-size:17px;font-weight:800;color:#fff;margin-bottom:12px;line-height:1.3;}
+.mission-btn{
+  background:rgba(255,255,255,.2);border:none;border-radius:8px;
+  padding:10px 16px;color:#fff;font-size:13px;font-weight:700;
+  font-family:'Noto Sans KR',sans-serif;cursor:pointer;
+  backdrop-filter:blur(4px);
+}
+
+/* 스탯 그리드 */
+.stat-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:16px;}
+.stat-box{background:rgba(255,255,255,.07);border-radius:12px;padding:12px 8px;text-align:center;border:1px solid rgba(255,255,255,.08);}
+.stat-num{font-size:20px;font-weight:800;color:#fff;}
+.stat-lbl{font-size:10px;color:rgba(255,255,255,.55);margin-top:3px;}
+.stat-chg{font-size:10px;color:var(--green);font-weight:700;margin-top:2px;}
+
+/* ━━━━━━━━━━━━━━━
+   업로드
+━━━━━━━━━━━━━━━ */
+.upload-zone{
+  margin:0 16px 12px;background:var(--surface);
+  border:2px dashed rgba(124,111,247,.25);border-radius:var(--r);
+  padding:32px 20px;display:flex;flex-direction:column;align-items:center;gap:10px;cursor:pointer;
+  transition:all .2s;
+}
+.upload-zone:hover{border-color:var(--primary);background:var(--primary-light);}
+.mode-sel{display:flex;gap:6px;padding:0 16px;margin-bottom:10px;}
+.mode-btn{flex:1;padding:10px;border-radius:var(--r-sm);border:1.5px solid var(--border2);background:var(--surface2);color:var(--text-sub);font-size:12px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;text-align:center;transition:all .2s;}
+.mode-btn.on{border-color:var(--primary);color:var(--primary);background:var(--primary-light);}
+
+/* ━━━━━━━━━━━━━━━
+   분석 결과
+━━━━━━━━━━━━━━━ */
+.analysis-hero{background:linear-gradient(135deg,#3D1515,#5C1A1A);padding:20px 20px 24px;}
+.ans-stats{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:6px;margin-top:14px;}
+.ans-stat{background:rgba(255,255,255,.12);border-radius:10px;padding:10px 6px;text-align:center;}
+.ans-num{font-size:18px;font-weight:800;color:#fff;}
+.ans-lbl{font-size:9px;color:rgba(255,255,255,.65);margin-top:2px;}
+
+/* ━━━━━━━━━━━━━━━
+   훈련
+━━━━━━━━━━━━━━━ */
+.prob-card{margin:0 16px 10px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);overflow:hidden;}
+.prob-body{font-size:13px;color:var(--text-sub);line-height:1.7;padding:0 16px 12px;}
+.choice{
+  padding:12px 16px;background:var(--surface2);border-radius:var(--r-sm);
+  border:1.5px solid var(--border2);font-size:13px;font-weight:600;color:var(--text);
+  cursor:pointer;transition:all .2s;margin-bottom:8px;
+}
+.choice:last-child{margin-bottom:0;}
+.choice.sel{border-color:var(--primary);background:var(--primary-light);color:var(--primary);}
+.choice.ok{border-color:var(--green);background:var(--green-light);color:var(--green);}
+.choice.no{border-color:var(--accent);background:var(--accent-light);color:var(--accent);}
+
+/* 루프 결과 */
+.loop-result{
+  margin:0 16px 12px;border-radius:var(--r);padding:20px;text-align:center;
+}
+.loop-result.pass{background:linear-gradient(135deg,#064E3B,#065F46);}
+.loop-result.fail{background:linear-gradient(135deg,#7F1D1D,#991B1B);}
+.loop-emoji{font-size:48px;margin-bottom:12px;}
+.loop-title{font-size:20px;font-weight:900;color:#fff;margin-bottom:6px;}
+.loop-sub{font-size:13px;color:rgba(255,255,255,.7);line-height:1.6;}
+
+/* ━━━━━━━━━━━━━━━
+   학부모 홈
+━━━━━━━━━━━━━━━ */
+.p-hero{
+  background:linear-gradient(135deg,#064E3B,#065F46,#047857);
+  padding:20px 20px 24px;position:relative;overflow:hidden;
+}
+.p-hero::before{
+  content:'';position:absolute;top:-40px;right:-40px;width:180px;height:180px;
+  background:radial-gradient(circle,rgba(52,211,153,.25) 0%,transparent 70%);border-radius:50%;
+}
+
+/* 사이클 카드 */
+.cycle-step{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border-bottom:1px solid var(--border);}
+.cycle-step:last-child{border-bottom:none;}
+.cycle-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:800;color:#fff;flex-shrink:0;margin-top:1px;}
+.cycle-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px;}
+.cycle-txt{font-size:13px;color:var(--text);line-height:1.5;font-weight:500;}
+
+/* 학부모 액션 */
+.action-item{display:flex;gap:12px;align-items:flex-start;padding:12px 16px;border-bottom:1px solid var(--border);}
+.action-item:last-child{border-bottom:none;}
+.action-ic{font-size:20px;flex-shrink:0;margin-top:1px;}
+.action-title{font-size:13px;font-weight:700;color:var(--text);margin-bottom:2px;}
+.action-sub{font-size:12px;color:var(--text-sub);line-height:1.5;}
+
+/* ━━━━━━━━━━━━━━━
+   선생님 홈
+━━━━━━━━━━━━━━━ */
+.t-hero{
+  background:linear-gradient(135deg,#0C2D3A,#0E3D50,#0A4060);
+  padding:20px 20px 24px;position:relative;overflow:hidden;
+}
+.t-hero::before{
+  content:'';position:absolute;top:-40px;right:-40px;width:180px;height:180px;
+  background:radial-gradient(circle,rgba(6,182,212,.25) 0%,transparent 70%);border-radius:50%;
+}
+
+/* 학생 목록 */
+.student-row{display:flex;align-items:center;gap:12px;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;transition:background .15s;}
+.student-row:last-child{border-bottom:none;}
+.student-row:active{background:var(--surface2);}
+.stu-name{font-size:14px;font-weight:700;color:var(--text);}
+.stu-sub{font-size:11px;color:var(--text-sub);margin-top:2px;}
+.stu-pct{font-size:16px;font-weight:800;margin-left:auto;flex-shrink:0;}
+.stu-bar{width:60px;height:4px;background:var(--surface3);border-radius:99px;overflow:hidden;margin-top:4px;}
+.stu-bar-f{height:100%;border-radius:99px;}
+
+/* 위험 알림 */
+.danger-alert{
+  margin:0 16px 10px;background:var(--accent-light);
+  border:1px solid rgba(255,107,107,.2);border-radius:var(--r);
+  padding:14px 16px;display:flex;gap:12px;align-items:flex-start;
+}
+.da-icon{font-size:20px;flex-shrink:0;}
+.da-title{font-size:13px;font-weight:700;color:var(--accent);margin-bottom:3px;}
+.da-sub{font-size:12px;color:var(--text-sub);line-height:1.5;}
+
+/* ━━━━━━━━━━━━━━━
+   진도
+━━━━━━━━━━━━━━━ */
+.grade-tabs{display:flex;gap:5px;padding:0 16px 12px;overflow-x:auto;scrollbar-width:none;}
+.grade-tabs::-webkit-scrollbar{display:none;}
+.gtab{
+  padding:6px 14px;border-radius:20px;font-size:12px;font-weight:700;
+  cursor:pointer;white-space:nowrap;background:var(--surface);
+  color:var(--text-muted);border:1.5px solid var(--border2);transition:all .2s;
+}
+.gtab.on{background:var(--primary);color:#fff;border-color:var(--primary);}
+.unit-row{display:flex;align-items:center;gap:10px;padding:12px 16px;border-bottom:1px solid var(--border);cursor:pointer;}
+.unit-row:last-child{border-bottom:none;}
+.unit-ic{width:32px;height:32px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.unit-nm{font-size:13px;font-weight:700;color:var(--text);}
+.unit-sb{font-size:11px;color:var(--text-sub);margin-top:2px;}
+.unit-pct{font-size:14px;font-weight:800;margin-left:auto;flex-shrink:0;}
+.chain-warn{margin:0 16px 10px;background:var(--accent-light);border:1px solid rgba(255,107,107,.2);border-radius:var(--r);padding:14px;display:flex;gap:10px;}
+
+/* 설정 */
+.set-row{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border);}
+.set-row:last-child{border-bottom:none;}
+.set-lbl{font-size:14px;font-weight:600;color:var(--text);}
+.set-sub{font-size:11px;color:var(--text-sub);margin-top:2px;}
+.tog{width:44px;height:24px;border-radius:99px;background:var(--primary);position:relative;cursor:pointer;transition:background .2s;}
+.tog::after{content:'';position:absolute;width:20px;height:20px;border-radius:50%;background:#fff;top:2px;right:2px;transition:right .2s;box-shadow:0 2px 4px rgba(0,0,0,.3);}
+.tog.off{background:var(--surface3);}
+.tog.off::after{right:22px;}
+
+/* 코드 박스 */
+.code-box{
+  margin:12px 16px;background:var(--surface2);border-radius:var(--r);
+  border:2px dashed rgba(124,111,247,.25);padding:20px;text-align:center;
+}
+.code-val{font-size:28px;font-weight:900;color:var(--primary);letter-spacing:4px;margin:8px 0 14px;}
+
+/* 차트 */
+.chart{display:flex;align-items:flex-end;gap:8px;height:90px;padding-bottom:20px;position:relative;}
+.chart::after{content:'';position:absolute;bottom:20px;left:0;right:0;height:1px;background:var(--border);}
+.bw{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;height:100%;justify-content:flex-end;}
+.bw .bp{font-size:9px;font-weight:700;color:var(--text);}
+.bw .bb{width:100%;border-radius:5px 5px 0 0;position:relative;}
+.bw .bl{font-size:9px;color:var(--text-muted);position:absolute;bottom:-17px;left:50%;transform:translateX(-50%);white-space:nowrap;}
+</style>
+</head>
+<body>
+
+<!-- 상단 네비 -->
+<div class="top-nav">
+  <div class="nav-group">
+    <span class="nav-label">공통</span>
+    <button class="nb s" onclick="go('onboard')">온보딩</button>
+    <button class="nb s" onclick="go('login')">로그인</button>
+  </div>
+  <div class="nav-group">
+    <span class="nav-label">학생</span>
+    <button class="nb s" onclick="go('s-home')">홈</button>
+    <button class="nb s" onclick="go('upload')">업로드</button>
+    <button class="nb s" onclick="go('analysis')">분석</button>
+    <button class="nb s" onclick="go('practice')">훈련</button>
+    <button class="nb s" onclick="go('loop-result')">루프결과</button>
+    <button class="nb s" onclick="go('s-progress')">진도</button>
+    <button class="nb s" onclick="go('dashboard')">대시보드</button>
+  </div>
+  <div class="nav-group">
+    <span class="nav-label">학부모</span>
+    <button class="nb p" onclick="go('p-home')">홈</button>
+    <button class="nb p" onclick="go('p-report')">보고서</button>
+    <button class="nb p" onclick="go('p-progress')">진도</button>
+    <button class="nb p" onclick="go('p-growth')">성장</button>
+  </div>
+  <div class="nav-group">
+    <span class="nav-label">선생님</span>
+    <button class="nb t" onclick="go('t-home')">홈</button>
+    <button class="nb t" onclick="go('t-student')">학생상세</button>
+    <button class="nb t" onclick="go('t-progress')">반진도</button>
+  </div>
+  <div class="nav-group">
+    <span class="nav-label">공통</span>
+    <button class="nb s" onclick="go('settings')">설정</button>
+  </div>
+</div>
+
+<div class="phone">
+  <div class="notch" style="position:relative;">
+    <span class="n-time">9:41</span>
+    <span class="n-icons">● ● ●</span>
+  </div>
+
+  <!-- ① 온보딩 -->
+  <div class="sc on" id="onboard">
+    <div class="ob-wrap">
+      <div class="ob-slides" id="ob-slides">
+        <div class="ob-slide" style="background:linear-gradient(160deg,#09090F,#13132A);">
+          <div style="font-size:56px;font-weight:900;color:#fff;letter-spacing:-3px;margin-bottom:8px;">우열</div>
+          <div style="font-size:13px;color:rgba(255,255,255,.4);margin-bottom:32px;letter-spacing:2px;">優劣</div>
+          <div class="ob-title">우리엄마가 나 가르치다<br>열받아서 만든 앱</div>
+          <div class="ob-sub">틀린 문제를 완전히 이해할 때까지.<br>그 성장을 부모님이 데이터로 확인해요.</div>
+          <button class="ob-next" onclick="go('login')">시작하기</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ② 로그인/가입 -->
+  <div class="sc" id="login">
+    <div class="inner">
+      <div class="login-hero">
+        <div class="login-logo" style="font-size:44px;font-weight:900;color:var(--text);letter-spacing:-3px;">우열</div><div style="font-size:12px;color:var(--text-muted);letter-spacing:3px;margin-top:2px;">優劣</div>
+        <div style="font-size:11px;color:var(--text-muted);margin-top:4px;">優劣 · 우리엄마가 나 가르치다 열받아서 만든 앱</div>
+      </div>
+
+      <div class="slabel">나는 누구인가요?</div>
+      <div class="type-grid">
+        <div class="type-btn as" id="t-s" onclick="setType('s')">
+          <span class="type-ic">🎒</span>학생
+        </div>
+        <div class="type-btn" id="t-p" onclick="setType('p')">
+          <span class="type-ic">👨‍👩‍👧</span>학부모
+        </div>
+        <div class="type-btn" id="t-t" onclick="setType('t')">
+          <span class="type-ic">👩‍🏫</span>선생님
+        </div>
+      </div>
+
+      <!-- 학생 필드 -->
+      <div id="f-s">
+        <div class="igroup"><div class="ilabel">이름</div><input class="ifield" value="김민준"></div>
+        <div class="igroup">
+          <div class="ilabel">학년</div>
+          <select class="ifield" style="appearance:none;-webkit-appearance:none;cursor:pointer;">
+            <optgroup label="초등학교">
+              <option>초1</option>
+              <option>초2</option>
+              <option>초3</option>
+              <option>초4</option>
+              <option>초5</option>
+              <option>초6</option>
+            </optgroup>
+            <optgroup label="중학교">
+              <option>중1</option>
+              <option>중2</option>
+              <option>중3</option>
+            </optgroup>
+            <optgroup label="고등학교">
+              <option>고1</option>
+              <option>고2</option>
+              <option>고3</option>
+            </optgroup>
+          </select>
+        </div>
+        <div class="igroup"><div class="ilabel">아이디</div><input class="ifield" value="minjun2025"></div>
+        <div class="igroup"><div class="ilabel">비밀번호</div><input class="ifield" type="password" value="••••••••"></div>
+      </div>
+
+      <!-- 학부모 필드 -->
+      <div id="f-p" style="display:none;">
+        <div class="igroup"><div class="ilabel">이름</div><input class="ifield" value="김선현"></div>
+        <div class="igroup"><div class="ilabel">자녀 연결 코드</div><input class="ifield" placeholder="예) 우열-3947" value="우열-3947"></div>
+        <div class="hint-box"><p>✅ 이름 + 자녀 코드만 입력하면 끝!<br>가입 후 앱을 켜면 항상 자동 로그인돼요.</p></div>
+      </div>
+
+      <!-- 선생님 필드 -->
+      <div id="f-t" style="display:none;">
+        <div class="igroup"><div class="ilabel">이름</div><input class="ifield" value="박선생님"></div>
+        <div class="igroup"><div class="ilabel">학원명</div><input class="ifield" value="스마트수학학원"></div>
+        <div class="igroup"><div class="ilabel">아이디</div><input class="ifield" value="teacher01"></div>
+        <div class="igroup"><div class="ilabel">비밀번호</div><input class="ifield" type="password" value="••••••••"></div>
+        <div class="hint-box" style="background:var(--teacher-light);border-color:rgba(6,182,212,.2);">
+          <p style="color:var(--teacher);">📋 가입 후 학생 코드를 등록하면<br>반 전체 학습 데이터를 볼 수 있어요.</p>
+        </div>
+      </div>
+
+      <div style="height:8px;"></div>
+      <button class="pbtn" onclick="loginGo()">가입하기 / 로그인</button>
+      <div style="height:20px;"></div>
+    </div>
+  </div>
+
+  <!-- ③ 학생 홈 -->
+  <div class="sc" id="s-home">
+    <div class="inner">
+      <div class="s-hero">
+        <div class="s-hero-greeting">안녕하세요 👋</div>
+        <div class="s-hero-name">김민준</div>
+        <div class="stat-grid">
+          <div class="stat-box"><div class="stat-num">67%</div><div class="stat-lbl">정답률</div><div class="stat-chg">↑ +12%</div></div>
+          <div class="stat-box"><div class="stat-num">24</div><div class="stat-lbl">푼 문제</div><div class="stat-chg">↑ +8개</div></div>
+          <div class="stat-box"><div class="stat-num">4주</div><div class="stat-lbl">연속 학습</div><div class="stat-chg">🔥 유지중</div></div>
+        </div>
+      </div>
+
+      <!-- 틀린 문제 업로드 -->
+      <div class="slabel">틀린 문제 올리기</div>
+      <div onclick="go('upload')" style="margin:0 16px 12px;background:var(--surface);border-radius:var(--r);border:1.5px dashed rgba(124,111,247,.3);padding:18px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all .2s;">
+        <div style="width:44px;height:44px;border-radius:12px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;flex-shrink:0;">
+          <div style="font-size:11px;font-weight:800;color:var(--primary);text-align:center;line-height:1.2;">사진<br>업로드</div>
+        </div>
+        <div style="flex:1;">
+          <div style="font-size:14px;font-weight:800;color:var(--text);margin-bottom:3px;">틀린 문제 사진 찍기</div>
+          <div style="font-size:12px;color:var(--text-sub);">AI가 왜 틀렸는지 분석해드려요</div>
+        </div>
+        <div style="font-size:16px;color:var(--primary);font-weight:700;">›</div>
+      </div>
+
+      <!-- 오늘의 미션 -->
+      <div class="slabel">오늘의 미션</div>
+      <div class="mission-card" onclick="go('practice')">
+        <div class="mission-label">🎯 지금 바로 도전!</div>
+        <div class="mission-title">절댓값 부등식<br>유사문제 3개 남았어요</div>
+        <button class="mission-btn">지금 풀기 →</button>
+      </div>
+
+      <!-- 약점 개념 -->
+      <div class="slabel">지금 약한 개념</div>
+      <div class="card">
+        <div class="crow">
+          <div style="font-size:18px;">🔴</div>
+          <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--text);">절댓값 부등식 해석</div><div style="font-size:11px;color:var(--text-sub);margin-top:2px;">오답 7회 · 집중 필요</div></div>
+          <div class="tag" style="background:var(--accent-light);color:var(--accent);">취약</div>
+        </div>
+        <div class="crow">
+          <div style="font-size:18px;">🟡</div>
+          <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--text);">약수의 개수 공식</div><div style="font-size:11px;color:var(--text-sub);margin-top:2px;">오답 5회 · 연습 필요</div></div>
+          <div class="tag" style="background:var(--yellow-light);color:var(--yellow);">보통</div>
+        </div>
+        <div class="crow">
+          <div style="font-size:18px;">🟢</div>
+          <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--text);">소인수분해</div><div style="font-size:11px;color:var(--text-sub);margin-top:2px;">정답률 90% · 완료!</div></div>
+          <div class="tag" style="background:var(--green-light);color:var(--green);">완료</div>
+        </div>
+      </div>
+
+      <!-- 연결 코드 -->
+      <div class="slabel">연결 코드</div>
+      <div style="margin:0 16px 12px;background:var(--surface);border-radius:var(--r);border:1.5px dashed rgba(124,111,247,.25);padding:14px;display:flex;align-items:center;gap:12px;">
+        <div style="flex:1;">
+          <div style="font-size:11px;color:var(--text-sub);margin-bottom:4px;">부모님 · 선생님께 이 코드를 알려주세요</div>
+          <div style="font-size:24px;font-weight:900;color:var(--primary);letter-spacing:3px;">우열-3947</div>
+        </div>
+        <button onclick="copyCode()" id="copy-btn" style="background:var(--primary-light);border:1px solid rgba(124,111,247,.3);border-radius:10px;padding:10px 14px;color:var(--primary);font-size:12px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;flex-shrink:0;">복사</button>
+      </div>
+    </div>
+    <div class="bnav">
+      <div class="bi on" onclick="go('s-home')"><div class="bi-ic" style="font-size:16px;font-weight:800;color:inherit;">홈</div><div class="bi-lb">홈</div></div>
+      <div class="bi" onclick="go('upload')"><div class="bi-ic" style="font-size:14px;font-weight:800;">촬영</div><div class="bi-lb">업로드</div></div>
+      <div class="bi" onclick="go('practice')"><div class="bi-ic" style="font-size:14px;font-weight:800;">훈련</div><div class="bi-lb">훈련</div></div>
+      <div class="bi" onclick="go('s-progress')"><div class="bi-ic" style="font-size:14px;font-weight:800;">진도</div><div class="bi-lb">진도</div></div>
+      <div class="bi" onclick="go('settings')"><div class="bi-ic" style="font-size:14px;font-weight:800;">설정</div><div class="bi-lb">설정</div></div>
+    </div>
+  </div>
+
+  <!-- ④ 업로드 -->
+  <div class="sc" id="upload">
+    <div class="inner">
+      <div style="padding:16px 20px 8px;display:flex;align-items:center;gap:12px;">
+        <div style="font-size:20px;cursor:pointer;" onclick="go('s-home')">←</div>
+        <div><div style="font-size:18px;font-weight:800;color:var(--text);">문제지 업로드</div><div style="font-size:12px;color:var(--text-sub);">AI가 왜 틀렸는지 분석해드려요</div></div>
+      </div>
+
+      <div class="slabel">사진 업로드</div>
+      <div class="upload-zone" onclick="go('analysis')">
+        <div style="font-size:40px;">📷</div>
+        <div style="font-size:16px;font-weight:700;color:var(--text);">사진 촬영 또는 앨범 선택</div>
+        <div style="font-size:12px;color:var(--text-sub);text-align:center;">JPG/PNG · 최대 10장<br>풀이 과정이 보이도록 찍어주세요</div>
+        <div style="display:flex;gap:8px;margin-top:4px;">
+          <div class="pill" style="background:var(--primary-light);color:var(--primary);">📸 카메라</div>
+          <div class="pill" style="background:var(--primary-light);color:var(--primary);">🖼️ 앨범</div>
+        </div>
+      </div>
+
+      <div class="slabel">인식된 문제</div>
+      <div class="card">
+        <div style="background:var(--primary);padding:10px 14px;display:flex;justify-content:space-between;">
+          <span style="color:#fff;font-size:13px;font-weight:700;">📄 풀이사진_0523.jpg</span>
+          <span style="color:rgba(255,255,255,.8);font-size:11px;">✓ 인식 완료</span>
+        </div>
+        <div class="crow">
+          <div style="width:22px;height:22px;border-radius:50%;background:var(--primary-light);color:var(--primary);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">24</div>
+          <div style="flex:1;font-size:12px;color:var(--text);">0이 아닌 두 정수 a, b가 조건을 만족할 때...</div>
+          <div class="tag" style="background:var(--accent-light);color:var(--accent);">오답</div>
+        </div>
+        <div class="crow">
+          <div style="width:22px;height:22px;border-radius:50%;background:var(--primary-light);color:var(--primary);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;">25</div>
+          <div style="flex:1;font-size:12px;color:var(--text);">정육면체의 전개도에서...</div>
+          <div class="tag" style="background:var(--green-light);color:var(--green);">정답</div>
+        </div>
+      </div>
+
+      <div style="height:8px;"></div>
+      <button class="pbtn" onclick="go('analysis')">🤖 AI 오답 분석 시작</button>
+      <div style="height:16px;"></div>
+    </div>
+    <div class="bnav">
+      <div class="bi" onclick="go('s-home')"><div class="bi-ic" style="font-size:16px;font-weight:800;color:inherit;">홈</div><div class="bi-lb">홈</div></div>
+      <div class="bi on" onclick="go('upload')"><div class="bi-ic" style="font-size:14px;font-weight:800;">촬영</div><div class="bi-lb">업로드</div></div>
+      <div class="bi" onclick="go('practice')"><div class="bi-ic" style="font-size:14px;font-weight:800;">훈련</div><div class="bi-lb">훈련</div></div>
+      <div class="bi" onclick="go('s-progress')"><div class="bi-ic" style="font-size:14px;font-weight:800;">진도</div><div class="bi-lb">진도</div></div>
+      <div class="bi" onclick="go('settings')"><div class="bi-ic" style="font-size:14px;font-weight:800;">설정</div><div class="bi-lb">설정</div></div>
+    </div>
+  </div>
+
+  <!-- ⑤ AI 분석 결과 -->
+  <div class="sc" id="analysis">
+    <div class="inner">
+      <div class="analysis-hero">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px;">
+          <div style="cursor:pointer;color:rgba(255,255,255,.7);" onclick="go('upload')">←</div>
+          <div style="font-size:16px;font-weight:800;color:#fff;">AI 풀이 분석</div>
+          <div class="pill" style="background:rgba(255,255,255,.15);color:#fff;margin-left:auto;">신뢰도 97%</div>
+        </div>
+        <div style="font-size:19px;font-weight:800;color:#fff;">김민준 · 24번 문제</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.6);margin-top:2px;margin-bottom:14px;">2026.05.23 · 중1 · 절댓값 부등식</div>
+        <div class="ans-stats">
+          <div class="ans-stat"><div class="ans-num">8</div><div class="ans-lbl">총 문제</div></div>
+          <div class="ans-stat"><div class="ans-num">5</div><div class="ans-lbl">오답</div></div>
+          <div class="ans-stat"><div class="ans-num">3</div><div class="ans-lbl">정답</div></div>
+          <div class="ans-stat"><div class="ans-num">37%</div><div class="ans-lbl">정답률</div></div>
+        </div>
+      </div>
+
+      <div class="slabel">학생 답안 vs 정답</div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:0 16px;margin-bottom:12px;">
+        <div style="background:var(--accent-light);border-radius:var(--r);padding:14px;text-align:center;border:1px solid rgba(255,107,107,.2);">
+          <div style="font-size:11px;color:var(--accent);font-weight:700;margin-bottom:4px;">학생 답안</div>
+          <div style="font-size:28px;font-weight:900;color:var(--accent);">17</div>
+        </div>
+        <div style="background:var(--green-light);border-radius:var(--r);padding:14px;text-align:center;border:1px solid rgba(52,211,153,.2);">
+          <div style="font-size:11px;color:var(--green);font-weight:700;margin-bottom:4px;">정답</div>
+          <div style="font-size:28px;font-weight:900;color:var(--green);">10</div>
+        </div>
+      </div>
+
+      <div class="slabel">왜 틀렸나요?</div>
+      <div class="card" style="padding:14px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+          <div style="font-size:14px;font-weight:700;color:var(--text);">🔴 개념 오류</div>
+          <div class="tag" style="background:var(--accent-light);color:var(--accent);">핵심 원인</div>
+        </div>
+        <div style="font-size:13px;color:var(--text-sub);line-height:1.6;">학생은 소수를 나열하는 방식으로 접근했으나, 이 문제는 <strong style="color:var(--text);">약수의 개수 조건</strong>을 이용해야 합니다. |b| > b에서 b < 0임을 먼저 파악해야 해요.</div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:10px;">
+          <span class="pill" style="background:var(--accent-light);color:var(--accent);">절댓값 부등식</span>
+          <span class="pill" style="background:var(--accent-light);color:var(--accent);">약수의 개수</span>
+          <span class="pill" style="background:var(--accent-light);color:var(--accent);">음수/양수 판별</span>
+        </div>
+      </div>
+
+      <div style="height:8px;"></div>
+      <button class="pbtn" onclick="go('practice')">✏️ 유사문제 5개 풀기</button>
+      <button class="sbtn" onclick="go('practice')">📄 PDF로 받아서 풀기</button>
+      <div style="height:16px;"></div>
+    </div>
+    <div class="bnav">
+      <div class="bi" onclick="go('s-home')"><div class="bi-ic" style="font-size:16px;font-weight:800;color:inherit;">홈</div><div class="bi-lb">홈</div></div>
+      <div class="bi on" onclick="go('upload')"><div class="bi-ic" style="font-size:14px;font-weight:800;">촬영</div><div class="bi-lb">업로드</div></div>
+      <div class="bi" onclick="go('practice')"><div class="bi-ic" style="font-size:14px;font-weight:800;">훈련</div><div class="bi-lb">훈련</div></div>
+      <div class="bi" onclick="go('s-progress')"><div class="bi-ic" style="font-size:14px;font-weight:800;">진도</div><div class="bi-lb">진도</div></div>
+      <div class="bi" onclick="go('settings')"><div class="bi-ic" style="font-size:14px;font-weight:800;">설정</div><div class="bi-lb">설정</div></div>
+    </div>
+  </div>
+
+  <!-- ⑥ 유사문제 훈련 -->
+  <div class="sc" id="practice">
+    <div class="inner">
+      <div style="padding:16px 20px 8px;display:flex;align-items:center;justify-content:space-between;">
+        <div style="display:flex;align-items:center;gap:12px;">
+          <div style="cursor:pointer;" onclick="go('analysis')">←</div>
+          <div><div style="font-size:18px;font-weight:800;color:var(--text);">유사문제 훈련</div><div style="font-size:12px;color:var(--text-sub);">절댓값 조건과 약수의 개수</div></div>
+        </div>
+        <div class="pill" style="background:var(--primary-light);color:var(--primary);">1 / 5</div>
+      </div>
+
+      <div style="padding:0 16px;margin-bottom:12px;">
+        <div class="pbar"><div class="pbar-f" style="width:20%;background:var(--primary);"></div></div>
+      </div>
+
+      <div class="prob-card">
+        <div style="padding:12px 16px 0;">
+          <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
+            <span class="pill" style="background:var(--surface2);color:var(--text-sub);">문제 1</span>
+            <span class="pill" style="background:var(--yellow-light);color:var(--yellow);">easy</span>
+            <span class="pill" style="background:var(--primary-light);color:var(--primary);">절댓값</span>
+          </div>
+          <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:8px;">부호 판단과 약수 개수 1</div>
+        </div>
+        <div class="prob-body">
+          0이 아닌 두 정수 a, b가 다음 조건을 만족한다.<br>
+          (가) |a| ≤ a, |b| > b<br>
+          (나) a ≤ 40, 1 ≤ |b| ≤ 2<br>
+          (다) |a|의 약수의 개수는 (3 − b)이다.<br>
+          가능한 정수 a는 모두 몇 개인가?
+        </div>
+        <div style="padding:0 16px 14px;">
+          <div class="choice" onclick="sel(this)">1. 13개</div>
+          <div class="choice sel" onclick="sel(this)">2. 14개</div>
+          <div class="choice" onclick="sel(this)">3. 15개</div>
+          <div class="choice" onclick="sel(this)">4. 16개</div>
+          <div class="choice" onclick="sel(this)">5. 17개</div>
+          <button style="width:100%;background:var(--primary);border:none;border-radius:var(--r-sm);padding:13px;color:#fff;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-top:10px;" onclick="go('loop-result')">답안 제출</button>
+        </div>
+      </div>
+    </div>
+    <div class="bnav">
+      <div class="bi" onclick="go('s-home')"><div class="bi-ic" style="font-size:16px;font-weight:800;color:inherit;">홈</div><div class="bi-lb">홈</div></div>
+      <div class="bi" onclick="go('upload')"><div class="bi-ic" style="font-size:14px;font-weight:800;">촬영</div><div class="bi-lb">업로드</div></div>
+      <div class="bi on" onclick="go('practice')"><div class="bi-ic" style="font-size:14px;font-weight:800;">훈련</div><div class="bi-lb">훈련</div></div>
+      <div class="bi" onclick="go('s-progress')"><div class="bi-ic" style="font-size:14px;font-weight:800;">진도</div><div class="bi-lb">진도</div></div>
+      <div class="bi" onclick="go('settings')"><div class="bi-ic" style="font-size:14px;font-weight:800;">설정</div><div class="bi-lb">설정</div></div>
+    </div>
+  </div>
+
+  <!-- ⑦ 루프 결과 -->
+  <div class="sc" id="loop-result">
+    <div class="inner" style="display:flex;flex-direction:column;justify-content:center;padding:20px 16px;">
+
+      <!-- 틀렸을 때 -->
+      <div class="loop-result fail">
+        <div class="loop-emoji">😤</div>
+        <div class="loop-title">3/5 맞았어요!</div>
+        <div class="loop-sub">아직 2개가 틀렸어요.<br>조금만 더 하면 완전히 이해할 수 있어요!</div>
+      </div>
+
+      <div style="margin-bottom:12px;">
+        <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:8px;padding:0 4px;">틀린 문제 원인</div>
+        <div class="card" style="margin:0 0 0 0;">
+          <div class="crow">
+            <div style="font-size:18px;">❌</div>
+            <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--text);">문제 2번</div><div style="font-size:11px;color:var(--text-sub);">약수의 개수 공식 적용 오류</div></div>
+          </div>
+          <div class="crow">
+            <div style="font-size:18px;">❌</div>
+            <div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--text);">문제 4번</div><div style="font-size:11px;color:var(--text-sub);">음수 범위 계산 실수</div></div>
+          </div>
+        </div>
+      </div>
+
+      <button class="pbtn" style="margin:0 0 10px;" onclick="go('practice')">🔁 다시 도전하기</button>
+      <button class="sbtn" style="margin:0;" onclick="go('s-home')">나중에 하기</button>
+
+      <div style="margin-top:16px;background:var(--green-light);border-radius:var(--r);padding:14px;border:1px solid rgba(52,211,153,.2);">
+        <div style="font-size:12px;color:var(--green);font-weight:700;margin-bottom:4px;">📈 성장 중이에요!</div>
+        <div style="font-size:12px;color:var(--text-sub);line-height:1.5;">지난주 정답률 55% → 이번 주 67%<br>포기하지 않으면 반드시 올라요!</div>
+      </div>
+    </div>
+    <div class="bnav">
+      <div class="bi" onclick="go('s-home')"><div class="bi-ic" style="font-size:16px;font-weight:800;color:inherit;">홈</div><div class="bi-lb">홈</div></div>
+      <div class="bi" onclick="go('upload')"><div class="bi-ic" style="font-size:14px;font-weight:800;">촬영</div><div class="bi-lb">업로드</div></div>
+      <div class="bi on" onclick="go('practice')"><div class="bi-ic" style="font-size:14px;font-weight:800;">훈련</div><div class="bi-lb">훈련</div></div>
+      <div class="bi" onclick="go('s-progress')"><div class="bi-ic" style="font-size:14px;font-weight:800;">진도</div><div class="bi-lb">진도</div></div>
+      <div class="bi" onclick="go('settings')"><div class="bi-ic" style="font-size:14px;font-weight:800;">설정</div><div class="bi-lb">설정</div></div>
+    </div>
+  </div>
+
+  <!-- ⑧ 학생 진도 -->
+  <div class="sc" id="s-progress">
+    <div class="inner">
+      <div style="padding:16px 20px 8px;"><div style="font-size:18px;font-weight:800;color:var(--text);">내 진도 현황</div><div style="font-size:12px;color:var(--text-sub);margin-top:2px;">2022 개정 교육과정 · 중1</div></div>
+      <div class="grade-tabs" id="sp-tabs">
+        <div class="gtab" onclick="spGrade('sp-e1',this)">초1~2</div>
+        <div class="gtab" onclick="spGrade('sp-e2',this)">초3~4</div>
+        <div class="gtab" onclick="spGrade('sp-e3',this)">초5~6</div>
+        <div class="gtab on" onclick="spGrade('sp-g1',this)">중1</div>
+        <div class="gtab" onclick="spGrade('sp-g2',this)">중2</div>
+        <div class="gtab" onclick="spGrade('sp-g3',this)">중3</div>
+        <div class="gtab" onclick="spGrade('sp-h1',this)">고1</div>
+        <div class="gtab" onclick="spGrade('sp-h2',this)">고2</div>
+        <div class="gtab" onclick="spGrade('sp-h3',this)">고3</div>
+      </div>
+      <div id="sp-e1" style="display:none;"><div style="margin:16px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:24px;text-align:center;"><div style="font-size:32px;margin-bottom:8px;">📖</div><div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">초1~2학년</div><div style="font-size:12px;color:var(--text-sub);">수와 연산·도형·측정·규칙성 기초</div></div></div>
+      <div id="sp-e2" style="display:none;"><div style="margin:16px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:24px;text-align:center;"><div style="font-size:32px;margin-bottom:8px;">📖</div><div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">초3~4학년</div><div style="font-size:12px;color:var(--text-sub);">분수·소수·곱셈·나눗셈·평면도형</div></div></div>
+      <div id="sp-e3" style="display:none;"><div style="margin:16px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:24px;text-align:center;"><div style="font-size:32px;margin-bottom:8px;">📖</div><div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">초5~6학년</div><div style="font-size:12px;color:var(--text-sub);">분수·소수 연산·비와 비율·입체도형</div></div></div>
+      <div id="sp-g1">
+        <div class="slabel">Ⅰ 수와 연산</div>
+        <div class="card">
+          <div class="unit-row" onclick="openUnit('① 소인수분해','소수·합성수·최대공약수','done','90%')"><div class="unit-ic" style="background:var(--green-light);">✅</div><div><div class="unit-nm">① 소인수분해</div><div class="unit-sb">소수·합성수·최대공약수</div></div><div class="unit-pct" style="color:var(--green);">90%</div></div>
+          <div class="unit-row" onclick="openUnit('② 정수와 유리수','양수·음수·절댓값','done','85%')"><div class="unit-ic" style="background:var(--green-light);">✅</div><div><div class="unit-nm">② 정수와 유리수</div><div class="unit-sb">양수·음수·절댓값</div></div><div class="unit-pct" style="color:var(--green);">85%</div></div>
+        </div>
+        <div class="slabel">Ⅱ 문자와 식</div>
+        <div class="card">
+          <div class="unit-row" onclick="openUnit('③ 문자의 사용과 식','문자 사용·일차식 계산','learning','70%')"><div class="unit-ic" style="background:var(--yellow-light);">🔄</div><div><div class="unit-nm">③ 문자의 사용과 식</div><div class="unit-sb">문자 사용·일차식 계산</div></div><div class="unit-pct" style="color:var(--yellow);">70%</div></div>
+          <div class="unit-row" onclick="openUnit('④ 일차방정식','방정식 풀이·활용','weak','40%')"><div class="unit-ic" style="background:var(--accent-light);">🔴</div><div><div class="unit-nm">④ 일차방정식</div><div class="unit-sb">방정식 풀이·활용</div></div><div class="unit-pct" style="color:var(--accent);">40%</div></div>
+        </div>
+        <div class="slabel">Ⅲ~Ⅴ (예정)</div>
+        <div class="card">
+          <div class="unit-row" onclick="openUnit('⑤ 좌표평면과 그래프','순서쌍·좌표평면','none','')"><div class="unit-ic" style="background:var(--surface3);">⬜</div><div><div class="unit-nm">⑤ 좌표평면과 그래프</div><div class="unit-sb">순서쌍·좌표평면</div></div><div class="unit-pct" style="color:var(--text-muted);">-</div></div>
+          <div class="unit-row" onclick="openUnit('⑥ 정비례와 반비례','비례 관계·그래프','none','')"><div class="unit-ic" style="background:var(--surface3);">⬜</div><div><div class="unit-nm">⑥ 정비례와 반비례</div><div class="unit-sb">비례 관계·그래프</div></div><div class="unit-pct" style="color:var(--text-muted);">-</div></div>
+          <div class="unit-row" onclick="openUnit('⑦ 기본 도형','점·선·면·각','none','')"><div class="unit-ic" style="background:var(--surface3);">⬜</div><div><div class="unit-nm">⑦ 기본 도형</div><div class="unit-sb">점·선·면·각</div></div><div class="unit-pct" style="color:var(--text-muted);">-</div></div>
+          <div class="unit-row" onclick="openUnit('⑧ 작도와 합동','삼각형 작도','none','')"><div class="unit-ic" style="background:var(--surface3);">⬜</div><div><div class="unit-nm">⑧ 작도와 합동</div><div class="unit-sb">삼각형 작도</div></div><div class="unit-pct" style="color:var(--text-muted);">-</div></div>
+          <div class="unit-row" onclick="openUnit('⑨ 평면도형의 성질','다각형·원','none','')"><div class="unit-ic" style="background:var(--surface3);">⬜</div><div><div class="unit-nm">⑨ 평면도형의 성질</div><div class="unit-sb">다각형·원</div></div><div class="unit-pct" style="color:var(--text-muted);">-</div></div>
+          <div class="unit-row" onclick="openUnit('⑩ 입체도형의 성질','다면체·회전체','none','')"><div class="unit-ic" style="background:var(--surface3);">⬜</div><div><div class="unit-nm">⑩ 입체도형의 성질</div><div class="unit-sb">다면체·회전체</div></div><div class="unit-pct" style="color:var(--text-muted);">-</div></div>
+        </div>
+      </div>
+      <div id="sp-g2" style="display:none;"><div style="margin:16px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:24px;text-align:center;"><div style="font-size:32px;margin-bottom:8px;">📖</div><div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">중1 완료 후 시작!</div><div style="font-size:12px;color:var(--text-sub);">연립방정식·일차함수·도형 학습 예정</div></div></div>
+      <div id="sp-g3" style="display:none;"><div style="margin:16px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:24px;text-align:center;"><div style="font-size:32px;margin-bottom:8px;">📖</div><div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">중2 완료 후 시작!</div><div style="font-size:12px;color:var(--text-sub);">제곱근·이차방정식·삼각비 학습 예정</div></div></div>
+      <div id="sp-h1" style="display:none;"><div style="margin:16px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:24px;text-align:center;"><div style="font-size:32px;margin-bottom:8px;">🏫</div><div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">중3 완료 후 시작!</div><div style="font-size:12px;color:var(--text-sub);">공통수학Ⅰ·Ⅱ (행렬 포함)</div></div></div>
+      <div id="sp-h2" style="display:none;"><div style="margin:16px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:24px;text-align:center;"><div style="font-size:32px;margin-bottom:8px;">📐</div><div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">고1 완료 후 시작!</div><div style="font-size:12px;color:var(--text-sub);">수학Ⅰ·Ⅱ 미적분 기초</div></div></div>
+      <div id="sp-h3" style="display:none;"><div style="margin:16px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:24px;text-align:center;"><div style="font-size:32px;margin-bottom:8px;">🎓</div><div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">고2 완료 후 시작!</div><div style="font-size:12px;color:var(--text-sub);">확률통계·미적분·기하</div></div></div>
+    </div>
+    <div class="bnav">
+      <div class="bi" onclick="go('s-home')"><div class="bi-ic" style="font-size:16px;font-weight:800;color:inherit;">홈</div><div class="bi-lb">홈</div></div>
+      <div class="bi" onclick="go('upload')"><div class="bi-ic" style="font-size:14px;font-weight:800;">촬영</div><div class="bi-lb">업로드</div></div>
+      <div class="bi" onclick="go('practice')"><div class="bi-ic" style="font-size:14px;font-weight:800;">훈련</div><div class="bi-lb">훈련</div></div>
+      <div class="bi on" onclick="go('s-progress')"><div class="bi-ic" style="font-size:14px;font-weight:800;">진도</div><div class="bi-lb">진도</div></div>
+      <div class="bi" onclick="go('settings')"><div class="bi-ic" style="font-size:14px;font-weight:800;">설정</div><div class="bi-lb">설정</div></div>
+    </div>
+  </div>
+
+  <!-- ⑨ 학생 대시보드 -->
+  <div class="sc" id="dashboard">
+    <div class="inner">
+      <div style="background:linear-gradient(135deg,#13132A,#0D1F4A);padding:20px 20px 24px;">
+        <div style="font-size:13px;color:rgba(255,255,255,.55);margin-bottom:3px;">나의 학습 현황</div>
+        <div style="font-size:20px;font-weight:800;color:#fff;margin-bottom:16px;">사용자 수준 피드백</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;">
+          <div class="stat-box"><div class="stat-num">67%</div><div class="stat-lbl">이번 주 정답률</div><div class="stat-chg">↑ +12%</div></div>
+          <div class="stat-box"><div class="stat-num">24개</div><div class="stat-lbl">총 푼 문제</div><div class="stat-chg">이번 주 +8개</div></div>
+          <div class="stat-box"><div class="stat-num">기초</div><div class="stat-lbl">현재 수준</div><div class="stat-chg" style="color:var(--yellow);">재점검 필요</div></div>
+          <div class="stat-box"><div class="stat-num">4주</div><div class="stat-lbl">연속 학습</div><div class="stat-chg">🔥 Keep going!</div></div>
+        </div>
+      </div>
+      <div class="slabel">4주 정답률 추이</div>
+      <div class="card" style="padding:14px;">
+        <div class="chart">
+          <div class="bw"><div class="bp">45%</div><div class="bb" style="height:45%;background:linear-gradient(180deg,#FF6B6B,#FB923C)"><span class="bl">1주</span></div></div>
+          <div class="bw"><div class="bp">52%</div><div class="bb" style="height:52%;background:linear-gradient(180deg,#FB923C,#FBBF24)"><span class="bl">2주</span></div></div>
+          <div class="bw"><div class="bp">61%</div><div class="bb" style="height:61%;background:linear-gradient(180deg,#FBBF24,#34D399)"><span class="bl">3주</span></div></div>
+          <div class="bw"><div class="bp">67%</div><div class="bb" style="height:67%;background:linear-gradient(180deg,#34D399,#7C6FF7)"><span class="bl">4주</span></div></div>
+        </div>
+      </div>
+      <div class="slabel">약점 개념</div>
+      <div class="card">
+        <div class="crow"><div style="flex:1;font-size:13px;font-weight:600;color:var(--text);">절댓값 부등식 해석</div><div style="font-size:12px;color:var(--accent);font-weight:700;">오답 7</div></div>
+        <div class="crow"><div style="flex:1;font-size:13px;font-weight:600;color:var(--text);">약수의 개수 공식</div><div style="font-size:12px;color:var(--orange);font-weight:700;">오답 5</div></div>
+        <div class="crow"><div style="flex:1;font-size:13px;font-weight:600;color:var(--text);">음수/양수 판별</div><div style="font-size:12px;color:var(--yellow);font-weight:700;">오답 3</div></div>
+      </div>
+    </div>
+    <div class="bnav">
+      <div class="bi" onclick="go('s-home')"><div class="bi-ic" style="font-size:16px;font-weight:800;color:inherit;">홈</div><div class="bi-lb">홈</div></div>
+      <div class="bi" onclick="go('upload')"><div class="bi-ic" style="font-size:14px;font-weight:800;">촬영</div><div class="bi-lb">업로드</div></div>
+      <div class="bi" onclick="go('practice')"><div class="bi-ic" style="font-size:14px;font-weight:800;">훈련</div><div class="bi-lb">훈련</div></div>
+      <div class="bi" onclick="go('s-progress')"><div class="bi-ic" style="font-size:14px;font-weight:800;">진도</div><div class="bi-lb">진도</div></div>
+      <div class="bi on" onclick="go('dashboard')"><div class="bi-ic" style="font-size:14px;font-weight:800;">현황</div><div class="bi-lb">대시보드</div></div>
+    </div>
+  </div>
+
+  <!-- ⑩ 학부모 홈 -->
+  <div class="sc" id="p-home">
+    <div class="inner">
+      <div class="p-hero">
+        <div style="font-size:13px;color:rgba(255,255,255,.55);position:relative;z-index:1;">안녕하세요 👋</div>
+        <div style="font-size:22px;font-weight:800;color:#fff;margin:2px 0 16px;position:relative;z-index:1;">김민준 어머니</div>
+        <div class="stat-grid" style="position:relative;z-index:1;">
+          <div class="stat-box"><div class="stat-num">67%</div><div class="stat-lbl">이번 주 정답률</div><div class="stat-chg">↑ +12%</div></div>
+          <div class="stat-box"><div class="stat-num">24</div><div class="stat-lbl">푼 문제</div><div class="stat-chg">↑ +8개</div></div>
+          <div class="stat-box"><div class="stat-num">4주</div><div class="stat-lbl">연속 학습</div><div class="stat-chg">🔥 유지중</div></div>
+        </div>
+      </div>
+
+      <div class="slabel">이번 주 요약</div>
+      <div style="margin:0 16px 12px;background:linear-gradient(135deg,var(--primary),var(--primary-d));border-radius:var(--r);padding:16px;position:relative;overflow:hidden;box-shadow:0 8px 24px rgba(124,111,247,.25);">
+        <div style="font-size:12px;color:rgba(255,255,255,.7);margin-bottom:4px;">5월 2주차</div>
+        <div style="font-size:18px;font-weight:800;color:#fff;margin-bottom:4px;">전주 대비 12% 향상!</div>
+        <div style="font-size:12px;color:rgba(255,255,255,.75);">절댓값 부등식 집중 공략 중이에요</div>
+        <div style="position:absolute;right:16px;top:50%;transform:translateY(-50%);font-size:36px;opacity:.15;">📊</div>
+      </div>
+
+      <div class="slabel">약점</div>
+      <div class="card">
+        <div class="crow"><div style="width:8px;height:8px;border-radius:50%;background:var(--accent);flex-shrink:0;"></div><div style="flex:1;font-size:13px;font-weight:700;color:var(--text);">절댓값 부등식</div><div class="tag" style="background:var(--accent-light);color:var(--accent);">오답 7회</div></div>
+        <div class="crow"><div style="width:8px;height:8px;border-radius:50%;background:var(--orange);flex-shrink:0;"></div><div style="flex:1;font-size:13px;font-weight:700;color:var(--text);">약수의 개수</div><div class="tag" style="background:var(--orange-light);color:var(--orange);">오답 5회</div></div>
+      </div>
+
+      <div class="slabel">잘하고 있어요</div>
+      <div class="card">
+        <div class="crow"><div style="width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;"></div><div style="flex:1;font-size:13px;font-weight:700;color:var(--text);">소인수분해</div><div class="tag" style="background:var(--green-light);color:var(--green);">90%</div></div>
+        <div class="crow"><div style="width:8px;height:8px;border-radius:50%;background:var(--green);flex-shrink:0;"></div><div style="flex:1;font-size:13px;font-weight:700;color:var(--text);">정수와 유리수</div><div class="tag" style="background:var(--green-light);color:var(--green);">85%</div></div>
+      </div>
+
+      <!-- 부모님 액션 아이템 -->
+      <div class="slabel">이번 주 부모님이 해주세요</div>
+      <div class="card">
+        <div class="action-item">
+          <div class="action-ic">💬</div>
+          <div><div class="action-title">오늘 유사문제 풀었는지 확인해주세요</div><div class="action-sub">절댓값 부등식 유사문제 3개가 남아있어요</div></div>
+        </div>
+        <div class="action-item">
+          <div class="action-ic">🎉</div>
+          <div><div class="action-title">소인수분해 완벽 이해! 칭찬해주세요</div><div class="action-sub">4주 연속 90% 이상 유지하고 있어요</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="bnav">
+      <div class="bi on-g" onclick="go('p-home')"><div class="bi-ic" style="font-size:16px;font-weight:800;color:inherit;">홈</div><div class="bi-lb" style="color:#10B981;">홈</div></div>
+      <div class="bi" onclick="go('p-report')"><div class="bi-ic" style="font-size:14px;font-weight:800;">보고</div><div class="bi-lb">보고서</div></div>
+      <div class="bi" onclick="go('p-progress')"><div class="bi-ic" style="font-size:14px;font-weight:800;">진도</div><div class="bi-lb">진도</div></div>
+      <div class="bi" onclick="go('p-growth')"><div class="bi-ic" style="font-size:14px;font-weight:800;">성장</div><div class="bi-lb">성장</div></div>
+      <div class="bi" onclick="go('settings')"><div class="bi-ic" style="font-size:14px;font-weight:800;">설정</div><div class="bi-lb">설정</div></div>
+    </div>
+  </div>
+
+  <!-- ⑪ 학부모 보고서 -->
+  <div class="sc" id="p-report">
+    <div class="inner">
+      <div style="padding:16px 20px 12px;"><div style="font-size:18px;font-weight:800;color:var(--text);">5월 2주차 보고서</div><div style="font-size:12px;color:var(--text-sub);margin-top:2px;">2026.05.05 ~ 05.11</div></div>
+      <div class="card">
+        <div style="padding:14px 16px 0;font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;">📌 이번 주 학습 사이클</div>
+        <div class="cycle-step"><div class="cycle-num" style="background:var(--accent);">1</div><div><div class="cycle-lbl" style="color:var(--accent);">약점 발견</div><div class="cycle-txt">절댓값 부등식에서 음수/양수 판별 반복 오류</div></div></div>
+        <div class="cycle-step"><div class="cycle-num" style="background:var(--primary);">2</div><div><div class="cycle-lbl" style="color:var(--primary);">솔루션 제시</div><div class="cycle-txt">절댓값 유형 유사문제 5개 추가 제공</div></div></div>
+        <div class="cycle-step"><div class="cycle-num" style="background:var(--green);">3</div><div><div class="cycle-lbl" style="color:var(--green);">결과 확인</div><div class="cycle-txt">정답률 <strong style="color:var(--green);">40% → 67%</strong> 향상!</div></div></div>
+        <div class="cycle-step"><div class="cycle-num" style="background:var(--yellow);">4</div><div><div class="cycle-lbl" style="color:var(--yellow);">성장 증명</div><div class="cycle-txt">4주 연속 정답률 꾸준히 상승 중!</div></div></div>
+      </div>
+      <div class="slabel">단원별 이해도</div>
+      <div class="card" style="padding:14px 16px;">
+        <div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="font-size:12px;font-weight:600;color:var(--text);">① 소인수분해</span><span style="font-size:12px;font-weight:700;color:var(--green);">90%</span></div><div class="pbar"><div class="pbar-f" style="width:90%;background:var(--green);"></div></div></div>
+        <div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="font-size:12px;font-weight:600;color:var(--text);">② 정수와 유리수</span><span style="font-size:12px;font-weight:700;color:var(--green);">85%</span></div><div class="pbar"><div class="pbar-f" style="width:85%;background:var(--green);"></div></div></div>
+        <div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="font-size:12px;font-weight:600;color:var(--text);">③ 문자와 식</span><span style="font-size:12px;font-weight:700;color:var(--yellow);">70%</span></div><div class="pbar"><div class="pbar-f" style="width:70%;background:var(--yellow);"></div></div></div>
+        <div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="font-size:12px;font-weight:600;color:var(--text);">④ 일차방정식</span><span style="font-size:12px;font-weight:700;color:var(--accent);">40%</span></div><div class="pbar"><div class="pbar-f" style="width:40%;background:var(--accent);"></div></div></div>
+      </div>
+    </div>
+    <div class="bnav">
+      <div class="bi" onclick="go('p-home')"><div class="bi-ic" style="font-size:16px;font-weight:800;color:inherit;">홈</div><div class="bi-lb">홈</div></div>
+      <div class="bi on-g" onclick="go('p-report')"><div class="bi-ic" style="font-size:14px;font-weight:800;">보고</div><div class="bi-lb" style="color:#10B981;">보고서</div></div>
+      <div class="bi" onclick="go('p-progress')"><div class="bi-ic" style="font-size:14px;font-weight:800;">진도</div><div class="bi-lb">진도</div></div>
+      <div class="bi" onclick="go('p-growth')"><div class="bi-ic" style="font-size:14px;font-weight:800;">성장</div><div class="bi-lb">성장</div></div>
+      <div class="bi" onclick="go('settings')"><div class="bi-ic" style="font-size:14px;font-weight:800;">설정</div><div class="bi-lb">설정</div></div>
+    </div>
+  </div>
+
+  <!-- ⑫ 학부모 진도 -->
+  <div class="sc" id="p-progress">
+    <div class="inner">
+      <div style="padding:16px 20px 8px;"><div style="font-size:18px;font-weight:800;color:var(--text);">교육과정 진도</div><div style="font-size:12px;color:var(--text-sub);margin-top:2px;">2022 개정 교육과정 기준</div></div>
+      <div class="grade-tabs" id="pp-tabs">
+        <div class="gtab" onclick="ppGrade('pp-e1',this)">초1~2</div>
+        <div class="gtab" onclick="ppGrade('pp-e2',this)">초3~4</div>
+        <div class="gtab" onclick="ppGrade('pp-e3',this)">초5~6</div>
+        <div class="gtab on" onclick="ppGrade('pp-g1',this)">중1</div>
+        <div class="gtab" onclick="ppGrade('pp-g2',this)">중2</div>
+        <div class="gtab" onclick="ppGrade('pp-g3',this)">중3</div>
+        <div class="gtab" onclick="ppGrade('pp-h1',this)">고1</div>
+        <div class="gtab" onclick="ppGrade('pp-h2',this)">고2</div>
+        <div class="gtab" onclick="ppGrade('pp-h3',this)">고3</div>
+      </div>
+      <div id="pp-e1" style="display:none;"><div style="margin:16px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:24px;text-align:center;"><div style="font-size:32px;margin-bottom:8px;">📖</div><div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">초1~2학년</div><div style="font-size:12px;color:var(--text-sub);">수와 연산·도형·측정·규칙성 기초</div></div></div>
+      <div id="pp-e2" style="display:none;"><div style="margin:16px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:24px;text-align:center;"><div style="font-size:32px;margin-bottom:8px;">📖</div><div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">초3~4학년</div><div style="font-size:12px;color:var(--text-sub);">분수·소수·곱셈·나눗셈·평면도형</div></div></div>
+      <div id="pp-e3" style="display:none;"><div style="margin:16px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:24px;text-align:center;"><div style="font-size:32px;margin-bottom:8px;">📖</div><div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">초5~6학년</div><div style="font-size:12px;color:var(--text-sub);">분수·소수 연산·비와 비율·입체도형</div></div></div>
+      <div class="chain-warn"><div style="font-size:20px;">⚠️</div><div><div style="font-size:13px;font-weight:700;color:var(--accent);margin-bottom:3px;" id="pp-warn-title">개념 연결고리 주의!</div><div style="font-size:12px;color:var(--text-sub);line-height:1.5;" id="pp-warn-text">일차방정식(40%)이 약해요. 중2 연립방정식 전에 보완이 필요해요!</div></div></div>
+      <div id="pp-g1">
+        <div class="slabel">Ⅰ 수와 연산</div>
+        <div class="card">
+          <div class="unit-row" onclick="openUnit('① 소인수분해','소수·합성수·최대공약수','done','90%')"><div class="unit-ic" style="background:var(--green-light);">✅</div><div><div class="unit-nm">① 소인수분해</div><div class="unit-sb">소수·합성수·최대공약수</div></div><div class="unit-pct" style="color:var(--green);">90%</div></div>
+          <div class="unit-row" onclick="openUnit('② 정수와 유리수','양수·음수·절댓값','done','85%')"><div class="unit-ic" style="background:var(--green-light);">✅</div><div><div class="unit-nm">② 정수와 유리수</div><div class="unit-sb">양수·음수·절댓값</div></div><div class="unit-pct" style="color:var(--green);">85%</div></div>
+        </div>
+        <div class="slabel">Ⅱ 문자와 식</div>
+        <div class="card">
+          <div class="unit-row"><div class="unit-ic" style="background:var(--yellow-light);">🔄</div><div><div class="unit-nm">③ 문자의 사용과 식</div><div class="unit-sb">일차식 계산</div></div><div class="unit-pct" style="color:var(--yellow);">70%</div></div>
+          <div class="unit-row" onclick="openUnit('④ 일차방정식','방정식 풀이·활용','weak','40%')"><div class="unit-ic" style="background:var(--accent-light);">🔴</div><div><div class="unit-nm">④ 일차방정식</div><div class="unit-sb">방정식 풀이·활용</div></div><div class="unit-pct" style="color:var(--accent);">40%</div></div>
+        </div>
+        <div class="slabel">Ⅲ~Ⅴ (예정)</div>
+        <div class="card">
+          <div class="unit-row"><div class="unit-ic" style="background:var(--surface3);">⬜</div><div><div class="unit-nm">⑤~⑩ 좌표·도형 단원</div><div class="unit-sb">좌표평면·기본도형·입체도형</div></div><div class="unit-pct" style="color:var(--text-muted);">-</div></div>
+        </div>
+      </div>
+      <div id="pp-g2" style="display:none;"><div style="margin:16px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:24px;text-align:center;"><div style="font-size:32px;margin-bottom:8px;">📖</div><div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">중1 완료 후 시작</div><div style="font-size:12px;color:var(--text-sub);">연립방정식·일차함수·도형</div></div></div>
+      <div id="pp-g3" style="display:none;"><div style="margin:16px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:24px;text-align:center;"><div style="font-size:32px;margin-bottom:8px;">📖</div><div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">중2 완료 후 시작</div><div style="font-size:12px;color:var(--text-sub);">제곱근·이차방정식·삼각비</div></div></div>
+      <div id="pp-h1" style="display:none;"><div style="margin:16px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:24px;text-align:center;"><div style="font-size:32px;margin-bottom:8px;">🏫</div><div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">중3 완료 후 시작</div><div style="font-size:12px;color:var(--text-sub);">공통수학Ⅰ·Ⅱ (행렬 포함)</div></div></div>
+      <div id="pp-h2" style="display:none;"><div style="margin:16px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:24px;text-align:center;"><div style="font-size:32px;margin-bottom:8px;">📐</div><div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">고1 완료 후 시작</div><div style="font-size:12px;color:var(--text-sub);">수학Ⅰ·Ⅱ 미적분 기초</div></div></div>
+      <div id="pp-h3" style="display:none;"><div style="margin:16px;background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:24px;text-align:center;"><div style="font-size:32px;margin-bottom:8px;">🎓</div><div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">고2 완료 후 시작</div><div style="font-size:12px;color:var(--text-sub);">확률통계·미적분·기하</div></div></div>
+    </div>
+    <div class="bnav">
+      <div class="bi" onclick="go('p-home')"><div class="bi-ic" style="font-size:16px;font-weight:800;color:inherit;">홈</div><div class="bi-lb">홈</div></div>
+      <div class="bi" onclick="go('p-report')"><div class="bi-ic" style="font-size:14px;font-weight:800;">보고</div><div class="bi-lb">보고서</div></div>
+      <div class="bi on-g" onclick="go('p-progress')"><div class="bi-ic" style="font-size:14px;font-weight:800;">진도</div><div class="bi-lb" style="color:#10B981;">진도</div></div>
+      <div class="bi" onclick="go('p-growth')"><div class="bi-ic" style="font-size:14px;font-weight:800;">성장</div><div class="bi-lb">성장</div></div>
+      <div class="bi" onclick="go('settings')"><div class="bi-ic" style="font-size:14px;font-weight:800;">설정</div><div class="bi-lb">설정</div></div>
+    </div>
+  </div>
+
+  <!-- ⑬ 학부모 성장 -->
+  <div class="sc" id="p-growth">
+    <div class="inner">
+      <div style="padding:16px 20px 12px;"><div style="font-size:18px;font-weight:800;color:var(--text);">성장 그래프</div><div style="font-size:12px;color:var(--text-sub);margin-top:2px;">4주간 정답률 변화</div></div>
+      <div class="card" style="padding:14px 16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+          <div style="font-size:14px;font-weight:700;color:var(--text);">📈 정답률 추이</div>
+          <div class="tag" style="background:var(--green-light);color:var(--green);">+22% 향상</div>
+        </div>
+        <div class="chart">
+          <div class="bw"><div class="bp">45%</div><div class="bb" style="height:45%;background:linear-gradient(180deg,#FF6B6B,#FB923C)"><span class="bl">1주</span></div></div>
+          <div class="bw"><div class="bp">52%</div><div class="bb" style="height:52%;background:linear-gradient(180deg,#FB923C,#FBBF24)"><span class="bl">2주</span></div></div>
+          <div class="bw"><div class="bp">61%</div><div class="bb" style="height:61%;background:linear-gradient(180deg,#FBBF24,#34D399)"><span class="bl">3주</span></div></div>
+          <div class="bw"><div class="bp">67%</div><div class="bb" style="height:67%;background:linear-gradient(180deg,#34D399,#7C6FF7)"><span class="bl">4주</span></div></div>
+        </div>
+      </div>
+      <div class="slabel">주차별 상세</div>
+      <div class="card">
+        <div class="crow"><div style="width:32px;height:32px;border-radius:10px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--accent);flex-shrink:0;">1주</div><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--text);">정답률 45%</div><div style="font-size:11px;color:var(--text-sub);margin-top:2px;">소인수분해 집중 학습 시작</div></div></div>
+        <div class="crow"><div style="width:32px;height:32px;border-radius:10px;background:var(--orange-light);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--orange);flex-shrink:0;">2주</div><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--text);">정답률 52% <span style="color:var(--green);font-size:11px;">↑+7%</span></div><div style="font-size:11px;color:var(--text-sub);margin-top:2px;">정수와 유리수 개념 보완</div></div></div>
+        <div class="crow"><div style="width:32px;height:32px;border-radius:10px;background:var(--yellow-light);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--yellow);flex-shrink:0;">3주</div><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--text);">정답률 61% <span style="color:var(--green);font-size:11px;">↑+9%</span></div><div style="font-size:11px;color:var(--text-sub);margin-top:2px;">약수의 개수 공식 학습</div></div></div>
+        <div class="crow"><div style="width:32px;height:32px;border-radius:10px;background:var(--green-light);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:var(--green);flex-shrink:0;">4주</div><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--text);">정답률 67% <span style="color:var(--green);font-size:11px;">↑+6%</span></div><div style="font-size:11px;color:var(--text-sub);margin-top:2px;">절댓값 부등식 집중 공략 중</div></div></div>
+      </div>
+    </div>
+    <div class="bnav">
+      <div class="bi" onclick="go('p-home')"><div class="bi-ic" style="font-size:16px;font-weight:800;color:inherit;">홈</div><div class="bi-lb">홈</div></div>
+      <div class="bi" onclick="go('p-report')"><div class="bi-ic" style="font-size:14px;font-weight:800;">보고</div><div class="bi-lb">보고서</div></div>
+      <div class="bi" onclick="go('p-progress')"><div class="bi-ic" style="font-size:14px;font-weight:800;">진도</div><div class="bi-lb">진도</div></div>
+      <div class="bi on-g" onclick="go('p-growth')"><div class="bi-ic" style="font-size:14px;font-weight:800;">성장</div><div class="bi-lb" style="color:#10B981;">성장</div></div>
+      <div class="bi" onclick="go('settings')"><div class="bi-ic" style="font-size:14px;font-weight:800;">설정</div><div class="bi-lb">설정</div></div>
+    </div>
+  </div>
+
+  <!-- ⑭ 선생님 홈 -->
+  <div class="sc" id="t-home">
+    <div class="inner">
+      <div class="t-hero">
+        <div style="font-size:13px;color:rgba(255,255,255,.55);position:relative;z-index:1;">안녕하세요 👩‍🏫</div>
+        <div style="font-size:20px;font-weight:800;color:#fff;margin:2px 0 4px;position:relative;z-index:1;">박선생님</div>
+        <div style="font-size:13px;color:rgba(255,255,255,.6);margin-bottom:16px;position:relative;z-index:1;">스마트수학학원 · 중1 수학반</div>
+        <div class="stat-grid" style="position:relative;z-index:1;">
+          <div class="stat-box"><div class="stat-num">18</div><div class="stat-lbl">담당 학생</div><div class="stat-chg" style="color:var(--teacher);">↑ +2명</div></div>
+          <div class="stat-box"><div class="stat-num">3명</div><div class="stat-lbl">즉시 관리 필요</div><div class="stat-chg" style="color:var(--accent);">⚠️ 확인요</div></div>
+          <div class="stat-box"><div class="stat-num">67%</div><div class="stat-lbl">반 평균 정답률</div><div class="stat-chg" style="color:var(--teacher);">↑ +8%</div></div>
+        </div>
+      </div>
+
+      <!-- 학생 추가 -->
+      <div style="margin:12px 16px;display:flex;gap:8px;">
+        <div style="flex:1;background:var(--surface);border-radius:var(--r);border:1.5px dashed rgba(6,182,212,.3);padding:14px;display:flex;align-items:center;gap:12px;cursor:pointer;" onclick="document.getElementById('add-student-modal').style.display='flex'">
+          <div style="width:36px;height:36px;border-radius:10px;background:var(--teacher-light);display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:800;color:var(--teacher);flex-shrink:0;">+</div>
+          <div>
+            <div style="font-size:14px;font-weight:800;color:var(--text);">학생 추가</div>
+            <div style="font-size:12px;color:var(--text-sub);margin-top:2px;">학생 코드를 입력하세요</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 학생 추가 모달 -->
+      <div id="add-student-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:flex-end;justify-content:center;">
+        <div style="width:375px;background:var(--surface);border-radius:24px 24px 0 0;padding:24px;">
+          <div style="width:40px;height:4px;background:var(--surface3);border-radius:99px;margin:0 auto 20px;"></div>
+          <div style="font-size:18px;font-weight:800;color:var(--text);margin-bottom:4px;">학생 추가</div>
+          <div style="font-size:12px;color:var(--text-sub);margin-bottom:16px;">학생에게 코드를 받아 입력하세요</div>
+          <div class="ilabel">학생 연결 코드</div>
+          <input class="ifield" placeholder="예) 우열-3947" style="margin-bottom:12px;">
+          <button style="width:100%;background:var(--teacher);border:none;border-radius:var(--r);padding:14px;color:#fff;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-bottom:8px;" onclick="document.getElementById('add-student-modal').style.display='none'">추가하기</button>
+          <button style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:13px;color:var(--text-sub);font-size:13px;font-weight:600;font-family:'Noto Sans KR',sans-serif;cursor:pointer;" onclick="document.getElementById('add-student-modal').style.display='none'">취소</button>
+        </div>
+      </div>
+
+      <!-- 위험 학생 알림 -->
+      <div class="slabel">즉시 관리 필요</div>
+      <div class="danger-alert">
+        <div class="da-icon">🚨</div>
+        <div><div class="da-title">3명이 정답률 40% 미만이에요!</div><div class="da-sub">최지우·박지호·이서연 — 절댓값 부등식 집중 지도가 필요해요.</div></div>
+      </div>
+
+      <!-- 학생 목록 -->
+      <div class="slabel">전체 학생 현황</div>
+      <div class="card">
+        <div class="student-row" onclick="go('t-student')">
+          <div class="avatar" style="background:var(--accent-light);color:var(--accent);">최</div>
+          <div style="flex:1;"><div class="stu-name">최지우</div><div class="stu-sub">일차방정식 취약 · 즉시 관리</div><div class="stu-bar"><div class="stu-bar-f" style="width:35%;background:var(--accent);"></div></div></div>
+          <div style="text-align:right;"><div class="stu-pct" style="color:var(--accent);">35%</div><div class="tag" style="background:var(--accent-light);color:var(--accent);margin-top:4px;">위험</div></div>
+        </div>
+        <div class="student-row" onclick="go('t-student')">
+          <div class="avatar" style="background:var(--accent-light);color:var(--accent);">박</div>
+          <div style="flex:1;"><div class="stu-name">박지호</div><div class="stu-sub">절댓값 부등식 취약</div><div class="stu-bar"><div class="stu-bar-f" style="width:38%;background:var(--accent);"></div></div></div>
+          <div style="text-align:right;"><div class="stu-pct" style="color:var(--accent);">38%</div><div class="tag" style="background:var(--accent-light);color:var(--accent);margin-top:4px;">위험</div></div>
+        </div>
+        <div class="student-row" onclick="go('t-student')">
+          <div class="avatar" style="background:var(--yellow-light);color:var(--yellow);">이</div>
+          <div style="flex:1;"><div class="stu-name">이서연</div><div class="stu-sub">약수의 개수 취약</div><div class="stu-bar"><div class="stu-bar-f" style="width:55%;background:var(--yellow);"></div></div></div>
+          <div style="text-align:right;"><div class="stu-pct" style="color:var(--yellow);">55%</div><div class="tag" style="background:var(--yellow-light);color:var(--yellow);margin-top:4px;">주의</div></div>
+        </div>
+        <div class="student-row" onclick="go('t-student')">
+          <div class="avatar" style="background:var(--primary-light);color:var(--primary);">김</div>
+          <div style="flex:1;"><div class="stu-name">김민준</div><div class="stu-sub">절댓값 부등식 연습 중</div><div class="stu-bar"><div class="stu-bar-f" style="width:67%;background:var(--primary);"></div></div></div>
+          <div style="text-align:right;"><div class="stu-pct" style="color:var(--primary);">67%</div><div class="tag" style="background:var(--primary-light);color:var(--primary);margin-top:4px;">보통</div></div>
+        </div>
+        <div class="student-row" onclick="go('t-student')">
+          <div class="avatar" style="background:var(--green-light);color:var(--green);">정</div>
+          <div style="flex:1;"><div class="stu-name">정하은</div><div class="stu-sub">전 단원 양호</div><div class="stu-bar"><div class="stu-bar-f" style="width:88%;background:var(--green);"></div></div></div>
+          <div style="text-align:right;"><div class="stu-pct" style="color:var(--green);">88%</div><div class="tag" style="background:var(--green-light);color:var(--green);margin-top:4px;">우수</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="bnav">
+      <div class="bi on-t" onclick="go('t-home')"><div class="bi-ic" style="font-size:16px;font-weight:800;color:inherit;">홈</div><div class="bi-lb" style="color:var(--teacher);">홈</div></div>
+      <div class="bi" onclick="go('t-student')"><div class="bi-ic" style="font-size:14px;font-weight:800;">학생</div><div class="bi-lb">학생상세</div></div>
+      <div class="bi" onclick="go('t-progress')"><div class="bi-ic" style="font-size:14px;font-weight:800;">현황</div><div class="bi-lb">반진도</div></div>
+      <div class="bi" onclick="go('settings')"><div class="bi-ic" style="font-size:14px;font-weight:800;">설정</div><div class="bi-lb">설정</div></div>
+    </div>
+  </div>
+
+  <!-- ⑮ 선생님 학생 상세 -->
+  <div class="sc" id="t-student">
+    <div class="inner">
+      <div style="padding:16px 20px 8px;display:flex;align-items:center;gap:12px;">
+        <div style="cursor:pointer;" onclick="go('t-home')">←</div>
+        <div style="width:40px;height:40px;border-radius:12px;background:var(--accent-light);display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:800;color:var(--accent);">최</div>
+        <div><div style="font-size:18px;font-weight:800;color:var(--text);">최지우</div><div style="font-size:12px;color:var(--text-sub);">중1 수학반 · 즉시 관리 필요</div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 16px;margin-bottom:12px;">
+        <div style="background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:14px;text-align:center;">
+          <div style="font-size:24px;font-weight:800;color:var(--accent);">35%</div>
+          <div style="font-size:11px;color:var(--text-sub);margin-top:3px;">이번 주 정답률</div>
+        </div>
+        <div style="background:var(--surface);border-radius:var(--r);border:1px solid var(--border);padding:14px;text-align:center;">
+          <div style="font-size:24px;font-weight:800;color:var(--orange);">12개</div>
+          <div style="font-size:11px;color:var(--text-sub);margin-top:3px;">푼 문제</div>
+        </div>
+      </div>
+
+      <div class="danger-alert" style="margin:0 16px 10px;">
+        <div class="da-icon">⚠️</div>
+        <div><div class="da-title">지도 포인트</div><div class="da-sub">일차방정식 풀이 접근 자체를 모르고 있어요. 문자와 식 개념부터 다시 확인이 필요해요.</div></div>
+      </div>
+
+      <div class="slabel">약점 개념</div>
+      <div class="card" style="padding:14px 16px;">
+        <div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="font-size:12px;font-weight:600;color:var(--text);">일차방정식</span><span style="font-size:12px;font-weight:700;color:var(--accent);">25%</span></div><div class="pbar"><div class="pbar-f" style="width:25%;background:var(--accent);"></div></div></div>
+        <div style="margin-bottom:10px;"><div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="font-size:12px;font-weight:600;color:var(--text);">문자와 식</span><span style="font-size:12px;font-weight:700;color:var(--orange);">45%</span></div><div class="pbar"><div class="pbar-f" style="width:45%;background:var(--orange);"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="font-size:12px;font-weight:600;color:var(--text);">소인수분해</span><span style="font-size:12px;font-weight:700;color:var(--green);">80%</span></div><div class="pbar"><div class="pbar-f" style="width:80%;background:var(--green);"></div></div></div>
+      </div>
+
+      <div class="slabel">최근 오답 이력</div>
+      <div class="card">
+        <div class="crow"><div style="font-size:18px;">❌</div><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--text);">일차방정식 풀이</div><div style="font-size:11px;color:var(--text-sub);">5/23 · 이항 개념 오류</div></div></div>
+        <div class="crow"><div style="font-size:18px;">❌</div><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--text);">문자와 식 계산</div><div style="font-size:11px;color:var(--text-sub);">5/21 · 부호 처리 실수</div></div></div>
+        <div class="crow"><div style="font-size:18px;">✅</div><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--text);">소인수분해</div><div style="font-size:11px;color:var(--text-sub);">5/20 · 정답</div></div></div>
+      </div>
+    </div>
+    <div class="bnav">
+      <div class="bi" onclick="go('t-home')"><div class="bi-ic" style="font-size:16px;font-weight:800;color:inherit;">홈</div><div class="bi-lb">홈</div></div>
+      <div class="bi on-t" onclick="go('t-student')"><div class="bi-ic" style="font-size:14px;font-weight:800;">학생</div><div class="bi-lb" style="color:var(--teacher);">학생상세</div></div>
+      <div class="bi" onclick="go('t-progress')"><div class="bi-ic" style="font-size:14px;font-weight:800;">현황</div><div class="bi-lb">반진도</div></div>
+      <div class="bi" onclick="go('settings')"><div class="bi-ic" style="font-size:14px;font-weight:800;">설정</div><div class="bi-lb">설정</div></div>
+    </div>
+  </div>
+
+  <!-- ⑯ 선생님 반 진도 -->
+  <div class="sc" id="t-progress">
+    <div class="inner">
+      <div style="padding:16px 20px 12px;"><div style="font-size:18px;font-weight:800;color:var(--text);">반 전체 진도 현황</div><div style="font-size:12px;color:var(--text-sub);margin-top:2px;">중1 수학반 · 18명</div></div>
+
+      <div class="slabel">단원별 반 평균</div>
+      <div class="card" style="padding:14px 16px;">
+        <div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="font-size:12px;font-weight:600;color:var(--text);">① 소인수분해</span><span style="font-size:12px;font-weight:700;color:var(--green);">82%</span></div><div class="pbar"><div class="pbar-f" style="width:82%;background:var(--green);"></div></div></div>
+        <div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="font-size:12px;font-weight:600;color:var(--text);">② 정수와 유리수</span><span style="font-size:12px;font-weight:700;color:var(--green);">75%</span></div><div class="pbar"><div class="pbar-f" style="width:75%;background:var(--green);"></div></div></div>
+        <div style="margin-bottom:12px;"><div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="font-size:12px;font-weight:600;color:var(--text);">③ 문자와 식</span><span style="font-size:12px;font-weight:700;color:var(--yellow);">60%</span></div><div class="pbar"><div class="pbar-f" style="width:60%;background:var(--yellow);"></div></div></div>
+        <div><div style="display:flex;justify-content:space-between;margin-bottom:5px;"><span style="font-size:12px;font-weight:600;color:var(--text);">④ 일차방정식</span><span style="font-size:12px;font-weight:700;color:var(--accent);">48%</span></div><div class="pbar"><div class="pbar-f" style="width:48%;background:var(--accent);"></div></div></div>
+      </div>
+
+      <div class="slabel">분포 현황</div>
+      <div class="card">
+        <div class="crow">
+          <div class="tag" style="background:var(--green-light);color:var(--green);">우수 (80%+)</div>
+          <div style="flex:1;padding-left:12px;font-size:13px;font-weight:700;color:var(--text);">5명</div>
+          <div style="font-size:12px;color:var(--text-sub);">정하은·오수민 외 3명</div>
+        </div>
+        <div class="crow">
+          <div class="tag" style="background:var(--yellow-light);color:var(--yellow);">보통 (60~80%)</div>
+          <div style="flex:1;padding-left:12px;font-size:13px;font-weight:700;color:var(--text);">10명</div>
+          <div style="font-size:12px;color:var(--text-sub);">김민준 외 9명</div>
+        </div>
+        <div class="crow">
+          <div class="tag" style="background:var(--accent-light);color:var(--accent);">위험 (60% 미만)</div>
+          <div style="flex:1;padding-left:12px;font-size:13px;font-weight:700;color:var(--text);">3명</div>
+          <div style="font-size:12px;color:var(--accent);">즉시 관리 필요!</div>
+        </div>
+      </div>
+
+      <div class="slabel">이번 주 수업 추천</div>
+      <div class="card">
+        <div class="action-item">
+          <div class="action-ic">📌</div>
+          <div><div class="action-title">일차방정식 이항 개념 재설명 필요</div><div class="action-sub">반 전체 48%로 가장 취약. 다음 수업에서 집중 설명을 권장해요.</div></div>
+        </div>
+        <div class="action-item">
+          <div class="action-ic">👥</div>
+          <div><div class="action-title">위험군 3명 개별 면담 권장</div><div class="action-sub">최지우·박지호·이서연은 문자와 식부터 재점검이 필요해요.</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="bnav">
+      <div class="bi" onclick="go('t-home')"><div class="bi-ic" style="font-size:16px;font-weight:800;color:inherit;">홈</div><div class="bi-lb">홈</div></div>
+      <div class="bi" onclick="go('t-student')"><div class="bi-ic" style="font-size:14px;font-weight:800;">학생</div><div class="bi-lb">학생상세</div></div>
+      <div class="bi on-t" onclick="go('t-progress')"><div class="bi-ic" style="font-size:14px;font-weight:800;">현황</div><div class="bi-lb" style="color:var(--teacher);">반진도</div></div>
+      <div class="bi" onclick="go('settings')"><div class="bi-ic" style="font-size:14px;font-weight:800;">설정</div><div class="bi-lb">설정</div></div>
+    </div>
+  </div>
+
+  <!-- ⑰ 설정 -->
+  <div class="sc" id="settings">
+    <div class="inner">
+      <div style="padding:16px 20px 12px;font-size:18px;font-weight:800;color:var(--text);">설정</div>
+
+      <!-- 학생용 코드 -->
+      <div id="set-s-code">
+        <div class="slabel">내 정보</div>
+        <div class="card">
+          <div class="set-row"><div><div class="set-lbl">이름</div><div class="set-sub">김민준</div></div><div style="font-size:12px;color:var(--primary);font-weight:700;cursor:pointer;">수정 ›</div></div>
+          <div class="set-row"><div><div class="set-lbl">학년</div><div class="set-sub">중1</div></div><div style="font-size:12px;color:var(--primary);font-weight:700;cursor:pointer;">변경 ›</div></div>
+          <div class="set-row"><div><div class="set-lbl">비밀번호</div><div class="set-sub">••••••••</div></div><div style="font-size:12px;color:var(--primary);font-weight:700;cursor:pointer;">변경 ›</div></div>
+        </div>
+
+        <div class="slabel">내 연결 코드</div>
+        <div class="code-box">
+          <div style="font-size:11px;color:var(--text-sub);margin-bottom:6px;">부모님·선생님께 이 코드를 알려주세요</div>
+          <div class="code-val">우열-3947</div>
+          <button onclick="copyCode()" id="copy-btn2" style="width:100%;background:var(--primary-light);border:1px solid rgba(124,111,247,.3);border-radius:10px;padding:12px;color:var(--primary);font-size:13px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;">코드 복사</button>
+        </div>
+      </div>
+
+      <!-- 학부모용 자녀 정보 -->
+      <div id="set-p-child" style="display:none;">
+        <div class="slabel">연결된 자녀</div>
+        <div class="card">
+          <div class="crow">
+            <div class="avatar" style="background:var(--green-light);color:var(--green);">민</div>
+            <div style="flex:1;"><div style="font-size:14px;font-weight:700;color:var(--text);">김민준</div><div style="font-size:11px;color:var(--text-sub);">중1 · 코드 우열-3947</div></div>
+            <div class="tag" style="background:var(--green-light);color:var(--green);">연결됨</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 선생님용 학생 목록 -->
+      <div id="set-t-students" style="display:none;">
+        <div class="slabel">등록된 학생</div>
+        <div class="card">
+          <div class="crow"><div class="avatar" style="background:var(--teacher-light);color:var(--teacher);">김</div><div style="flex:1;"><div style="font-size:13px;font-weight:700;color:var(--text);">김민준</div><div style="font-size:11px;color:var(--text-sub);">우열-3947</div></div><div class="tag" style="background:var(--teacher-light);color:var(--teacher);">연결됨</div></div>
+          <div class="crow"><div style="width:36px;height:36px;border-radius:11px;border:2px dashed var(--border2);display:flex;align-items:center;justify-content:center;font-size:18px;color:var(--text-muted);flex-shrink:0;">+</div><div style="flex:1;font-size:13px;color:var(--text-muted);">학생 코드 추가하기</div></div>
+        </div>
+      </div>
+
+      <div class="slabel">알림</div>
+      <div class="card">
+        <div class="set-row"><div><div class="set-lbl">학습 완료 알림</div><div class="set-sub">문제 풀면 바로 알림</div></div><div class="tog" onclick="this.classList.toggle('off')"></div></div>
+        <div class="set-row"><div><div class="set-lbl">주간 보고서</div><div class="set-sub">매주 내 학습 결과 요약</div></div><div class="tog" onclick="this.classList.toggle('off')"></div></div>
+      </div>
+
+      <div class="slabel">앱 정보</div>
+      <div class="card">
+        <div class="set-row"><div class="set-lbl">우열 (優劣)</div><div style="font-size:12px;color:var(--text-muted);">v1.0.0</div></div>
+        <div class="set-row" style="cursor:pointer;" onclick="go('onboard')"><div class="set-lbl" style="color:var(--accent);">로그아웃</div></div>
+      </div>
+      <div style="height:16px;"></div>
+    </div>
+    <!-- 설정 하단 네비는 JS로 처리 -->
+    <div id="set-bnav-s" class="bnav">
+      <div class="bi" onclick="go('s-home')"><div class="bi-ic" style="font-size:16px;font-weight:800;color:inherit;">홈</div><div class="bi-lb">홈</div></div>
+      <div class="bi" onclick="go('upload')"><div class="bi-ic" style="font-size:14px;font-weight:800;">촬영</div><div class="bi-lb">업로드</div></div>
+      <div class="bi" onclick="go('practice')"><div class="bi-ic" style="font-size:14px;font-weight:800;">훈련</div><div class="bi-lb">훈련</div></div>
+      <div class="bi" onclick="go('s-progress')"><div class="bi-ic" style="font-size:14px;font-weight:800;">진도</div><div class="bi-lb">진도</div></div>
+      <div class="bi on" onclick="go('settings')"><div class="bi-ic" style="font-size:14px;font-weight:800;">설정</div><div class="bi-lb">설정</div></div>
+    </div>
+    <div id="set-bnav-p" class="bnav" style="display:none;">
+      <div class="bi" onclick="go('p-home')"><div class="bi-ic" style="font-size:16px;font-weight:800;color:inherit;">홈</div><div class="bi-lb">홈</div></div>
+      <div class="bi" onclick="go('p-report')"><div class="bi-ic" style="font-size:14px;font-weight:800;">보고</div><div class="bi-lb">보고서</div></div>
+      <div class="bi" onclick="go('p-progress')"><div class="bi-ic" style="font-size:14px;font-weight:800;">진도</div><div class="bi-lb">진도</div></div>
+      <div class="bi" onclick="go('p-growth')"><div class="bi-ic" style="font-size:14px;font-weight:800;">성장</div><div class="bi-lb">성장</div></div>
+      <div class="bi on-g" onclick="go('settings')"><div class="bi-ic" style="font-size:14px;font-weight:800;">설정</div><div class="bi-lb" style="color:#10B981;">설정</div></div>
+    </div>
+    <div id="set-bnav-t" class="bnav" style="display:none;">
+      <div class="bi" onclick="go('t-home')"><div class="bi-ic" style="font-size:16px;font-weight:800;color:inherit;">홈</div><div class="bi-lb">홈</div></div>
+      <div class="bi" onclick="go('t-student')"><div class="bi-ic" style="font-size:14px;font-weight:800;">학생</div><div class="bi-lb">학생상세</div></div>
+      <div class="bi" onclick="go('t-progress')"><div class="bi-ic" style="font-size:14px;font-weight:800;">현황</div><div class="bi-lb">반진도</div></div>
+      <div class="bi on-t" onclick="go('settings')"><div class="bi-ic" style="font-size:14px;font-weight:800;">설정</div><div class="bi-lb" style="color:var(--teacher);">설정</div></div>
+    </div>
+  </div>
+
+
+  <!-- 단원 상세 모달 -->
+  <div id="unit-modal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:flex-end;justify-content:center;">
+    <div style="width:375px;background:var(--surface);border-radius:24px 24px 0 0;padding:24px;max-height:70vh;overflow-y:auto;">
+      <div style="width:40px;height:4px;background:var(--surface3);border-radius:99px;margin:0 auto 16px;"></div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:16px;">
+        <div onclick="document.getElementById('unit-modal').style.display='none'" style="font-size:20px;cursor:pointer;color:var(--text-sub);">←</div>
+        <div style="font-size:14px;font-weight:700;color:var(--text-sub);">단원 상세</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:6px;">
+        <div id="unit-modal-ic" style="width:36px;height:36px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;flex-shrink:0;"></div>
+        <div>
+          <div id="unit-modal-name" style="font-size:18px;font-weight:800;color:var(--text);"></div>
+          <div id="unit-modal-sub" style="font-size:12px;color:var(--text-sub);margin-top:2px;"></div>
+        </div>
+        <div id="unit-modal-pct" style="margin-left:auto;font-size:22px;font-weight:900;"></div>
+      </div>
+
+      <!-- 이해도 바 -->
+      <div id="unit-modal-bar-wrap" style="margin:12px 0;">
+        <div style="height:8px;background:var(--surface3);border-radius:99px;overflow:hidden;">
+          <div id="unit-modal-bar" style="height:100%;border-radius:99px;transition:width .5s;"></div>
+        </div>
+      </div>
+
+      <!-- 상태별 내용 -->
+      <div id="unit-modal-content"></div>
+
+      <button id="unit-modal-btn" style="width:100%;border:none;border-radius:var(--r);padding:14px;color:#fff;font-size:14px;font-weight:700;font-family:'Noto Sans KR',sans-serif;cursor:pointer;margin-top:16px;margin-bottom:8px;"></button>
+      <button onclick="document.getElementById('unit-modal').style.display='none'" style="width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:var(--r);padding:13px;color:var(--text-sub);font-size:13px;font-weight:600;font-family:'Noto Sans KR',sans-serif;cursor:pointer;">닫기</button>
+    </div>
+  </div>
+
+</div><!-- /phone -->
+
+<script>
+
+function openUnit(name, sub, status, pct) {
+  const modal = document.getElementById('unit-modal');
+  const icEl = document.getElementById('unit-modal-ic');
+  const nameEl = document.getElementById('unit-modal-name');
+  const subEl = document.getElementById('unit-modal-sub');
+  const pctEl = document.getElementById('unit-modal-pct');
+  const barEl = document.getElementById('unit-modal-bar');
+  const contentEl = document.getElementById('unit-modal-content');
+  const btnEl = document.getElementById('unit-modal-btn');
+
+  nameEl.textContent = name;
+  subEl.textContent = sub;
+
+  const configs = {
+    done: {
+      ic: '✅', icBg: 'var(--green-light)',
+      pctColor: 'var(--green)',
+      barColor: 'var(--green)',
+      content: `<div style="background:var(--green-light);border-radius:var(--r);padding:14px;border:1px solid rgba(52,211,153,.2);margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:700;color:var(--green);margin-bottom:4px;">완료한 단원이에요!</div>
+        <div style="font-size:12px;color:var(--text-sub);line-height:1.6;">틀렸던 문제를 다시 한번 복습해보세요.</div>
+      </div>`,
+      btnText: '오답 복습하기',
+      btnColor: 'var(--green)'
+    },
+    learning: {
+      ic: '🔄', icBg: 'var(--yellow-light)',
+      pctColor: 'var(--yellow)',
+      barColor: 'var(--yellow)',
+      content: `<div style="background:var(--accent-light);border-radius:var(--r);padding:14px;border:1px solid rgba(255,107,107,.2);margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:4px;">아직 약한 단원이에요!</div>
+        <div style="font-size:12px;color:var(--text-sub);line-height:1.6;">유사문제 훈련으로 집중 연습해보세요.</div>
+      </div>`,
+      btnText: '지금 연습하기',
+      btnColor: 'var(--primary)'
+    },
+    weak: {
+      ic: '🔴', icBg: 'var(--accent-light)',
+      pctColor: 'var(--accent)',
+      barColor: 'var(--accent)',
+      content: `<div style="background:var(--accent-light);border-radius:var(--r);padding:14px;border:1px solid rgba(255,107,107,.2);margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:4px;">집중 관리가 필요한 단원이에요!</div>
+        <div style="font-size:12px;color:var(--text-sub);line-height:1.6;">기초부터 다시 시작하면 금방 올라올 수 있어요.</div>
+      </div>`,
+      btnText: '기초부터 다시 시작',
+      btnColor: 'var(--accent)'
+    },
+    none: {
+      ic: '⬜', icBg: 'var(--surface3)',
+      pctColor: 'var(--text-muted)',
+      barColor: 'var(--surface3)',
+      content: `<div style="background:var(--surface2);border-radius:var(--r);padding:14px;border:1px solid var(--border);margin-bottom:12px;">
+        <div style="font-size:12px;font-weight:700;color:var(--text-sub);margin-bottom:4px;">아직 학습하지 않은 단원이에요</div>
+        <div style="font-size:12px;color:var(--text-sub);line-height:1.6;">틀린 문제를 업로드하면 이 단원 학습이 시작돼요!</div>
+      </div>`,
+      btnText: '문제 업로드하러 가기',
+      btnColor: 'var(--surface3)'
+    }
+  };
+
+  const cfg = configs[status] || configs.none;
+  icEl.textContent = cfg.ic;
+  icEl.style.background = cfg.icBg;
+  pctEl.textContent = pct || '-';
+  pctEl.style.color = cfg.pctColor;
+  barEl.style.width = pct ? pct : '0%';
+  barEl.style.background = cfg.barColor;
+  contentEl.innerHTML = cfg.content;
+  btnEl.textContent = cfg.btnText;
+  btnEl.style.background = cfg.btnColor;
+  btnEl.onclick = () => {
+    document.getElementById('unit-modal').style.display = 'none';
+    if (status === 'none') go('upload');
+    else go('practice');
+  };
+
+  modal.style.display = 'flex';
+}
+
+function copyCode() {
+  navigator.clipboard.writeText('우열-3947').then(() => {
+    ['copy-btn','copy-btn2'].forEach(id => {
+      const btn = document.getElementById(id);
+      if (btn) { btn.textContent = '복사됨 ✓'; setTimeout(() => btn.textContent = id==='copy-btn' ? '복사' : '코드 복사', 2000); }
+    });
+  });
+}
+
+let _type = 's';
+let _obIdx = 0;
+
+// 온보딩
+function nextSlide() {
+  _obIdx++;
+  if (_obIdx >= 3) { go('login'); return; }
+  document.getElementById('ob-slides').style.transform = `translateX(-${_obIdx * 33.333}%)`;
+  document.querySelectorAll('.ob-dot').forEach((d,i) => d.classList.toggle('on', i === _obIdx));
+}
+
+// 로그인 타입
+function setType(t) {
+  _type = t;
+  ['s','p','t'].forEach(x => {
+    document.getElementById('t-'+x).className = 'type-btn' + (x===t ? (t==='s'?' as':t==='p'?' ap':' at') : '');
+    document.getElementById('f-'+x).style.display = x===t ? 'block' : 'none';
+  });
+}
+
+function loginGo() {
+  if (_type==='s') go('s-home');
+  else if (_type==='p') go('p-home');
+  else go('t-home');
+}
+
+// 화면 전환
+function go(id) {
+  document.querySelectorAll('.sc').forEach(s => s.classList.remove('on'));
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.classList.add('on');
+  const inner = el.querySelector('.inner');
+  if (inner) inner.scrollTop = 0;
+
+  // 설정 화면 분기
+  if (id === 'settings') {
+    const t = window._type || _type;
+    ['s','p','t'].forEach(x => {
+      const nb = document.getElementById('set-bnav-'+x);
+      if (nb) nb.style.display = x===t ? 'flex' : 'none';
+    });
+    document.getElementById('set-s-code').style.display = t==='s' ? 'block' : 'none';
+    document.getElementById('set-p-child').style.display = t==='p' ? 'block' : 'none';
+    document.getElementById('set-t-students').style.display = t==='t' ? 'block' : 'none';
+  }
+}
+
+// 학년 탭 - 학생 진도
+function spGrade(id, el) {
+  ['sp-e1','sp-e2','sp-e3','sp-g1','sp-g2','sp-g3','sp-h1','sp-h2','sp-h3'].forEach(g => {
+    const el2 = document.getElementById(g);
+    if (el2) el2.style.display = g===id ? 'block' : 'none';
+  });
+  document.querySelectorAll('#s-progress .gtab').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+}
+
+const ppWarns = {
+  'pp-e1': '초등 기초가 탄탄해야 중학교 수학이 쉬워요!',
+  'pp-e2': '분수·소수 개념이 중학교 유리수의 기초예요!',
+  'pp-e3': '비와 비율이 약하면 중학교 비례식에 영향이 있어요!',
+  'pp-g1': '일차방정식(40%)이 약해요. 중2 연립방정식 전에 보완이 필요해요!',
+  'pp-g2': '일차함수가 약하면 중3 이차함수, 고1 함수에도 영향이 있어요!',
+  'pp-g3': '이차방정식이 약하면 고1 공통수학에 영향을 줄 수 있어요!',
+  'pp-h1': '공통수학 함수가 약하면 고2 수학Ⅱ 미분·적분에 영향이 있어요!',
+  'pp-h2': '미적분 기초가 약하면 고3 미적분 심화에 영향을 줄 수 있어요!',
+  'pp-h3': '수능 대비 최종 단계입니다. 선택과목을 집중 점검하세요!'
+};
+function ppGrade(id, el) {
+  ['pp-e1','pp-e2','pp-e3','pp-g1','pp-g2','pp-g3','pp-h1','pp-h2','pp-h3'].forEach(g => {
+    const el2 = document.getElementById(g);
+    if (el2) el2.style.display = g===id ? 'block' : 'none';
+  });
+  document.querySelectorAll('#p-progress .gtab').forEach(t => t.classList.remove('on'));
+  el.classList.add('on');
+  document.getElementById('pp-warn-text').textContent = ppWarns[id];
+}
+
+// 객관식 선택
+function sel(el) {
+  el.closest('div').querySelectorAll('.choice').forEach(c => c.classList.remove('sel'));
+  el.classList.add('sel');
+}
+
+// 토글
+document.getElementById('unit-modal').addEventListener('click', function(e) {
+  if (e.target === this) this.style.display = 'none';
+});
+
+document.querySelectorAll('.tog').forEach(t => t.addEventListener('click', () => t.classList.toggle('off')));
+</script>
+</body>
+</html>

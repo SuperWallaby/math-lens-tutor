@@ -12,7 +12,7 @@ function corsHeadersFor(origin: string | null): Headers {
   );
   headers.set(
     "Access-Control-Allow-Headers",
-    "Content-Type, X-Device-Id, Authorization",
+    "Content-Type, X-Device-Id, Authorization, X-View-As-Student",
   );
   headers.set("Access-Control-Max-Age", "86400");
 

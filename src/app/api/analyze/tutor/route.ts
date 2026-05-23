@@ -5,7 +5,7 @@ import {
   refineSolutionAnalysisForAccurateMode,
   solveAndExpandFromVision,
 } from "@/lib/azure";
-import { getRequestUserId } from "@/lib/request";
+import { authErrorResponse, resolveActorUserId } from "@/lib/request";
 import { sampleAnalysis } from "@/lib/sample";
 import { studyLog } from "@/lib/server-log";
 import {
@@ -17,7 +17,18 @@ export const runtime = "nodejs";
 export const maxDuration = 120;
 
 export async function POST(request: Request) {
-  getRequestUserId(request);
+  try {
+    await resolveActorUserId(request, { write: true });
+  } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) {
+      return authResponse;
+    }
+    return NextResponse.json(
+      { error: "튜터 분석 중 오류가 발생했습니다." },
+      { status: 500 },
+    );
+  }
 
   try {
     const body = (await request.json()) as Record<string, unknown>;

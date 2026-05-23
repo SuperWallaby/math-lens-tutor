@@ -178,6 +178,9 @@ export const generatedProblemSchema = z.preprocess((raw) => {
   chart: chartConfigSchema,
   /** 필요할 때만: 좌표평면 도형 (JSXGraph). 불필요하면 null */
   jsxGraph: jsxGraphDiagramSchema,
+  /** 문제 은행 출처 — bank면 bankItemId와 함께 사용 */
+  source: z.enum(["bank", "generated"]).optional().default("generated"),
+  bankItemId: z.string().optional(),
 }));
 
 export const generatedProblemSetSchema = z.object({
@@ -257,4 +260,203 @@ export type LearningInsight = {
   weakConcepts: { concept: string; misses: number }[];
   recentFeedback: string[];
   trendChart: NonNullable<z.infer<typeof chartConfigSchema>>;
+};
+
+export type ConceptStatusItem = {
+  concept: string;
+  misses: number;
+  status: "weak" | "learning" | "strong";
+  label: string;
+};
+
+export type WeeklyTrendPoint = {
+  weekLabel: string;
+  accuracy: number;
+  summary: string;
+};
+
+export type CurriculumUnitProgress = {
+  id: string;
+  section: string;
+  name: string;
+  subtitle: string;
+  percent: number;
+  status: "done" | "learning" | "weak" | "none";
+};
+
+export type TodayMission = {
+  title: string;
+  subtitle: string;
+  remainingCount: number;
+  setId: string | null;
+  conceptTags: string[];
+};
+
+export type ParentActionItem = {
+  icon: string;
+  title: string;
+  subtitle: string;
+};
+
+export type WeeklyReportCycleStep = {
+  step: number;
+  label: string;
+  title: string;
+  text: string;
+};
+
+export type LearningProfile = {
+  grade: string;
+  insight: LearningInsight;
+  stats: {
+    accuracy: number;
+    accuracyDelta: number;
+    totalProblems: number;
+    problemsDelta: number;
+    streakWeeks: number;
+  };
+  mission: TodayMission | null;
+  conceptStatus: ConceptStatusItem[];
+  strongConcepts: { concept: string; score: number }[];
+  weeklyTrend: WeeklyTrendPoint[];
+  curriculumUnits: CurriculumUnitProgress[];
+  chainWarning: string | null;
+  parentActions: ParentActionItem[];
+  weeklyReport: {
+    weekLabel: string;
+    period: string;
+    cycle: WeeklyReportCycleStep[];
+    unitMastery: { name: string; percent: number }[];
+  };
+};
+
+export type TeacherStudentOverview = {
+  id: string;
+  displayName: string;
+  studentCode: string;
+  accuracy: number;
+  status: "danger" | "warning" | "normal" | "excellent";
+  statusLabel: string;
+  weakConcept: string;
+  totalAttempts: number;
+};
+
+export type TeacherClassOverview = {
+  totalStudents: number;
+  atRiskCount: number;
+  classAverageAccuracy: number;
+  accuracyDelta: number;
+  organizationName: string | null;
+  dangerStudents: TeacherStudentOverview[];
+  students: TeacherStudentOverview[];
+  classUnitAverages: { name: string; percent: number }[];
+  recommendations: { icon: string; title: string; subtitle: string }[];
+};
+
+export type UserRole = "student" | "parent" | "teacher";
+
+export type OAuthProvider = "kakao" | "google" | "apple";
+
+export type User = {
+  id: string;
+  role: UserRole | null;
+  displayName: string;
+  grade?: string;
+  organizationName?: string;
+  studentCode?: string;
+  oauthProvider: OAuthProvider;
+  oauthSubject: string;
+  linkedDeviceIds: string[];
+  profileComplete: boolean;
+  createdAt: string;
+};
+
+export type StudentLink = {
+  id: string;
+  guardianUserId: string;
+  studentUserId: string;
+  createdAt: string;
+};
+
+export type LinkedStudentSummary = {
+  id: string;
+  displayName: string;
+  studentCode: string;
+};
+
+export type AuthSessionPayload = {
+  userId: string;
+};
+
+/** 문제 은행에 저장되는 개별 문항 (개념·난이도·학년대 분류) */
+export type ProblemBankItem = {
+  id: string;
+  contentHash: string;
+  type: GeneratedProblem["type"];
+  title: string;
+  prompt: string;
+  choices?: GeneratedProblem["choices"];
+  correctAnswer: string;
+  explanation: string;
+  difficulty: GeneratedProblem["difficulty"];
+  conceptTags: string[];
+  /** 검색·매칭용 대표 개념 */
+  conceptPrimary: string;
+  gradeBand: string;
+  source: "ai_generated" | "imported";
+  originSubmissionId?: string;
+  active: boolean;
+  deliveryCount: number;
+  chart: GeneratedProblem["chart"];
+  jsxGraph: GeneratedProblem["jsxGraph"];
+  createdAt: string;
+};
+
+/** 사용자에게 어떤 은행 문항을 언제 보냈는지 (중복 발송 방지) */
+export type UserProblemDelivery = {
+  id: string;
+  userId: string;
+  bankItemId: string;
+  problemSetId: string;
+  submissionId?: string;
+  problemId: string;
+  deliveredAt: string;
+  outcome: "pending" | "correct" | "incorrect";
+  attemptId?: string;
+};
+
+/** 스캔한 원본 문제 + 분석 결과 (오답 원인 학습 데이터) */
+export type ScannedProblemRecord = {
+  id: string;
+  userId: string;
+  submissionId: string;
+  imageUrl: string | null;
+  imageName: string;
+  problemText: string;
+  extractedStudentAnswer: string;
+  inferredCorrectAnswer: string;
+  errorSummary: string;
+  solutionSteps: string[];
+  weakConcepts: string[];
+  recommendedFocus: string[];
+  conceptTags: string[];
+  conceptPrimary: string;
+  gradeBand: string;
+  createdAt: string;
+};
+
+/** 연습 중 틀린 기록 (풀이 과정 실수 패턴) */
+export type PracticeMistakeRecord = {
+  id: string;
+  userId: string;
+  attemptId: string;
+  setId: string;
+  problemId: string;
+  bankItemId?: string;
+  answer: string;
+  expectedAnswer: string;
+  conceptTags: string[];
+  conceptPrimary: string;
+  feedback: string;
+  createdAt: string;
 };

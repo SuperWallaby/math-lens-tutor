@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 import '../layout/tablet_layout.dart';
+import '../models/app_models.dart';
 import '../services/api_client.dart';
 import 'dashboard_screen.dart';
+import 'link_student_screen.dart';
 import 'upload_screen.dart';
 
 const _kStudyReturnUser = 'study_return_user';
@@ -29,6 +32,12 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _maybeRedirectToUpload() async {
     if (_redirectChecked || !mounted) return;
     _redirectChecked = true;
+
+    final user = widget.apiClient.authSession.user;
+    if (user?.isGuardian ?? false) {
+      return;
+    }
+
     final prefs = await SharedPreferences.getInstance();
     if (!mounted) return;
     if (prefs.getBool(_kStudyReturnUser) ?? false) {
@@ -40,56 +49,149 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
+  Future<void> _copyStudentCode() async {
+    final code = widget.apiClient.authSession.user?.studentCode;
+    if (code == null) return;
+    await Clipboard.setData(ClipboardData(text: code));
+    if (!mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('학생 고유번호가 복사되었습니다.')),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final user = widget.apiClient.authSession.user;
+    final isGuardian = user?.isGuardian ?? false;
+    final isStudent = user?.isStudent ?? false;
+
     return Scaffold(
       body: SafeArea(
         child: TabletBody(
           child: ListView(
             padding: TabletLayout.pagePadding(context),
             children: [
-              const SizedBox(height: 24),
-              Text(
-                '우열',
-                style: TextStyle(
-                  fontSize: TabletLayout.titleHero(context),
-                  fontWeight: FontWeight.w900,
-                  height: 1.05,
-                ),
+              Row(
+                children: [
+                  Expanded(
+                    child: Text(
+                      '우열',
+                      style: TextStyle(
+                        fontSize: TabletLayout.titleHero(context),
+                        fontWeight: FontWeight.w900,
+                        height: 1.05,
+                      ),
+                    ),
+                  ),
+                  if (user != null)
+                    Chip(
+                      label: Text(user.role?.label ?? '가입 중'),
+                    ),
+                ],
               ),
               SizedBox(height: TabletLayout.isWideTablet(context) ? 20 : 16),
               Text(
-                '풀이 사진을 찍으면 AI가 오답 원인과 부족 개념을 분석하고, 유사 문제 5개로 바로 훈련합니다.',
+                isGuardian
+                    ? '연결된 학생의 활동과 수준을 대시보드에서 확인할 수 있습니다. 풀이 등록은 학생 계정에서 진행해 주세요.'
+                    : '풀이 사진을 찍으면 AI가 오답 원인과 부족 개념을 분석하고, 유사 문제 5개로 바로 훈련합니다.',
                 style: TextStyle(
                   color: const Color(0xFFCBD5E1),
                   fontSize: TabletLayout.body(context),
                   height: 1.55,
                 ),
               ),
+              if (isStudent && user?.studentCode != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF0F172A),
+                    borderRadius: BorderRadius.circular(18),
+                  ),
+                  child: Row(
+                    children: [
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              '내 학생 고유번호',
+                              style: TextStyle(color: Color(0xFF94A3B8)),
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              user!.studentCode!,
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        onPressed: _copyStudentCode,
+                        icon: const Icon(Icons.copy_rounded),
+                        tooltip: '복사',
+                      ),
+                    ],
+                  ),
+                ),
+              ],
               const SizedBox(height: 28),
-              FilledButton.icon(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => UploadScreen(apiClient: widget.apiClient),
-                    ),
-                  );
-                },
-                icon: const Icon(Icons.camera_alt_rounded),
-                label: const Text('풀이 사진 분석하기'),
-              ),
-              const SizedBox(height: 12),
+              if (isStudent) ...[
+                FilledButton.icon(
+                  onPressed: () {
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => UploadScreen(apiClient: widget.apiClient),
+                      ),
+                    );
+                  },
+                  icon: const Icon(Icons.camera_alt_rounded),
+                  label: const Text('풀이 사진 분석하기'),
+                ),
+                const SizedBox(height: 12),
+              ] else if (isGuardian) ...[
+                FilledButton.icon(
+                  onPressed: () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => LinkStudentScreen(
+                          apiClient: widget.apiClient,
+                        ),
+                      ),
+                    );
+                    if (mounted) setState(() {});
+                  },
+                  icon: const Icon(Icons.link_rounded),
+                  label: const Text('학생 연결하기'),
+                ),
+                const SizedBox(height: 12),
+              ],
               OutlinedButton.icon(
-                onPressed: () {
-                  Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => DashboardScreen(apiClient: widget.apiClient),
-                    ),
-                  );
-                },
+                onPressed: isGuardian &&
+                        widget.apiClient.authSession.linkedStudents.isEmpty
+                    ? null
+                    : () {
+                        Navigator.of(context).push(
+                          MaterialPageRoute(
+                            builder: (_) =>
+                                DashboardScreen(apiClient: widget.apiClient),
+                          ),
+                        );
+                      },
                 icon: const Icon(Icons.insights_rounded),
-                label: const Text('학습 대시보드'),
+                label: Text(isGuardian ? '학생 학습 대시보드' : '학습 대시보드'),
               ),
+              if (isGuardian &&
+                  widget.apiClient.authSession.linkedStudents.isEmpty) ...[
+                const SizedBox(height: 12),
+                const Text(
+                  '대시보드를 보려면 먼저 학생 고유번호로 연결해 주세요.',
+                  style: TextStyle(color: Color(0xFF94A3B8)),
+                ),
+              ],
               const SizedBox(height: 32),
               const _FeatureTile(
                 icon: Icons.image_search_rounded,

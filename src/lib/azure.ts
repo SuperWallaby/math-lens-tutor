@@ -816,28 +816,33 @@ export async function generateSimilarProblems(
     problemSetId?: string;
     /** 비전 OCR 직후(튜터 병렬) — problemText·학생 풀이만으로 유사 유형 생성 */
     fromVisionOcrOnly?: boolean;
+    /** 기본 5. 문제 은행 보충 시 1~5 */
+    problemCount?: number;
   },
 ): Promise<GeneratedProblemSet> {
+  const count = Math.min(5, Math.max(1, options.problemCount ?? 5));
+
   if (!hasAzureOpenAiConfig()) {
     const id = options.problemSetId ?? randomUUID();
     return {
       ...sampleProblemSet,
       id,
       submissionId,
+      problems: sampleProblemSet.problems.slice(0, count),
     };
   }
 
   const setId = options.problemSetId ?? randomUUID();
   const visionOnly = options.fromVisionOcrOnly === true;
   const promptIntro = visionOnly
-    ? `Create five similar Korean math practice problems from this worksheet photo OCR (tutor diagnosis may still be running in parallel).
+    ? `Create ${count} similar Korean math practice problems from this worksheet photo OCR (tutor diagnosis may still be running in parallel).
 
 OCR snapshot:
 ${JSON.stringify(analysis, null, 2)}
 
 Use problemText, extractedStudentAnswer, and solutionSteps (student handwriting). inferredCorrectAnswer or errorSummary may be empty — infer the likely weak concept from the problem type and visible student work. Do not wait for a full diagnosis.
 Ignore imageQualityWarning, visionImageClarityScore, and visionExtractionConfidence except to avoid over-trusting ambiguous OCR.`
-    : `Create five similar Korean math practice problems based on this student's mistake analysis.
+    : `Create ${count} similar Korean math practice problems based on this student's mistake analysis.
 
 Analysis:
 ${JSON.stringify(analysis, null, 2)}
@@ -871,7 +876,7 @@ Return JSON only matching this exact shape:
 
 Rules:
 - id must be exactly "${setId}" and submissionId exactly "${submissionId}".
-- Exactly 5 problems.
+- Exactly ${count} problems.
 - Mix multiple_choice and free_response when useful.
 - Multiple choice problems must have choices numbered 1 through 5.
 - For multiple_choice, correctAnswer must be the **exact label text** of the correct option (same string as one choice's "label"), never only the choice id "1".."5".
@@ -904,10 +909,18 @@ Make the problems similar enough to train the missing concept, but not identical
       : {}),
   });
 
-  const parsed = generatedProblemSetSchema.parse(parseJsonFromText(text));
+  const parsed = generatedProblemSetSchema.parse({
+    ...parseJsonFromText(text),
+    id: setId,
+    submissionId,
+  });
   return {
     ...parsed,
     id: setId,
     submissionId,
+    problems: parsed.problems.slice(0, count).map((problem) => ({
+      ...problem,
+      source: "generated" as const,
+    })),
   };
 }

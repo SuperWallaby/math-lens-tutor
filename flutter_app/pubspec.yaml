@@ -41,6 +41,9 @@ dependencies:
   flutter_math_fork: ^0.7.4
   desktop_drop: ^0.7.1
   shared_preferences: ^2.5.3
+  google_sign_in: ^6.3.0
+  sign_in_with_apple: ^7.0.1
+  kakao_flutter_sdk_user: ^1.9.7+3
   image: ^4.7.2
   webview_flutter: ^4.13.1
   webview_flutter_web: ^0.2.3+4

@@ -1,5 +1,6 @@
 import { randomUUID } from "crypto";
 import { getMongoDb } from "./mongodb";
+import { reassignProblemBankUserData } from "./problem-bank-store";
 import { buildSampleInsight, sampleProblemSet, sampleSubmission } from "./sample";
 import type {
   GeneratedProblemSet,
@@ -152,4 +153,69 @@ export async function getLearningInsight(
 ): Promise<LearningInsight> {
   const attempts = await getAttempts(userId);
   return buildSampleInsight(attempts);
+}
+
+export async function reassignUserData(
+  fromUserId: string,
+  toUserId: string,
+): Promise<void> {
+  const db = await getMongoDb();
+  if (db) {
+    await Promise.all([
+      db.collection("solution_images").updateMany(
+        { userId: fromUserId },
+        { $set: { userId: toUserId } },
+      ),
+      db.collection("solution_submissions").updateMany(
+        { userId: fromUserId },
+        { $set: { userId: toUserId } },
+      ),
+      db.collection("problem_attempts").updateMany(
+        { userId: fromUserId },
+        { $set: { userId: toUserId } },
+      ),
+      reassignProblemBankUserData(fromUserId, toUserId),
+    ]);
+    return;
+  }
+
+  await reassignProblemBankUserData(fromUserId, toUserId);
+
+  for (const submission of memoryDb.submissions) {
+    if (submission.userId === fromUserId) {
+      submission.userId = toUserId;
+    }
+  }
+  for (const attempt of memoryDb.attempts) {
+    if (attempt.userId === fromUserId) {
+      attempt.userId = toUserId;
+    }
+  }
+}
+
+export async function getSubmissionsByUserId(
+  userId: string,
+  limit = 20,
+): Promise<SolutionSubmission[]> {
+  const db = await getMongoDb();
+  if (!db) {
+    return memoryDb.submissions
+      .filter((submission) => submission.userId === userId)
+      .slice(0, limit);
+  }
+
+  return db
+    .collection<SolutionSubmission>("solution_submissions")
+    .find({ userId }, { projection: { _id: 0 } })
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .toArray();
+}
+
+export async function getLatestProblemSetForUser(
+  userId: string,
+): Promise<GeneratedProblemSet | null> {
+  const submissions = await getSubmissionsByUserId(userId, 1);
+  if (submissions.length === 0) return null;
+  return getProblemSetBySubmission(submissions[0].id);
 }

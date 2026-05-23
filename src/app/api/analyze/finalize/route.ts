@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
 import { parseAnalyzeQualityMode } from "@/lib/analyze-mode";
-import { getRequestUserId } from "@/lib/request";
+import { indexScannedSubmission } from "@/lib/problem-bank";
+import { authErrorResponse, resolveActorUserId } from "@/lib/request";
 import { studyLog } from "@/lib/server-log";
 import { getProblemSet, saveSubmission } from "@/lib/store";
+import { findUserById } from "@/lib/users";
 import {
   generatedProblemSetSchema,
   solutionAnalysisSchema,
@@ -14,7 +16,21 @@ export const maxDuration = 30;
 
 /** phased 분석: 튜터·유사문제 병렬 후 제출 기록 저장 */
 export async function POST(request: Request) {
-  const userId = getRequestUserId(request);
+  let userId = "anonymous";
+
+  try {
+    const actor = await resolveActorUserId(request, { write: true });
+    userId = actor.actorUserId;
+  } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) {
+      return authResponse;
+    }
+    return NextResponse.json(
+      { error: "결과 저장 중 오류가 발생했습니다." },
+      { status: 500 },
+    );
+  }
 
   try {
     const body = (await request.json()) as Record<string, unknown>;
@@ -68,8 +84,10 @@ export async function POST(request: Request) {
       modelMeta,
     };
 
+    const user = await findUserById(userId);
     studyLog("analyze:finalize", "POST save", { submissionId, problemSetId });
     await saveSubmission(submission);
+    await indexScannedSubmission(submission, user?.grade);
 
     return NextResponse.json({
       submissionId,

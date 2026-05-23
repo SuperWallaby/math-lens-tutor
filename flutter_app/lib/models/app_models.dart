@@ -120,6 +120,8 @@ class GeneratedProblem {
     required this.conceptTags,
     required this.chart,
     this.jsxGraph,
+    this.source = 'generated',
+    this.bankItemId,
   });
 
   factory GeneratedProblem.fromJson(Map<String, dynamic> json) {
@@ -138,6 +140,8 @@ class GeneratedProblem {
       conceptTags: _stringList(json['conceptTags']),
       chart: (json['chart'] as Map?)?.cast<String, dynamic>(),
       jsxGraph: (json['jsxGraph'] as Map?)?.cast<String, dynamic>(),
+      source: json['source'] as String? ?? 'generated',
+      bankItemId: json['bankItemId'] as String?,
     );
   }
 
@@ -152,8 +156,11 @@ class GeneratedProblem {
   final List<String> conceptTags;
   final Map<String, dynamic>? chart;
   final Map<String, dynamic>? jsxGraph;
+  final String source;
+  final String? bankItemId;
 
   bool get isMultipleChoice => type == 'multiple_choice' && choices.isNotEmpty;
+  bool get isFromBank => source == 'bank';
 }
 
 class GeneratedProblemSet {
@@ -276,6 +283,519 @@ class WeakConcept {
 
   final String concept;
   final int misses;
+}
+
+enum AppUserRole { student, parent, teacher }
+
+extension AppUserRoleX on AppUserRole {
+  String get apiValue => name;
+
+  static AppUserRole? fromApi(String? value) {
+    switch (value) {
+      case 'student':
+        return AppUserRole.student;
+      case 'parent':
+        return AppUserRole.parent;
+      case 'teacher':
+        return AppUserRole.teacher;
+      default:
+        return null;
+    }
+  }
+
+  String get label {
+    switch (this) {
+      case AppUserRole.student:
+        return '학생';
+      case AppUserRole.parent:
+        return '학부모';
+      case AppUserRole.teacher:
+        return '교사';
+    }
+  }
+
+  bool get isGuardian =>
+      this == AppUserRole.parent || this == AppUserRole.teacher;
+}
+
+class AppUser {
+  const AppUser({
+    required this.id,
+    required this.displayName,
+    required this.profileComplete,
+    this.role,
+    this.grade,
+    this.organizationName,
+    this.studentCode,
+    this.oauthProvider,
+  });
+
+  factory AppUser.fromJson(Map<String, dynamic> json) {
+    return AppUser(
+      id: json['id'] as String? ?? '',
+      displayName: json['displayName'] as String? ?? '',
+      profileComplete: json['profileComplete'] as bool? ?? false,
+      role: AppUserRoleX.fromApi(json['role'] as String?),
+      grade: json['grade'] as String?,
+      organizationName: json['organizationName'] as String?,
+      studentCode: json['studentCode'] as String?,
+      oauthProvider: json['oauthProvider'] as String?,
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'displayName': displayName,
+    'profileComplete': profileComplete,
+    'role': role?.apiValue,
+    'grade': grade,
+    'organizationName': organizationName,
+    'studentCode': studentCode,
+    'oauthProvider': oauthProvider,
+  };
+
+  final String id;
+  final String displayName;
+  final bool profileComplete;
+  final AppUserRole? role;
+  final String? grade;
+  final String? organizationName;
+  final String? studentCode;
+  final String? oauthProvider;
+
+  bool get isGuardian => role?.isGuardian ?? false;
+  bool get isStudent => role == AppUserRole.student;
+  bool get isTeacher => role == AppUserRole.teacher;
+}
+
+class LinkedStudent {
+  const LinkedStudent({
+    required this.id,
+    required this.displayName,
+    required this.studentCode,
+  });
+
+  factory LinkedStudent.fromJson(Map<String, dynamic> json) {
+    return LinkedStudent(
+      id: json['id'] as String? ?? '',
+      displayName: json['displayName'] as String? ?? '',
+      studentCode: json['studentCode'] as String? ?? '',
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'id': id,
+    'displayName': displayName,
+    'studentCode': studentCode,
+  };
+
+  final String id;
+  final String displayName;
+  final String studentCode;
+}
+
+class SubmissionSummary {
+  const SubmissionSummary({
+    required this.id,
+    required this.imageName,
+    required this.createdAt,
+    required this.errorSummary,
+    required this.weakConcepts,
+  });
+
+  factory SubmissionSummary.fromJson(Map<String, dynamic> json) {
+    return SubmissionSummary(
+      id: json['id'] as String? ?? '',
+      imageName: json['imageName'] as String? ?? '',
+      createdAt: json['createdAt'] as String? ?? '',
+      errorSummary: json['errorSummary'] as String? ?? '',
+      weakConcepts: _stringList(json['weakConcepts']),
+    );
+  }
+
+  final String id;
+  final String imageName;
+  final String createdAt;
+  final String errorSummary;
+  final List<String> weakConcepts;
+}
+
+class LearningProfile {
+  const LearningProfile({
+    required this.grade,
+    required this.insight,
+    required this.stats,
+    required this.conceptStatus,
+    required this.strongConcepts,
+    required this.weeklyTrend,
+    required this.curriculumUnits,
+    required this.parentActions,
+    required this.weeklyReport,
+    this.mission,
+    this.chainWarning,
+  });
+
+  factory LearningProfile.fromJson(Map<String, dynamic> json) {
+    return LearningProfile(
+      grade: json['grade'] as String? ?? '중1',
+      insight: LearningInsight.fromJson(
+        (json['insight'] as Map?)?.cast<String, dynamic>() ?? {},
+      ),
+      stats: LearningStats.fromJson(
+        (json['stats'] as Map?)?.cast<String, dynamic>() ?? {},
+      ),
+      mission: json['mission'] == null
+          ? null
+          : TodayMission.fromJson(
+              (json['mission'] as Map).cast<String, dynamic>(),
+            ),
+      conceptStatus: ((json['conceptStatus'] as List?) ?? [])
+          .whereType<Map>()
+          .map((e) => ConceptStatusItem.fromJson(e.cast<String, dynamic>()))
+          .toList(),
+      strongConcepts: ((json['strongConcepts'] as List?) ?? [])
+          .whereType<Map>()
+          .map((e) => StrongConcept.fromJson(e.cast<String, dynamic>()))
+          .toList(),
+      weeklyTrend: ((json['weeklyTrend'] as List?) ?? [])
+          .whereType<Map>()
+          .map((e) => WeeklyTrendPoint.fromJson(e.cast<String, dynamic>()))
+          .toList(),
+      curriculumUnits: ((json['curriculumUnits'] as List?) ?? [])
+          .whereType<Map>()
+          .map((e) => CurriculumUnitProgress.fromJson(e.cast<String, dynamic>()))
+          .toList(),
+      chainWarning: json['chainWarning'] as String?,
+      parentActions: ((json['parentActions'] as List?) ?? [])
+          .whereType<Map>()
+          .map((e) => ParentActionItem.fromJson(e.cast<String, dynamic>()))
+          .toList(),
+      weeklyReport: WeeklyReport.fromJson(
+        (json['weeklyReport'] as Map?)?.cast<String, dynamic>() ?? {},
+      ),
+    );
+  }
+
+  final String grade;
+  final LearningInsight insight;
+  final LearningStats stats;
+  final TodayMission? mission;
+  final List<ConceptStatusItem> conceptStatus;
+  final List<StrongConcept> strongConcepts;
+  final List<WeeklyTrendPoint> weeklyTrend;
+  final List<CurriculumUnitProgress> curriculumUnits;
+  final String? chainWarning;
+  final List<ParentActionItem> parentActions;
+  final WeeklyReport weeklyReport;
+}
+
+class LearningStats {
+  const LearningStats({
+    required this.accuracy,
+    required this.accuracyDelta,
+    required this.totalProblems,
+    required this.problemsDelta,
+    required this.streakWeeks,
+  });
+
+  factory LearningStats.fromJson(Map<String, dynamic> json) {
+    return LearningStats(
+      accuracy: json['accuracy'] as int? ?? 0,
+      accuracyDelta: json['accuracyDelta'] as int? ?? 0,
+      totalProblems: json['totalProblems'] as int? ?? 0,
+      problemsDelta: json['problemsDelta'] as int? ?? 0,
+      streakWeeks: json['streakWeeks'] as int? ?? 0,
+    );
+  }
+
+  final int accuracy;
+  final int accuracyDelta;
+  final int totalProblems;
+  final int problemsDelta;
+  final int streakWeeks;
+}
+
+class TodayMission {
+  const TodayMission({
+    required this.title,
+    required this.subtitle,
+    required this.remainingCount,
+    required this.setId,
+    required this.conceptTags,
+  });
+
+  factory TodayMission.fromJson(Map<String, dynamic> json) {
+    return TodayMission(
+      title: json['title'] as String? ?? '',
+      subtitle: json['subtitle'] as String? ?? '',
+      remainingCount: json['remainingCount'] as int? ?? 0,
+      setId: json['setId'] as String?,
+      conceptTags: _stringList(json['conceptTags']),
+    );
+  }
+
+  final String title;
+  final String subtitle;
+  final int remainingCount;
+  final String? setId;
+  final List<String> conceptTags;
+}
+
+class ConceptStatusItem {
+  const ConceptStatusItem({
+    required this.concept,
+    required this.misses,
+    required this.status,
+    required this.label,
+  });
+
+  factory ConceptStatusItem.fromJson(Map<String, dynamic> json) {
+    return ConceptStatusItem(
+      concept: json['concept'] as String? ?? '',
+      misses: json['misses'] as int? ?? 0,
+      status: json['status'] as String? ?? 'learning',
+      label: json['label'] as String? ?? '',
+    );
+  }
+
+  final String concept;
+  final int misses;
+  final String status;
+  final String label;
+}
+
+class StrongConcept {
+  const StrongConcept({required this.concept, required this.score});
+
+  factory StrongConcept.fromJson(Map<String, dynamic> json) {
+    return StrongConcept(
+      concept: json['concept'] as String? ?? '',
+      score: json['score'] as int? ?? 0,
+    );
+  }
+
+  final String concept;
+  final int score;
+}
+
+class WeeklyTrendPoint {
+  const WeeklyTrendPoint({
+    required this.weekLabel,
+    required this.accuracy,
+    required this.summary,
+  });
+
+  factory WeeklyTrendPoint.fromJson(Map<String, dynamic> json) {
+    return WeeklyTrendPoint(
+      weekLabel: json['weekLabel'] as String? ?? '',
+      accuracy: json['accuracy'] as int? ?? 0,
+      summary: json['summary'] as String? ?? '',
+    );
+  }
+
+  final String weekLabel;
+  final int accuracy;
+  final String summary;
+}
+
+class CurriculumUnitProgress {
+  const CurriculumUnitProgress({
+    required this.id,
+    required this.section,
+    required this.name,
+    required this.subtitle,
+    required this.percent,
+    required this.status,
+  });
+
+  factory CurriculumUnitProgress.fromJson(Map<String, dynamic> json) {
+    return CurriculumUnitProgress(
+      id: json['id'] as String? ?? '',
+      section: json['section'] as String? ?? '',
+      name: json['name'] as String? ?? '',
+      subtitle: json['subtitle'] as String? ?? '',
+      percent: json['percent'] as int? ?? 0,
+      status: json['status'] as String? ?? 'none',
+    );
+  }
+
+  final String id;
+  final String section;
+  final String name;
+  final String subtitle;
+  final int percent;
+  final String status;
+}
+
+class ParentActionItem {
+  const ParentActionItem({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  factory ParentActionItem.fromJson(Map<String, dynamic> json) {
+    return ParentActionItem(
+      icon: json['icon'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      subtitle: json['subtitle'] as String? ?? '',
+    );
+  }
+
+  final String icon;
+  final String title;
+  final String subtitle;
+}
+
+class WeeklyReport {
+  const WeeklyReport({
+    required this.weekLabel,
+    required this.period,
+    required this.cycle,
+    required this.unitMastery,
+  });
+
+  factory WeeklyReport.fromJson(Map<String, dynamic> json) {
+    return WeeklyReport(
+      weekLabel: json['weekLabel'] as String? ?? '',
+      period: json['period'] as String? ?? '',
+      cycle: ((json['cycle'] as List?) ?? [])
+          .whereType<Map>()
+          .map((e) => WeeklyReportStep.fromJson(e.cast<String, dynamic>()))
+          .toList(),
+      unitMastery: ((json['unitMastery'] as List?) ?? [])
+          .whereType<Map>()
+          .map((e) => UnitMastery.fromJson(e.cast<String, dynamic>()))
+          .toList(),
+    );
+  }
+
+  final String weekLabel;
+  final String period;
+  final List<WeeklyReportStep> cycle;
+  final List<UnitMastery> unitMastery;
+}
+
+class WeeklyReportStep {
+  const WeeklyReportStep({
+    required this.step,
+    required this.label,
+    required this.title,
+    required this.text,
+  });
+
+  factory WeeklyReportStep.fromJson(Map<String, dynamic> json) {
+    return WeeklyReportStep(
+      step: json['step'] as int? ?? 0,
+      label: json['label'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      text: json['text'] as String? ?? '',
+    );
+  }
+
+  final int step;
+  final String label;
+  final String title;
+  final String text;
+}
+
+class UnitMastery {
+  const UnitMastery({required this.name, required this.percent});
+
+  factory UnitMastery.fromJson(Map<String, dynamic> json) {
+    return UnitMastery(
+      name: json['name'] as String? ?? '',
+      percent: json['percent'] as int? ?? 0,
+    );
+  }
+
+  final String name;
+  final int percent;
+}
+
+class TeacherClassOverview {
+  const TeacherClassOverview({
+    required this.totalStudents,
+    required this.atRiskCount,
+    required this.classAverageAccuracy,
+    required this.accuracyDelta,
+    required this.dangerStudents,
+    required this.students,
+    required this.classUnitAverages,
+    required this.recommendations,
+    this.organizationName,
+  });
+
+  factory TeacherClassOverview.fromJson(Map<String, dynamic> json) {
+    return TeacherClassOverview(
+      totalStudents: json['totalStudents'] as int? ?? 0,
+      atRiskCount: json['atRiskCount'] as int? ?? 0,
+      classAverageAccuracy: json['classAverageAccuracy'] as int? ?? 0,
+      accuracyDelta: json['accuracyDelta'] as int? ?? 0,
+      organizationName: json['organizationName'] as String?,
+      dangerStudents: ((json['dangerStudents'] as List?) ?? [])
+          .whereType<Map>()
+          .map((e) => TeacherStudentRow.fromJson(e.cast<String, dynamic>()))
+          .toList(),
+      students: ((json['students'] as List?) ?? [])
+          .whereType<Map>()
+          .map((e) => TeacherStudentRow.fromJson(e.cast<String, dynamic>()))
+          .toList(),
+      classUnitAverages: ((json['classUnitAverages'] as List?) ?? [])
+          .whereType<Map>()
+          .map((e) => UnitMastery.fromJson(e.cast<String, dynamic>()))
+          .toList(),
+      recommendations: ((json['recommendations'] as List?) ?? [])
+          .whereType<Map>()
+          .map((e) => ParentActionItem.fromJson(e.cast<String, dynamic>()))
+          .toList(),
+    );
+  }
+
+  final int totalStudents;
+  final int atRiskCount;
+  final int classAverageAccuracy;
+  final int accuracyDelta;
+  final String? organizationName;
+  final List<TeacherStudentRow> dangerStudents;
+  final List<TeacherStudentRow> students;
+  final List<UnitMastery> classUnitAverages;
+  final List<ParentActionItem> recommendations;
+}
+
+class TeacherStudentRow {
+  const TeacherStudentRow({
+    required this.id,
+    required this.displayName,
+    required this.studentCode,
+    required this.accuracy,
+    required this.status,
+    required this.statusLabel,
+    required this.weakConcept,
+    required this.totalAttempts,
+  });
+
+  factory TeacherStudentRow.fromJson(Map<String, dynamic> json) {
+    return TeacherStudentRow(
+      id: json['id'] as String? ?? '',
+      displayName: json['displayName'] as String? ?? '',
+      studentCode: json['studentCode'] as String? ?? '',
+      accuracy: json['accuracy'] as int? ?? 0,
+      status: json['status'] as String? ?? 'normal',
+      statusLabel: json['statusLabel'] as String? ?? '',
+      weakConcept: json['weakConcept'] as String? ?? '',
+      totalAttempts: json['totalAttempts'] as int? ?? 0,
+    );
+  }
+
+  final String id;
+  final String displayName;
+  final String studentCode;
+  final int accuracy;
+  final String status;
+  final String statusLabel;
+  final String weakConcept;
+  final int totalAttempts;
 }
 
 List<String> _stringList(Object? value) {

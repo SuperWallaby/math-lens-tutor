@@ -11,13 +11,17 @@ import {
 } from "./analyze-steps";
 import {
   extractSolutionImageVision,
-  generateSimilarProblems,
   hasAzureOpenAiConfig,
   refineSolutionAnalysisForAccurateMode,
   solveAndExpandFromVision,
 } from "./azure";
-import { sampleAnalysis, sampleProblemSet } from "./sample";
+import {
+  indexScannedSubmission,
+  resolvePracticeProblemSet,
+} from "./problem-bank";
+import { sampleAnalysis } from "./sample";
 import { uploadSolutionImage, saveProblemSet, saveSubmission } from "./store";
+import { findUserById } from "./users";
 import type { GeneratedProblemSet, SolutionSubmission } from "./types";
 
 export type AnalyzeJobResult = {
@@ -94,24 +98,7 @@ export async function runAnalyzeJob(params: {
         analysis: partialAnalysisFromVision(vision),
       });
 
-      const visionDraft = partialAnalysisFromVision(vision);
       emitProgress("tutor");
-
-      let similarFinished = false;
-      const similarPromise = generateSimilarProblems(
-        visionDraft,
-        submissionId,
-        {
-          deploymentName: textDeploymentName,
-          mode: qualityMode,
-          problemSetId,
-          fromVisionOcrOnly: true,
-        },
-      ).then((ps) => {
-        similarFinished = true;
-        emitPartial({ type: "partial", step: "similar", problemSet: ps });
-        return ps;
-      });
 
       let tutorAnalysis = await solveAndExpandFromVision(vision, {
         deploymentName: textDeploymentName,
@@ -138,10 +125,21 @@ export async function runAnalyzeJob(params: {
         });
       }
 
-      if (!similarFinished) {
-        emitProgress("similar");
-      }
-      const generatedSet = await similarPromise;
+      emitProgress("similar");
+      const user = await findUserById(userId);
+      const generatedSet = await resolvePracticeProblemSet({
+        userId,
+        analysis: tutorAnalysis,
+        submissionId,
+        problemSetId,
+        grade: user?.grade,
+        generateOptions: {
+          deploymentName: textDeploymentName,
+          mode: qualityMode,
+          fromVisionOcrOnly: true,
+        },
+      });
+      emitPartial({ type: "partial", step: "similar", problemSet: generatedSet });
       return { analysis: tutorAnalysis, problemSet: generatedSet };
     })();
 
@@ -173,11 +171,19 @@ export async function runAnalyzeJob(params: {
     analysis = sampleAnalysis;
     emitPartial({ type: "partial", step: "tutor", analysis });
     emitProgress("similar");
-    problemSet = {
-      ...sampleProblemSet,
-      id: problemSetId,
+    const user = await findUserById(userId);
+    problemSet = await resolvePracticeProblemSet({
+      userId,
+      analysis,
       submissionId,
-    };
+      problemSetId,
+      grade: user?.grade,
+      generateOptions: {
+        deploymentName: textDeploymentName,
+        mode: qualityMode,
+        fromVisionOcrOnly: true,
+      },
+    });
     emitPartial({ type: "partial", step: "similar", problemSet });
   }
 
@@ -200,7 +206,9 @@ export async function runAnalyzeJob(params: {
   };
 
   emitProgress("save");
+  const user = await findUserById(userId);
   await saveSubmission(submission);
+  await indexScannedSubmission(submission, user?.grade);
   await saveProblemSet(problemSet);
 
   return {

@@ -9,7 +9,7 @@ import {
   extractSolutionImageVision,
   hasAzureOpenAiConfig,
 } from "@/lib/azure";
-import { getRequestUserId } from "@/lib/request";
+import { authErrorResponse, resolveActorUserId } from "@/lib/request";
 import { sampleAnalysis } from "@/lib/sample";
 import { studyLog } from "@/lib/server-log";
 import { uploadSolutionImage } from "@/lib/store";
@@ -18,7 +18,22 @@ export const runtime = "nodejs";
 export const maxDuration = 120;
 
 export async function POST(request: Request) {
-  const userId = getRequestUserId(request);
+  let userId = "anonymous";
+
+  try {
+    const actor = await resolveActorUserId(request, { write: true });
+    userId = actor.actorUserId;
+  } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) {
+      return authResponse;
+    }
+    return NextResponse.json(
+      { error: "사진을 읽는 중 오류가 발생했습니다." },
+      { status: 500 },
+    );
+  }
+
   const azureConfigured = hasAzureOpenAiConfig();
 
   try {

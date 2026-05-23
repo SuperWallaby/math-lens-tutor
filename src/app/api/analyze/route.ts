@@ -11,7 +11,7 @@ import {
   pickAllowedDeployment,
 } from "@/lib/model-deployment-options";
 import { GENERIC_ANALYZE_ERROR, logApiError } from "@/lib/api-errors";
-import { getRequestUserId } from "@/lib/request";
+import { authErrorResponse, resolveActorUserId } from "@/lib/request";
 import { encodeAnalyzePartialLine } from "@/lib/analyze-partial";
 import type { AnalyzePartialPayload } from "@/lib/analyze-partial";
 import {
@@ -63,7 +63,24 @@ function wantsProgressStream(formData: FormData): boolean {
 }
 
 export async function POST(request: Request) {
-  const userId = getRequestUserId(request);
+  let authUserId = "anonymous";
+  let userId = "anonymous";
+
+  try {
+    const actor = await resolveActorUserId(request, { write: true });
+    authUserId = actor.authUserId;
+    userId = actor.actorUserId;
+  } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) {
+      return authResponse;
+    }
+    return NextResponse.json(
+      { error: GENERIC_ANALYZE_ERROR },
+      { status: 500 },
+    );
+  }
+
   const azureConfigured = hasAzureOpenAiConfig();
 
   studyLog("analyze", "POST start", {
@@ -214,7 +231,7 @@ export async function POST(request: Request) {
     const errorId = await logApiError({
       request,
       route: "/api/analyze",
-      userId,
+      userId: authUserId,
       error,
     });
 

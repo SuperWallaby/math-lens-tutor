@@ -58,6 +58,7 @@ export const sampleProblemSet: GeneratedProblemSet = {
       conceptTags: ["완전제곱식", "최솟값"],
       chart: null,
       jsxGraph: null,
+      source: "generated",
     },
     {
       id: "demo-problem-2",
@@ -77,6 +78,7 @@ export const sampleProblemSet: GeneratedProblemSet = {
       conceptTags: ["꼭짓점"],
       chart: null,
       jsxGraph: null,
+      source: "generated",
     },
     {
       id: "demo-problem-3",
@@ -89,6 +91,7 @@ export const sampleProblemSet: GeneratedProblemSet = {
       conceptTags: ["완전제곱식", "상수항 보정"],
       chart: null,
       jsxGraph: null,
+      source: "generated",
     },
     {
       id: "demo-problem-4",
@@ -122,6 +125,7 @@ export const sampleProblemSet: GeneratedProblemSet = {
         options: { responsive: true },
       },
       jsxGraph: null,
+      source: "generated",
     },
     {
       id: "demo-problem-5",
@@ -174,6 +178,7 @@ export const sampleProblemSet: GeneratedProblemSet = {
           },
         ],
       },
+      source: "generated",
     },
   ],
 };

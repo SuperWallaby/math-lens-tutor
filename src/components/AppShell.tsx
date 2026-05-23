@@ -26,6 +26,9 @@ export function AppShell({ children }: { children: ReactNode }) {
                 설정
               </Link>
             ) : null}
+            <Link href="/signup" className="hover:text-white">
+              가입
+            </Link>
             <Link href="/privacy" className="hover:text-white">
               개인정보
             </Link>

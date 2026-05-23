@@ -1,7 +1,8 @@
 import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { GENERIC_SUBMIT_ERROR, logApiError } from "@/lib/api-errors";
-import { getRequestUserId } from "@/lib/request";
+import { authErrorResponse, resolveActorUserId } from "@/lib/request";
+import { recordPracticeAttempt } from "@/lib/problem-bank";
 import { studyLog } from "@/lib/server-log";
 import { getProblemSet, saveAttempt } from "@/lib/store";
 import type { GeneratedProblem, ProblemAttempt } from "@/lib/types";
@@ -34,7 +35,23 @@ function expectedAnswerForProblem(problem: GeneratedProblem): string {
 }
 
 export async function POST(request: Request) {
-  const userId = getRequestUserId(request);
+  let authUserId = "anonymous";
+  let userId = "anonymous";
+
+  try {
+    const actor = await resolveActorUserId(request, { write: true });
+    authUserId = actor.authUserId;
+    userId = actor.actorUserId;
+  } catch (error) {
+    const authResponse = authErrorResponse(error);
+    if (authResponse) {
+      return authResponse;
+    }
+    return NextResponse.json(
+      { error: GENERIC_SUBMIT_ERROR },
+      { status: 500 },
+    );
+  }
 
   try {
     const body = (await request.json()) as {
@@ -99,13 +116,18 @@ export async function POST(request: Request) {
     };
 
     await saveAttempt(attempt);
+    await recordPracticeAttempt({
+      attempt,
+      problem,
+      expectedAnswer: expected,
+    });
 
     return NextResponse.json(attempt);
   } catch (error) {
     const errorId = await logApiError({
       request,
       route: "/api/attempts",
-      userId,
+      userId: authUserId,
       error,
     });
 

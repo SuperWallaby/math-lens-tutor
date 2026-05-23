@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../screens/analysis_screen.dart';
 import '../screens/dashboard_screen.dart';
-import '../screens/home_screen.dart';
+import '../screens/student_hub_screen.dart';
 import '../screens/practice_screen.dart';
 import '../screens/upload_screen.dart';
 import '../services/api_client.dart';
@@ -23,7 +23,7 @@ class StoreScreenshotShell extends StatelessWidget {
   Widget build(BuildContext context) {
     switch (screen) {
       case 'home':
-        return HomeScreen(apiClient: apiClient);
+        return StudentHubScreen(apiClient: apiClient);
       case 'upload':
         return UploadScreen(apiClient: apiClient);
       case 'analysis':
@@ -42,7 +42,7 @@ class StoreScreenshotShell extends StatelessWidget {
           demoInsight: storeScreenshotLearningInsight(),
         );
       default:
-        return HomeScreen(apiClient: apiClient);
+        return StudentHubScreen(apiClient: apiClient);
     }
   }
 }

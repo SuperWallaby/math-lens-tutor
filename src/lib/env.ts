@@ -43,8 +43,27 @@ export const env = {
     process.env.AZURE_OPENAI_REASONING_EFFORT ?? "medium",
   mongodbUri: process.env.MONGODB_URI,
   mongodbDbName: process.env.MONGODB_DB_NAME ?? "math_lens_tutor",
+  jwtSecret: process.env.JWT_SECRET,
+  googleClientIdIos: process.env.GOOGLE_CLIENT_ID_IOS,
+  googleClientIdAndroid: process.env.GOOGLE_CLIENT_ID_ANDROID,
+  googleClientIdWeb: process.env.GOOGLE_CLIENT_ID_WEB,
+  appleClientId: process.env.APPLE_CLIENT_ID,
+  kakaoRestApiKey: process.env.KAKAO_REST_API_KEY,
+  kakaoNativeAppKey: process.env.KAKAO_NATIVE_APP_KEY,
 };
 
 export function hasMongoConfig() {
   return Boolean(env.mongodbUri);
+}
+
+export function hasAuthConfig() {
+  return Boolean(env.jwtSecret);
+}
+
+export function googleClientIds(): string[] {
+  return [
+    env.googleClientIdIos,
+    env.googleClientIdAndroid,
+    env.googleClientIdWeb,
+  ].filter((value): value is string => Boolean(value));
 }

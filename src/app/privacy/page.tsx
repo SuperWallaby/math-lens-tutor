@@ -7,7 +7,11 @@ const sections = [
       "풀이 사진(이미지 바이너리) 및 업로드 시 파일 이름",
       "AI가 생성한 풀이 분석 결과(문제 텍스트, 학생 답 추정, 정답 추정, 단계·오류 요약, 약점 개념 등)",
       "자동 생성된 유사 문제 세트와 객관식·주관식 답안 제출·채점 기록",
-      "로그인 없이 기기별 학습 데이터를 구분하기 위해 앱이 생성해 보내는 익명 기기 ID(HTTP 헤더 `X-Device-Id`)",
+      "카카오·Google·Apple 간편 가입 시 OAuth 제공자가 부여하는 식별자(주체 ID)와 표시 이름",
+      "선택한 계정 역할(학생·학부모·교사) 및 학생 계정의 고유번호(예: WY-XXXXXX)",
+      "학부모·교사 계정과 학생 계정 간 연결 관계(학생 고유번호로 연결)",
+      "가입·세션 유지를 위한 JWT 세션 토큰(앱 로컬 저장)",
+      "기기별 학습 데이터 병합을 위해 앱이 생성해 보내는 익명 기기 ID(HTTP 헤더 `X-Device-Id`)",
       "서비스 오류 대응을 위해 저장되는 API 오류 로그(경로, 메서드, 위와 연결되는 userId, 오류 메시지, User-Agent 등)",
     ],
   },
@@ -15,15 +19,16 @@ const sections = [
     title: "이용 목적",
     items: [
       "풀이 사진 분석 및 유사 문제 생성",
-      "기기(익명 ID) 단위 학습 기록·정답률·약점 개념·대시보드 형태의 피드백 제공",
+      "역할(학생·학부모·교사)에 맞는 학습 기록·정답률·약점 개념·대시보드 제공",
+      "학부모·교사가 연결한 학생의 활동·수준 조회",
       "서비스 장애 조사 및 품질 개선",
     ],
   },
   {
     title: "처리·저장의 근거 및 방식",
     items: [
-      "회원가입을 요구하지 않으며, 식별은 익명 기기 ID에 한합니다.",
-      "서버에 MongoDB가 설정된 경우: 위 정보는 MongoDB 컬렉션(예: `solution_images`, `solution_submissions`, `generated_problem_sets`, `problem_attempts`, `api_error_logs`)에 저장됩니다.",
+      "핵심 기능 이용 전 **간편 가입(카카오·Google·Apple)** 이 필요합니다. 비밀번호 로그인은 없으며, 가입 후 세션으로 재접속합니다.",
+      "서버에 MongoDB가 설정된 경우: 위 정보는 MongoDB 컬렉션(예: `users`, `student_links`, `solution_images`, `solution_submissions`, `generated_problem_sets`, `problem_attempts`, `api_error_logs`)에 저장됩니다.",
       "MongoDB가 없는 환경: 동일 성격의 데이터가 서버 프로세스 메모리에만 임시 보관될 수 있으며, 재시작 등으로 소실될 수 있습니다.",
       "AI 분석 시 풀이 이미지 및 관련 텍스트는 Microsoft Azure OpenAI로 전송될 수 있습니다.",
       "서버는 요청 헤더의 기기 ID를 `device:` 접두사가 붙은 `userId`로 저장합니다. 헤더가 없거나 형식이 맞지 않으면 내부 데모용 식별자로 묶일 수 있어, 실제 기기별 삭제를 원하면 앱이 정상적으로 기기 ID를 보내는지 확인하는 것이 좋습니다.",
@@ -55,7 +60,7 @@ export default function PrivacyPage() {
         <p className="text-sm font-medium text-blue-200">Privacy Policy</p>
         <h1 className="mt-3 text-4xl font-black">개인정보 처리방침</h1>
         <p className="mt-4 leading-8 text-slate-300">
-          <strong className="text-white">Math Lens Tutor</strong>는 로그인 없이 풀이
+          <strong className="text-white">Math Lens Tutor</strong>는 간편 가입 후 풀이
           사진을 분석하고 학습 기록을 제공하기 위해 아래와 같이 최소한의 정보를
           처리합니다. 본 방침은 서비스 동작 및 서버 구현에 맞추어 작성되었으며,
           고객 지원 연락처는 각 앱 마켓플레이스에 등록한 정보를 따릅니다.

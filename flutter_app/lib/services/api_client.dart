@@ -10,15 +10,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import '../models/app_models.dart';
 import 'api_base_url.dart';
+import 'auth_session.dart';
 import 'image_prepare_for_upload.dart';
+import 'oauth_service.dart';
 
 /// iOS/Android: 긴 NDJSON 스트림 대신 짧은 HTTP 3회(vision→tutor→similar).
 bool get _usePhasedAnalyze => !kIsWeb;
 
 class ApiClient {
-  ApiClient({String? baseUrl})
-    : baseUrl = (baseUrl ?? resolveApiBaseUrl()).replaceAll(RegExp(r'/$'), ''),
-      _deviceId = _loadOrCreateDeviceId() {
+  ApiClient({
+    String? baseUrl,
+    required this.authSession,
+  }) : baseUrl = (baseUrl ?? resolveApiBaseUrl()).replaceAll(RegExp(r'/$'), ''),
+       _deviceId = _loadOrCreateDeviceId() {
     if (kDebugMode) {
       debugPrint('[ApiClient] baseUrl=$baseUrl (debug→local unless API_BASE_URL set)');
     }
@@ -27,7 +31,9 @@ class ApiClient {
   static const _deviceIdKey = 'anonymous_device_id';
 
   final String baseUrl;
+  final AuthSession authSession;
   final Future<String> _deviceId;
+  VoidCallback? onUnauthorized;
 
   MediaType _guessImageMediaType(String filename) {
     final lower = filename.toLowerCase();
@@ -71,7 +77,6 @@ class ApiClient {
     void Function(Map<String, dynamic> event)? onStreamEvent,
   }) async {
     final prepared = prepareImageBytesForAnalyzeUpload(bytes, filename);
-    final deviceId = await _deviceId;
 
     void emitProgress(String step, String message) {
       onProgress?.call(message);
@@ -91,7 +96,7 @@ class ApiClient {
         'POST',
         Uri.parse('$baseUrl/api/analyze/vision'),
       );
-      visionRequest.headers['X-Device-Id'] = deviceId;
+      visionRequest.headers.addAll(await _authHeaders());
       visionRequest.fields['qualityMode'] = qualityMode.name;
       visionRequest.files.add(
         http.MultipartFile.fromBytes(
@@ -130,26 +135,11 @@ class ApiClient {
       emitProgress('tutor', '풀이 중…');
 
       final quality = visionJson['qualityMode'] ?? qualityMode.name;
-      var similarFinished = false;
-      final similarBody = {
-        'submissionId': visionJson['submissionId'],
-        'problemSetId': visionJson['problemSetId'],
-        'imageUrl': visionJson['imageUrl'],
-        'imageName': visionJson['imageName'],
-        'analysis': visionJson['analysis'],
-        'fromVisionOcrOnly': true,
-        'qualityMode': quality,
-        'textDeploymentName': visionJson['textDeploymentName'],
-        'visionDeploymentName': visionJson['visionDeploymentName'],
-      };
 
-      final tutorFuture = http
+      final tutorResponse = await http
           .post(
             Uri.parse('$baseUrl/api/analyze/tutor'),
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Device-Id': deviceId,
-            },
+            headers: await _jsonHeaders(),
             body: jsonEncode({
               'vision': visionJson['vision'],
               'qualityMode': quality,
@@ -158,56 +148,10 @@ class ApiClient {
           )
           .timeout(const Duration(minutes: 3));
 
-      final similarFuture = http
-          .post(
-            Uri.parse('$baseUrl/api/analyze/similar'),
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Device-Id': deviceId,
-            },
-            body: jsonEncode(similarBody),
-          )
-          .timeout(const Duration(minutes: 3));
-
-      tutorFuture.then((response) {
-        if (response.statusCode < 400) {
-          final json = _decodeMap(response);
-          emitPartial({
-            'type': 'partial',
-            'step': 'tutor',
-            'analysis': json['analysis'],
-            'message': '풀이 중…',
-          });
-        }
-      });
-
-      similarFuture.then((response) {
-        if (response.statusCode < 400) {
-          similarFinished = true;
-          final json = _decodeMap(response);
-          emitPartial({
-            'type': 'partial',
-            'step': 'similar',
-            'problemSet': json['problemSet'],
-            'message': '유사 문제 만드는 중…',
-          });
-        }
-      });
-
-      final tutorResponse = await tutorFuture;
-      final similarResponse = await similarFuture;
-
       final tutorJson = _decodeMap(tutorResponse);
       if (tutorResponse.statusCode >= 400) {
         throw ApiException(
           tutorJson['error'] as String? ?? '정답·오답 진단에 실패했습니다.',
-        );
-      }
-
-      final similarJson = _decodeMap(similarResponse);
-      if (similarResponse.statusCode >= 400) {
-        throw ApiException(
-          similarJson['error'] as String? ?? '유사 문제 생성에 실패했습니다.',
         );
       }
 
@@ -218,8 +162,26 @@ class ApiClient {
         'message': '풀이 중…',
       });
 
-      if (!similarFinished) {
-        emitProgress('similar', '유사 문제 만드는 중…');
+      emitProgress('similar', '유사 문제 만드는 중…');
+      final similarResponse = await http
+          .post(
+            Uri.parse('$baseUrl/api/analyze/similar'),
+            headers: await _jsonHeaders(),
+            body: jsonEncode({
+              'submissionId': visionJson['submissionId'],
+              'problemSetId': visionJson['problemSetId'],
+              'analysis': tutorJson['analysis'],
+              'qualityMode': quality,
+              'textDeploymentName': visionJson['textDeploymentName'],
+            }),
+          )
+          .timeout(const Duration(minutes: 3));
+
+      final similarJson = _decodeMap(similarResponse);
+      if (similarResponse.statusCode >= 400) {
+        throw ApiException(
+          similarJson['error'] as String? ?? '유사 문제 생성에 실패했습니다.',
+        );
       }
 
       emitPartial({
@@ -232,10 +194,7 @@ class ApiClient {
       final finalizeResponse = await http
           .post(
             Uri.parse('$baseUrl/api/analyze/finalize'),
-            headers: {
-              'Content-Type': 'application/json',
-              'X-Device-Id': deviceId,
-            },
+            headers: await _jsonHeaders(),
             body: jsonEncode({
               'submissionId': visionJson['submissionId'],
               'problemSetId': visionJson['problemSetId'],
@@ -276,7 +235,7 @@ class ApiClient {
     final prepared = prepareImageBytesForAnalyzeUpload(bytes, filename);
     final uri = Uri.parse('$baseUrl/api/analyze');
     final request = http.MultipartRequest('POST', uri);
-    request.headers['X-Device-Id'] = await _deviceId;
+    request.headers.addAll(await _authHeaders());
     request.fields['qualityMode'] = qualityMode.name;
     request.fields['streamProgress'] = '1';
     request.files.add(
@@ -471,17 +430,210 @@ class ApiClient {
   Future<LearningInsight> getInsight() async {
     final response = await http.get(
       Uri.parse('$baseUrl/api/insights'),
-      headers: await _deviceHeaders(),
+      headers: await _authHeaders(),
     );
     final body = _decode(response);
 
     if (response.statusCode >= 400) {
+      _handleAuthStatus(response.statusCode);
       throw ApiException(body['error'] as String? ?? '학습 데이터를 불러오지 못했습니다.');
     }
 
     return LearningInsight.fromJson(
       (body['insight'] as Map).cast<String, dynamic>(),
     );
+  }
+
+  Future<AppUser> signInWithOAuth(OAuthCredentialBundle credential) async {
+    final payload = <String, dynamic>{
+      'provider': credential.provider,
+    };
+    if (credential.idToken != null) {
+      payload['idToken'] = credential.idToken;
+    }
+    if (credential.accessToken != null) {
+      payload['accessToken'] = credential.accessToken;
+    }
+    if (credential.displayName != null) {
+      payload['displayName'] = credential.displayName;
+    }
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/auth/oauth'),
+      headers: await _jsonHeaders(),
+      body: jsonEncode(payload),
+    );
+    final body = _decode(response);
+    if (response.statusCode >= 400) {
+      throw ApiException(body['error'] as String? ?? '간편 가입에 실패했습니다.');
+    }
+
+    final token = body['token'] as String? ?? '';
+    final user = AppUser.fromJson(
+      (body['user'] as Map).cast<String, dynamic>(),
+    );
+    await authSession.setSession(token: token, user: user);
+    return user;
+  }
+
+  Future<LearningProfile> getLearningProfile() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/learning/profile'),
+      headers: await _authHeaders(),
+    );
+    final body = _decode(response);
+    if (response.statusCode >= 400) {
+      _handleAuthStatus(response.statusCode);
+      throw ApiException(body['error'] as String? ?? '학습 프로필을 불러오지 못했습니다.');
+    }
+
+    return LearningProfile.fromJson(
+      (body['profile'] as Map).cast<String, dynamic>(),
+    );
+  }
+
+  Future<TeacherClassOverview> getTeacherOverview() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/teacher/overview'),
+      headers: await _authHeaders(),
+    );
+    final body = _decode(response);
+    if (response.statusCode >= 400) {
+      _handleAuthStatus(response.statusCode);
+      throw ApiException(body['error'] as String? ?? '반 현황을 불러오지 못했습니다.');
+    }
+
+    return TeacherClassOverview.fromJson(
+      (body['overview'] as Map).cast<String, dynamic>(),
+    );
+  }
+
+  Future<AppUser> completeProfile(
+    AppUserRole role, {
+    String? grade,
+    String? organizationName,
+  }) async {
+    final payload = <String, dynamic>{'role': role.apiValue};
+    if (grade != null && grade.trim().isNotEmpty) {
+      payload['grade'] = grade.trim();
+    }
+    if (organizationName != null && organizationName.trim().isNotEmpty) {
+      payload['organizationName'] = organizationName.trim();
+    }
+
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/auth/complete-profile'),
+      headers: await _jsonHeaders(),
+      body: jsonEncode(payload),
+    );
+    final body = _decode(response);
+    if (response.statusCode >= 400) {
+      _handleAuthStatus(response.statusCode);
+      throw ApiException(body['error'] as String? ?? '역할 설정에 실패했습니다.');
+    }
+
+    final user = AppUser.fromJson(
+      (body['user'] as Map).cast<String, dynamic>(),
+    );
+    await authSession.updateUser(user);
+    return user;
+  }
+
+  Future<({AppUser user, List<LinkedStudent> linkedStudents})> fetchMe() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/auth/me'),
+      headers: await _authHeaders(),
+    );
+    final body = _decode(response);
+    if (response.statusCode >= 400) {
+      _handleAuthStatus(response.statusCode);
+      throw ApiException(body['error'] as String? ?? '사용자 정보를 불러오지 못했습니다.');
+    }
+
+    final user = AppUser.fromJson(
+      (body['user'] as Map).cast<String, dynamic>(),
+    );
+    final linkedStudents = ((body['linkedStudents'] as List?) ?? [])
+        .whereType<Map>()
+        .map((item) => LinkedStudent.fromJson(item.cast<String, dynamic>()))
+        .toList();
+    await authSession.setSession(
+      token: authSession.token ?? '',
+      user: user,
+      linkedStudents: linkedStudents,
+    );
+    return (user: user, linkedStudents: linkedStudents);
+  }
+
+  Future<LinkedStudent> linkStudent(String studentCode) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/students/link'),
+      headers: await _jsonHeaders(),
+      body: jsonEncode({'studentCode': studentCode.trim()}),
+    );
+    final body = _decode(response);
+    if (response.statusCode >= 400) {
+      _handleAuthStatus(response.statusCode);
+      throw ApiException(body['error'] as String? ?? '학생 연결에 실패했습니다.');
+    }
+
+    final student = LinkedStudent.fromJson(
+      (body['student'] as Map).cast<String, dynamic>(),
+    );
+    final students = [...authSession.linkedStudents];
+    if (!students.any((item) => item.id == student.id)) {
+      students.insert(0, student);
+    }
+    await authSession.setLinkedStudents(students);
+    if (authSession.viewAsStudentId == null) {
+      await authSession.setViewAsStudentId(student.id);
+    }
+    return student;
+  }
+
+  Future<List<LinkedStudent>> fetchLinkedStudents() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/students/linked'),
+      headers: await _authHeaders(),
+    );
+    final body = _decode(response);
+    if (response.statusCode >= 400) {
+      _handleAuthStatus(response.statusCode);
+      throw ApiException(
+        body['error'] as String? ?? '연결된 학생 목록을 불러오지 못했습니다.',
+      );
+    }
+
+    final students = ((body['students'] as List?) ?? [])
+        .whereType<Map>()
+        .map((item) => LinkedStudent.fromJson(item.cast<String, dynamic>()))
+        .toList();
+    await authSession.setLinkedStudents(students);
+    return students;
+  }
+
+  Future<List<SubmissionSummary>> getSubmissionSummaries() async {
+    final response = await http.get(
+      Uri.parse('$baseUrl/api/submissions'),
+      headers: await _authHeaders(),
+    );
+    final body = _decode(response);
+    if (response.statusCode >= 400) {
+      _handleAuthStatus(response.statusCode);
+      throw ApiException(body['error'] as String? ?? '활동 목록을 불러오지 못했습니다.');
+    }
+
+    return ((body['submissions'] as List?) ?? [])
+        .whereType<Map>()
+        .map((item) => SubmissionSummary.fromJson(item.cast<String, dynamic>()))
+        .toList();
+  }
+
+  void _handleAuthStatus(int statusCode) {
+    if (statusCode == 401) {
+      authSession.clear();
+      onUnauthorized?.call();
+    }
   }
 
   Map<String, dynamic> _decode(http.Response response) {
@@ -492,12 +644,28 @@ class ApiClient {
     }
   }
 
-  Future<Map<String, String>> _deviceHeaders() async {
-    return {'X-Device-Id': await _deviceId};
+  Future<Map<String, String>> _authHeaders() async {
+    final headers = <String, String>{
+      'X-Device-Id': await _deviceId,
+    };
+    final token = authSession.token;
+    if (token != null && token.isNotEmpty) {
+      headers['Authorization'] = 'Bearer $token';
+    }
+    final viewAs = authSession.viewAsStudentId;
+    if (viewAs != null && viewAs.isNotEmpty) {
+      headers['X-View-As-Student'] = viewAs;
+    }
+    return headers;
   }
 
+  Future<Map<String, String>> _deviceHeaders() async => _authHeaders();
+
   Future<Map<String, String>> _jsonHeaders() async {
-    return {'Content-Type': 'application/json', 'X-Device-Id': await _deviceId};
+    return {
+      'Content-Type': 'application/json',
+      ...(await _authHeaders()),
+    };
   }
 
   static Future<String> _loadOrCreateDeviceId() async {
