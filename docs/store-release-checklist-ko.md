@@ -97,6 +97,7 @@ flutter screenshot -o ../screen-shots/flutter-iphone-raw/test.png
 - **앱 이름**: 우열
 - **부제**: AI 수학 튜터 — 풀이 분석·유사문제
 - **개인정보 처리방침**: https://study-hazel-six.vercel.app/privacy
+- **계정·데이터 삭제**: https://study-hazel-six.vercel.app/account-deletion
 - **카테고리**: 교육
 - **연령**: 4+ (또는 9+ — 콘텐츠에 맞게)
 

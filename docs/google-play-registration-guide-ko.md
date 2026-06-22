@@ -22,6 +22,7 @@ Google Play Console에 **우열** Android 앱을 처음 등록·출시할 때 �
 | 패키지 이름 (Application ID) | `**com.neoproject.study`** — 생성 후 **변경 불가**   |
 | API (프로덕션)              | `https://study-hazel-six.vercel.app`         |
 | 개인정보 처리방침 URL           | `https://study-hazel-six.vercel.app/privacy` |
+| 계정·데이터 삭제 URL            | `https://study-hazel-six.vercel.app/account-deletion` |
 | 카테고리                    | 교육                                            |
 
 
@@ -117,9 +118,14 @@ flutter_app/releases/<버전>/wooyeol-*-build*.aab
 
 대시보드 **앱 콘텐츠**에서 항목별로 완료 표시가 나올 때까지 진행합니다.
 
-### 4.1 개인정보 처리방침
+### 4.1 개인정보 처리방침 · 계정 삭제
 
-- URL: `https://study-hazel-six.vercel.app/privacy`
+| 항목 | URL |
+|------|-----|
+| 개인정보 처리방침 | `https://study-hazel-six.vercel.app/privacy` |
+| **계정·데이터 삭제 (Play 필수)** | **`https://study-hazel-six.vercel.app/account-deletion`** |
+
+Play Console **데이터 보안** → 계정 삭제 링크 칸에는 **`/account-deletion`** URL을 넣습니다.
 
 ### 4.2 앱 액세스 권한 (App access) — **영어로 입력**
 
