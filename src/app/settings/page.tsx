@@ -88,19 +88,19 @@ export default function SettingsPage() {
     <AppShell>
       <div className="mx-auto max-w-xl space-y-8">
         <div>
-          <p className="text-sm text-slate-400">개발 — 분석 모델 선택</p>
+          <p className="text-sm text-wy-text-muted">개발 — 분석 모델 선택</p>
           <h1 className="mt-2 text-3xl font-black">설정</h1>
-          <p className="mt-3 text-sm leading-relaxed text-slate-300">
+          <p className="mt-3 text-sm leading-relaxed text-wy-text-sub">
             사진 분석 요청 시 이 브라우저에만 저장됩니다. 선택한 이름은 서버
             허용 목록(
-            <code className="rounded bg-slate-800 px-1 text-xs">
+            <code className="rounded bg-wy-surface-muted px-1 text-xs">
               AZURE_OPENAI_*_DEPLOYMENT_OPTIONS
             </code>
             )에 있을 때만 적용됩니다.
           </p>
         </div>
 
-        <div className="rounded-2xl border border-amber-500/25 bg-amber-500/10 p-4 text-sm leading-relaxed text-amber-100">
+        <div className="rounded-wy-md border border-wy-warning/30 bg-[var(--wy-warning-tint)] p-4 text-sm leading-relaxed text-foreground">
           <strong className="font-semibold">o1 / o3-mini:</strong> 해당
           버전을 Deprecating 처리해 <strong>신규 배포가 거절</strong>되는 경우가
           많습니다. 같은 리소스에는 <strong>o4-mini</strong>(텍스트·추론 후보)를
@@ -109,19 +109,19 @@ export default function SettingsPage() {
         </div>
 
         {!configured && loaded ? (
-          <p className="text-sm text-slate-400">
+          <p className="text-sm text-wy-text-muted">
             서버에 모델 설정이 없어 후보 목록을 불러오지 못했습니다.
           </p>
         ) : null}
 
-        <div className="space-y-6 rounded-3xl border border-white/10 bg-white/10 p-6">
+        <div className="space-y-6 rounded-[var(--wy-radius-md)] border border-wy-border bg-wy-surface p-6">
           <div>
-            <label className="block text-sm font-medium text-slate-200">
+            <label className="block text-sm font-medium text-foreground">
               비전 배포 (풀이 사진 OCR)
             </label>
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="mt-1 text-xs text-wy-text-muted">
               미선택 시 서버 기본(
-              <code className="rounded bg-slate-900 px-1">
+              <code className="rounded bg-wy-surface-elevated px-1">
                 AZURE_OPENAI_DEPLOYMENT_VISION
               </code>{" "}
               등)을 씁니다.
@@ -130,7 +130,7 @@ export default function SettingsPage() {
               value={vision}
               onChange={(e) => persistVision(e.target.value)}
               disabled={!loaded}
-              className="mt-3 w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-slate-100"
+              className="mt-3 w-full rounded-wy-md border border-wy-border bg-wy-surface-elevated px-4 py-3 text-sm text-foreground"
             >
               <option value="">기본 (서버)</option>
               {visionOptions.map((name) => (
@@ -142,10 +142,10 @@ export default function SettingsPage() {
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-slate-200">
+            <label className="block text-sm font-medium text-foreground">
               텍스트 배포 (튜터·유사 문제 등)
             </label>
-            <p className="mt-1 text-xs text-slate-400">
+            <p className="mt-1 text-xs text-wy-text-muted">
               선택 시 응답 모드와 관계없이 해당 배포로 텍스트 단계를 보냅니다.
               정확 모드의 2차 검토도 같은 이름을 사용합니다.
             </p>
@@ -153,7 +153,7 @@ export default function SettingsPage() {
               value={text}
               onChange={(e) => persistText(e.target.value)}
               disabled={!loaded}
-              className="mt-3 w-full rounded-2xl border border-white/10 bg-slate-900 px-4 py-3 text-sm text-slate-100"
+              className="mt-3 w-full rounded-wy-md border border-wy-border bg-wy-surface-elevated px-4 py-3 text-sm text-foreground"
             >
               <option value="">기본 (모드별 서버 배포)</option>
               {textOptions.map((name) => (
@@ -166,7 +166,7 @@ export default function SettingsPage() {
         </div>
 
         <p className="text-center text-sm">
-          <Link href="/upload" className="text-blue-300 hover:text-blue-200">
+          <Link href="/upload" className="text-wy-primary hover:text-wy-primary-dark">
             ← 사진 분석으로
           </Link>
         </p>

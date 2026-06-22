@@ -1,6 +1,21 @@
 import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
+/** 로컬 dev: localhost + 사설 LAN IP (랜덤 dev 포트·실기기 웹뷰 대응) */
+function isDevOriginAllowed(hostname: string): boolean {
+  if (
+    hostname === "localhost" ||
+    hostname === "127.0.0.1" ||
+    hostname === "::1"
+  ) {
+    return true;
+  }
+  if (/^192\.168\./.test(hostname)) return true;
+  if (/^10\./.test(hostname)) return true;
+  if (/^172\.(1[6-9]|2\d|3[0-1])\./.test(hostname)) return true;
+  return false;
+}
+
 /**
  * Flutter Web 등 다른 localhost 포트에서 /api 호출 시 브라우저 CORS(preflight 포함).
  */
@@ -23,14 +38,9 @@ function corsHeadersFor(origin: string | null): Headers {
 
   try {
     const { hostname } = new URL(origin);
-    const local =
-      hostname === "localhost" ||
-      hostname === "127.0.0.1" ||
-      hostname === "::1";
-    if (local) {
-      headers.set("Access-Control-Allow-Origin", origin);
-      headers.set("Vary", "Origin");
-    } else if (process.env.NODE_ENV !== "production") {
+    const devAllowed =
+      process.env.NODE_ENV !== "production" && isDevOriginAllowed(hostname);
+    if (devAllowed) {
       headers.set("Access-Control-Allow-Origin", origin);
       headers.set("Vary", "Origin");
     } else {

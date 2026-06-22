@@ -50,6 +50,13 @@ export const env = {
   appleClientId: process.env.APPLE_CLIENT_ID,
   kakaoRestApiKey: process.env.KAKAO_REST_API_KEY,
   kakaoNativeAppKey: process.env.KAKAO_NATIVE_APP_KEY,
+  resendApiKey: process.env.RESEND_API_KEY,
+  magicLinkFromEmail: process.env.MAGIC_LINK_FROM_EMAIL,
+  appPublicUrl: process.env.APP_PUBLIC_URL,
+  /** Ollama-compatible LLM base URL (GPU worker). Example: http://127.0.0.1:11434 */
+  gpuLlmBaseUrl: process.env.GPU_LLM_BASE_URL,
+  gpuLlmModel: process.env.GPU_LLM_MODEL ?? "qwen2.5:7b",
+  gpuLlmTimeoutMs: Number(process.env.GPU_LLM_TIMEOUT_MS ?? "120000"),
 };
 
 export function hasMongoConfig() {
@@ -58,6 +65,21 @@ export function hasMongoConfig() {
 
 export function hasAuthConfig() {
   return Boolean(env.jwtSecret);
+}
+
+export function hasMagicLinkEmailConfig() {
+  return Boolean(env.resendApiKey && env.magicLinkFromEmail);
+}
+
+export function resolveAppPublicUrl(fallbackOrigin?: string): string {
+  const raw = env.appPublicUrl?.trim() || fallbackOrigin?.trim() || "";
+  if (!raw) {
+    return "http://localhost:3000";
+  }
+  if (raw.startsWith("http://") || raw.startsWith("https://")) {
+    return raw.replace(/\/$/, "");
+  }
+  return `https://${raw.replace(/\/$/, "")}`;
 }
 
 export function googleClientIds(): string[] {

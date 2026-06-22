@@ -1,0 +1,31 @@
+---
+description: 우열 DESIGN.md — UI 생성 전 디자인 토큰 준수
+globs: flutter_app/lib/**/*.dart, src/**/*.tsx, src/**/*.css, src/components/**/*
+alwaysApply: false
+---
+
+# Design system (DESIGN.md)
+
+Before generating or editing **any visual UI**, read `DESIGN.md` at the project root.
+
+## Required
+
+- Use **only** colors, spacing, radius, and typography from `DESIGN.md`.
+- Flutter: import `flutter_app/lib/theme/app_design_system.dart` — use `AppColors`, `AppDesignColors`, `AppRadii`, `AppSpacing`, `buildAppTheme()`.
+- Web: use CSS variables from `src/app/globals.css` (`--wy-*`).
+- Primary brand blue is `#007BFF`, **not** violet `#7C6FF7` or legacy `#2563EB`.
+- **Light theme only** — scaffold `#F5F5F5`, cards `#FFFFFF`.
+- Card radius **14px**, button height **52px**, flat (no shadows).
+
+## Patterns
+
+- Cards: white surface, border `rgba(0,0,0,0.08)`, elevation 0.
+- Chips: semantic tint background (~12–18% opacity).
+- One primary filled CTA per screen; secondary actions outlined or text.
+
+## Forbidden
+
+- Dark scaffold colors (`#09090F`, slate-950, `#0F172A`).
+- Violet `#7C6FF7`, legacy Material blue `#2563EB`.
+- Heavy drop shadows, gradients on buttons/backgrounds.
+- Default Tailwind slate/blue without mapping to `--wy-*` tokens.

@@ -17,6 +17,17 @@ const WEB_URL =
   String(Constants.expoConfig?.extra?.webUrl ?? "").trim() ||
   "";
 
+const colors = {
+  bg: "#F5F5F5",
+  surface: "#FFFFFF",
+  text: "#1A1A2E",
+  textSub: "#5A6278",
+  primary: "#007BFF",
+  accent: "#FF8C00",
+  accentTint: "rgba(255, 140, 0, 0.12)",
+  border: "rgba(0, 0, 0, 0.08)",
+};
+
 export default function App() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -32,7 +43,7 @@ export default function App() {
             mobile/.env 에 EXPO_PUBLIC_WEB_URL 을 넣으세요.{"\n"}
             예: https://your-app.vercel.app
           </Text>
-          <StatusBar style="light" />
+          <StatusBar style="dark" />
         </SafeAreaView>
       </SafeAreaProvider>
     );
@@ -41,10 +52,10 @@ export default function App() {
   return (
     <SafeAreaProvider>
       <SafeAreaView style={styles.fill} edges={["top"]}>
-        <StatusBar style="light" />
+        <StatusBar style="dark" />
         {loading ? (
           <View style={styles.overlay}>
-            <ActivityIndicator size="large" color="#60a5fa" />
+            <ActivityIndicator size="large" color={colors.primary} />
             <Text style={styles.loadingText}>불러오는 중…</Text>
           </View>
         ) : null}
@@ -95,28 +106,28 @@ export default function App() {
 const styles = StyleSheet.create({
   fill: {
     flex: 1,
-    backgroundColor: "#020617",
+    backgroundColor: colors.bg,
   },
   webview: {
     flex: 1,
-    backgroundColor: "#020617",
+    backgroundColor: colors.surface,
   },
   center: {
     flex: 1,
-    backgroundColor: "#020617",
+    backgroundColor: colors.bg,
     alignItems: "center",
     justifyContent: "center",
     padding: 24,
   },
   title: {
-    color: "#f8fafc",
+    color: colors.text,
     fontSize: 18,
     fontWeight: "700",
     marginBottom: 12,
     textAlign: "center",
   },
   body: {
-    color: "#94a3b8",
+    color: colors.textSub,
     fontSize: 15,
     lineHeight: 22,
     textAlign: "center",
@@ -125,16 +136,18 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     alignItems: "center",
     justifyContent: "center",
-    backgroundColor: "#020617",
+    backgroundColor: colors.bg,
     zIndex: 2,
   },
   loadingText: {
     marginTop: 12,
-    color: "#94a3b8",
+    color: colors.textSub,
     fontSize: 14,
   },
   errorBanner: {
-    backgroundColor: "#7f1d1d",
+    backgroundColor: colors.accentTint,
+    borderBottomWidth: 1,
+    borderBottomColor: colors.border,
     paddingHorizontal: 12,
     paddingVertical: 8,
     flexDirection: "row",
@@ -145,14 +158,14 @@ const styles = StyleSheet.create({
   },
   errorText: {
     flex: 1,
-    color: "#fecaca",
+    color: colors.text,
     fontSize: 13,
   },
   retry: {
     paddingHorizontal: 12,
     paddingVertical: 6,
-    backgroundColor: "#ffffff22",
-    borderRadius: 8,
+    backgroundColor: colors.primary,
+    borderRadius: 10,
   },
   retryText: {
     color: "#fff",

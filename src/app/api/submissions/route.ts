@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 
 import { GENERIC_INSIGHT_ERROR, logApiError } from "@/lib/api-errors";
 import { authErrorResponse, resolveActorUserId } from "@/lib/request";
+import { toSubmissionListItem } from "@/lib/submission-list";
 import { getSubmissionsByUserId } from "@/lib/store";
 
 export async function GET(request: Request) {
@@ -13,13 +14,7 @@ export async function GET(request: Request) {
     const submissions = await getSubmissionsByUserId(actor.actorUserId);
 
     return NextResponse.json({
-      submissions: submissions.map((submission) => ({
-        id: submission.id,
-        imageName: submission.imageName,
-        createdAt: submission.createdAt,
-        errorSummary: submission.analysis.errorSummary,
-        weakConcepts: submission.analysis.weakConcepts.slice(0, 3),
-      })),
+      submissions: submissions.map(toSubmissionListItem),
     });
   } catch (error) {
     const authResponse = authErrorResponse(error);

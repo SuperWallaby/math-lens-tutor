@@ -12,5 +12,5 @@ String softBreakAnswerExplanation(String input) {
 
   final head = s.substring(0, m.start).trimRight();
   final tail = s.substring(m.start).trimLeft();
-  return '$head\n\n$tail';
+  return '$head\n$tail';
 }

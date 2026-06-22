@@ -57,10 +57,10 @@ export default function PrivacyPage() {
   return (
     <AppShell>
       <article className="mx-auto max-w-3xl">
-        <p className="text-sm font-medium text-blue-200">Privacy Policy</p>
+        <p className="text-sm font-medium text-wy-primary">Privacy Policy</p>
         <h1 className="mt-3 text-4xl font-black">개인정보 처리방침</h1>
-        <p className="mt-4 leading-8 text-slate-300">
-          <strong className="text-white">Math Lens Tutor</strong>는 간편 가입 후 풀이
+        <p className="mt-4 leading-8 text-wy-text-sub">
+          <strong className="text-foreground">Math Lens Tutor</strong>는 간편 가입 후 풀이
           사진을 분석하고 학습 기록을 제공하기 위해 아래와 같이 최소한의 정보를
           처리합니다. 본 방침은 서비스 동작 및 서버 구현에 맞추어 작성되었으며,
           고객 지원 연락처는 각 앱 마켓플레이스에 등록한 정보를 따릅니다.
@@ -70,10 +70,10 @@ export default function PrivacyPage() {
           {sections.map((section) => (
             <section
               key={section.title}
-              className="rounded-3xl border border-white/10 bg-white/5 p-6"
+              className="rounded-[var(--wy-radius-md)] border border-wy-border bg-wy-surface p-6"
             >
               <h2 className="text-xl font-bold">{section.title}</h2>
-              <ul className="mt-4 list-disc space-y-2 pl-5 leading-7 text-slate-300">
+              <ul className="mt-4 list-disc space-y-2 pl-5 leading-7 text-wy-text-sub">
                 {section.items.map((item) => (
                   <li key={item}>{item}</li>
                 ))}
@@ -82,7 +82,7 @@ export default function PrivacyPage() {
           ))}
         </div>
 
-        <p className="mt-10 text-sm leading-7 text-slate-400">
+        <p className="mt-10 text-sm leading-7 text-wy-text-muted">
           시행일: 본 문서 게시일 이후 제공되는 서비스부터 적용합니다. 내용이
           변경되면 동일 페이지에 개정 시행일과 함께 반영합니다.
         </p>

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 
+import '../theme/app_design_system.dart';
+
 /// iPad 등 넓은 화면에서 본문 폭·패딩·타이포를 키워 스토어 스크린샷에 맞게 보이도록 한다.
 abstract final class TabletLayout {
   TabletLayout._();
@@ -21,14 +23,36 @@ abstract final class TabletLayout {
     return (w * 0.94).clamp(720.0, 1400.0);
   }
 
+  /// Page insets. Top includes status-bar safe area when the body is full-bleed
+  /// (e.g. bottom-nav tabs). Inside [SafeArea] / below [AppBar], adds content-only top air.
   static EdgeInsets pagePadding(BuildContext context) {
+    final safeTop = MediaQuery.paddingOf(context).top;
+    final top = safeTop > 0 ? safeTop + AppSpacing.lg : AppSpacing.xxl;
+
     if (isWideTablet(context)) {
-      return const EdgeInsets.symmetric(horizontal: 40, vertical: 28);
+      return EdgeInsets.fromLTRB(40, top + AppSpacing.sm, 40, 28);
     }
     if (isTablet(context)) {
-      return const EdgeInsets.symmetric(horizontal: 32, vertical: 24);
+      return EdgeInsets.fromLTRB(32, top + AppSpacing.xs, 32, 24);
     }
-    return const EdgeInsets.all(24);
+    return EdgeInsets.fromLTRB(24, top, 24, 24);
+  }
+
+  /// [AppBar] 아래 본문 — status bar 중복 패딩 없이 좌우만 [pagePadding] 과 맞춤.
+  static EdgeInsets appBarBodyPadding(BuildContext context) {
+    if (isWideTablet(context)) {
+      return const EdgeInsets.fromLTRB(40, AppSpacing.md, 40, 28);
+    }
+    if (isTablet(context)) {
+      return const EdgeInsets.fromLTRB(32, AppSpacing.md, 32, 24);
+    }
+    return const EdgeInsets.fromLTRB(24, AppSpacing.md, 24, 24);
+  }
+
+  static double pageHorizontalPadding(BuildContext context) {
+    if (isWideTablet(context)) return 40;
+    if (isTablet(context)) return 32;
+    return 24;
   }
 
   static double titleHero(BuildContext context) =>

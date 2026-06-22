@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../layout/tablet_layout.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
+import '../theme/app_design_system.dart';
 
 class RoleSelectScreen extends StatefulWidget {
   const RoleSelectScreen({super.key, required this.apiClient});
@@ -92,12 +93,12 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
               ),
               const SizedBox(height: 12),
               const Text(
-                '학생은 풀이 분석·연습을, 학부모·교사는 연결된 학생의 활동과 수준을 확인합니다.',
-                style: TextStyle(color: Color(0xFFCBD5E1), height: 1.5),
+                '학생은 풀이 분석·연습을, 학부모는 자녀 학습을 함께 돕습니다.',
+                style: TextStyle(color: AppColors.textSub, height: 1.5),
               ),
               if (_error != null) ...[
                 const SizedBox(height: 16),
-                Text(_error!, style: const TextStyle(color: Color(0xFFF87171))),
+                Text(_error!, style: const TextStyle(color: AppColors.accent)),
               ],
               const SizedBox(height: 24),
               _RoleCard(
@@ -110,18 +111,10 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
               const SizedBox(height: 12),
               _RoleCard(
                 title: '학부모',
-                body: '자녀 학생 고유번호로 연결 후 활동·수준 확인',
+                body: '오늘의 코칭 질문·틀린 문제 설명으로 자녀 학습 돕기',
                 icon: Icons.family_restroom_rounded,
                 selected: _pendingRole == AppUserRole.parent,
                 onTap: () => setState(() => _pendingRole = AppUserRole.parent),
-              ),
-              const SizedBox(height: 12),
-              _RoleCard(
-                title: '교사',
-                body: '학생 고유번호로 연결 후 학습 현황 확인',
-                icon: Icons.menu_book_rounded,
-                selected: _pendingRole == AppUserRole.teacher,
-                onTap: () => setState(() => _pendingRole = AppUserRole.teacher),
               ),
               if (_pendingRole == AppUserRole.student) ...[
                 const SizedBox(height: 20),
@@ -137,21 +130,6 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
                       DropdownMenuEntry(value: grade, label: grade),
                   ],
                   onSelected: (value) => setState(() => _grade = value),
-                ),
-              ],
-              if (_pendingRole == AppUserRole.teacher) ...[
-                const SizedBox(height: 20),
-                const Text(
-                  '기관명 (선택)',
-                  style: TextStyle(fontWeight: FontWeight.w800),
-                ),
-                const SizedBox(height: 8),
-                TextField(
-                  controller: _orgController,
-                  decoration: const InputDecoration(
-                    hintText: '예) 스마트수학학원',
-                    border: OutlineInputBorder(),
-                  ),
                 ),
               ],
               if (_pendingRole != null) ...[
@@ -187,7 +165,7 @@ class _RoleCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Material(
-      color: selected ? const Color(0xFF1E3A8A) : const Color(0xFF0F172A),
+      color: selected ? AppColors.primary.withValues(alpha: 0.12) : AppColors.surface,
       borderRadius: BorderRadius.circular(20),
       child: InkWell(
         borderRadius: BorderRadius.circular(20),
@@ -198,13 +176,13 @@ class _RoleCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: selected
-                  ? const Color(0xFF2563EB)
-                  : Colors.white.withValues(alpha: 0.08),
+                  ? AppColors.primary
+                  : AppColors.border,
             ),
           ),
           child: Row(
             children: [
-              Icon(icon, color: const Color(0xFF60A5FA), size: 28),
+              Icon(icon, color: AppColors.primary, size: 28),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -221,7 +199,7 @@ class _RoleCard extends StatelessWidget {
                     Text(
                       body,
                       style: const TextStyle(
-                        color: Color(0xFF94A3B8),
+                        color: AppColors.textSub,
                         height: 1.45,
                       ),
                     ),
@@ -229,7 +207,7 @@ class _RoleCard extends StatelessWidget {
                 ),
               ),
               if (selected)
-                const Icon(Icons.check_circle_rounded, color: Color(0xFF60A5FA)),
+                const Icon(Icons.check_circle_rounded, color: AppColors.primary),
             ],
           ),
         ),

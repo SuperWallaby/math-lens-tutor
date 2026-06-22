@@ -65,6 +65,19 @@ PreparedAnalyzeImage prepareImageBytesForAnalyzeUpload(
   );
 }
 
+/// 프로필 아바타용 — 작은 정사각형·낮은 품질로 업로드 크기를 줄입니다.
+PreparedAnalyzeImage prepareImageBytesForProfileUpload(
+  Uint8List raw,
+  String filename,
+) {
+  return prepareImageBytesForAnalyzeUpload(
+    raw,
+    filename,
+    maxSide: 384,
+    jpegQuality: 80,
+  );
+}
+
 img.Image _compositeOnWhite(img.Image src) {
   final bg = img.Image(width: src.width, height: src.height, numChannels: 3);
   img.fill(bg, color: img.ColorRgb8(255, 255, 255));

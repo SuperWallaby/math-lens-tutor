@@ -1,0 +1,23 @@
+---
+description: Flutter app run target priority for local development
+alwaysApply: true
+---
+
+# Flutter Run Target Priority
+
+When the user asks to start/run the app in local development:
+
+1. Prefer a physically connected iPhone first.
+   - Check devices with `flutter devices` from `flutter_app/`.
+   - Start API with `yarn app` or `npm run dev:next` (picks a free random port 3100–3999, saved in `.dev-local-port`).
+   - If an iPhone is available, run Flutter on that device with local API:
+     `flutter run -d <iphone-device-id> --dart-define=API_BASE_URL=http://<mac-lan-ip>:<port>`
+     where `<port>` is from `.dev-local-port` (or use `yarn app`, which wires this automatically).
+   - Do not use `localhost` for a physical iPhone; use the Mac's LAN IP.
+2. Start/verify the Next.js API server on the Mac when local API is needed:
+   `npm run dev:next` or `yarn app`
+3. If no connected iPhone is available, or the iPhone launch fails, fall back to browser:
+   `npm run flutter:run:chrome`
+4. Mention the selected target briefly to the user.
+
+For Android emulator, use `http://10.0.2.2:<port>` where `<port>` is from `.dev-local-port` (`npm run flutter:run:android-emulator` reads it automatically).

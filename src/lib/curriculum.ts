@@ -54,6 +54,19 @@ export const GRADE_BAND_ORDER: GradeBand[] = [
   "h3",
 ];
 
+/** 학년대 탭 → 대표 학년 (목차·개념 매칭용) */
+export const GRADE_BAND_REPRESENTATIVE: Record<GradeBand, string> = {
+  e12: "초1",
+  e34: "초3",
+  e56: "초5",
+  m1: "중1",
+  m2: "중2",
+  m3: "중3",
+  h1: "고1",
+  h2: "고2",
+  h3: "고3",
+};
+
 export const GRADE_BAND_PLACEHOLDER: Record<
   GradeBand,
   { title: string; subtitle: string }
@@ -596,6 +609,7 @@ export const CURRICULUM_TABLE_OF_CONTENTS: Record<GradeBand, CurriculumUnit[]> =
 
 export function gradeToBand(grade?: string | null): GradeBand {
   const g = grade?.trim() ?? "중1";
+  if (g.startsWith("대학")) return "h3";
   if (g.startsWith("초1") || g.startsWith("초2")) return "e12";
   if (g.startsWith("초3") || g.startsWith("초4")) return "e34";
   if (g.startsWith("초5") || g.startsWith("초6")) return "e56";
@@ -607,6 +621,49 @@ export function gradeToBand(grade?: string | null): GradeBand {
   return "m1";
 }
 
+export type SchoolLevel = "elementary" | "middle" | "high";
+
+export function schoolLevelFromGrade(grade?: string | null): SchoolLevel {
+  const g = grade?.trim() ?? "중1";
+  if (g.startsWith("대학") || g.startsWith("고")) return "high";
+  if (g.startsWith("초")) return "elementary";
+  return "middle";
+}
+
+/** 튜터·오답 해설 프롬프트용 학년 맥락 */
+export function tutorGradeContext(grade?: string | null): {
+  gradeLabel: string;
+  schoolLevel: SchoolLevel;
+  promptBlock: string;
+} {
+  const trimmed = grade?.trim();
+  const gradeLabel = trimmed && trimmed.length > 0
+    ? trimmed
+    : GRADE_BAND_LABELS[gradeToBand(grade)];
+  const schoolLevel = schoolLevelFromGrade(grade);
+  const levelKo =
+    schoolLevel === "elementary"
+      ? "초등"
+      : schoolLevel === "middle"
+        ? "중등"
+        : "고등";
+
+  const styleGuide =
+    schoolLevel === "elementary"
+      ? "Use short, friendly Korean sentences. Avoid advanced jargon and high-school-only notation unless the problem already uses it. Prefer concrete numbers and step-by-step intuition."
+      : schoolLevel === "middle"
+        ? "Use standard Korean middle-school (중학교) math vocabulary and clear step-by-step reasoning."
+        : "Use precise Korean high-school math terminology with concise, rigorous reasoning.";
+
+  return {
+    gradeLabel,
+    schoolLevel,
+    promptBlock: `Student grade: ${gradeLabel} (${levelKo}).
+Tailor errorSummary and all tutor prose to this level.
+${styleGuide}`,
+  };
+}
+
 export function unitsForGrade(grade?: string | null): CurriculumUnit[] {
   const band = gradeToBand(grade);
   return UNITS_BY_BAND[band] ?? [];
@@ -614,6 +671,27 @@ export function unitsForGrade(grade?: string | null): CurriculumUnit[] {
 
 export function bandForGradeTabIndex(index: number): GradeBand {
   return GRADE_BAND_ORDER[index] ?? "m1";
+}
+
+export function findCurriculumUnit(
+  unitId: string,
+): { unit: CurriculumUnit; gradeBand: GradeBand } | null {
+  const normalized = unitId.trim();
+  if (!normalized) return null;
+  for (const band of GRADE_BAND_ORDER) {
+    const unit = UNITS_BY_BAND[band].find((u) => u.id === normalized);
+    if (unit) return { unit, gradeBand: band };
+  }
+  return null;
+}
+
+export function listCurriculumUnits(params?: {
+  gradeBand?: GradeBand;
+}): { unit: CurriculumUnit; gradeBand: GradeBand }[] {
+  const bands = params?.gradeBand ? [params.gradeBand] : GRADE_BAND_ORDER;
+  return bands.flatMap((band) =>
+    UNITS_BY_BAND[band].map((unit) => ({ unit, gradeBand: band })),
+  );
 }
 
 export function matchUnitForConcept(

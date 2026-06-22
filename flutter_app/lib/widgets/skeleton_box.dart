@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 
-/// 로딩 플레이스홀더 — 넓고 은은한 좌→우 shimmer.
+import '../theme/app_design_system.dart';
+
+/// 로딩 플레이스홀더 — 넓고 은은한 좌→右 shimmer.
 class SkeletonBox extends StatefulWidget {
   const SkeletonBox({
     super.key,
@@ -46,7 +48,6 @@ class _SkeletonBoxState extends State<SkeletonBox>
       animation: _controller,
       builder: (context, child) {
         final t = _controller.value;
-        // 더 넓은 밴드가 지나가도록 이동 범위 확대
         final begin = Alignment(-1.6 + 3.2 * t, 0);
         final end = Alignment(0.4 + 3.2 * t, 0);
 
@@ -55,24 +56,24 @@ class _SkeletonBoxState extends State<SkeletonBox>
         switch (widget.tint) {
           case SkeletonTint.neutral:
             colors = [
-              Colors.white.withValues(alpha: 0.03),
-              Colors.white.withValues(alpha: 0.04),
-              Colors.white.withValues(alpha: 0.055),
-              Colors.white.withValues(alpha: 0.075),
-              Colors.white.withValues(alpha: 0.055),
-              Colors.white.withValues(alpha: 0.04),
-              Colors.white.withValues(alpha: 0.03),
+              AppColors.surfaceMuted.withValues(alpha: 0.55),
+              AppColors.surfaceMuted.withValues(alpha: 0.7),
+              AppColors.surfaceElevated,
+              AppColors.surface,
+              AppColors.surfaceElevated,
+              AppColors.surfaceMuted.withValues(alpha: 0.7),
+              AppColors.surfaceMuted.withValues(alpha: 0.55),
             ];
             stops = const [0.0, 0.22, 0.38, 0.5, 0.62, 0.78, 1.0];
           case SkeletonTint.error:
             colors = [
-              const Color(0xFFF87171).withValues(alpha: 0.04),
-              const Color(0xFFF87171).withValues(alpha: 0.05),
-              const Color(0xFFF87171).withValues(alpha: 0.065),
-              const Color(0xFFF87171).withValues(alpha: 0.09),
-              const Color(0xFFF87171).withValues(alpha: 0.065),
-              const Color(0xFFF87171).withValues(alpha: 0.05),
-              const Color(0xFFF87171).withValues(alpha: 0.04),
+              AppColors.accent.withValues(alpha: 0.04),
+              AppColors.accent.withValues(alpha: 0.05),
+              AppColors.accent.withValues(alpha: 0.065),
+              AppColors.accent.withValues(alpha: 0.09),
+              AppColors.accent.withValues(alpha: 0.065),
+              AppColors.accent.withValues(alpha: 0.05),
+              AppColors.accent.withValues(alpha: 0.04),
             ];
             stops = const [0.0, 0.22, 0.38, 0.5, 0.62, 0.78, 1.0];
         }
@@ -82,6 +83,7 @@ class _SkeletonBoxState extends State<SkeletonBox>
           height: widget.height,
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(widget.borderRadius),
+            color: AppColors.surfaceMuted,
             gradient: LinearGradient(
               begin: begin,
               end: end,

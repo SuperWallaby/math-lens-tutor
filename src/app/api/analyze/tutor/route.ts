@@ -17,8 +17,9 @@ export const runtime = "nodejs";
 export const maxDuration = 120;
 
 export async function POST(request: Request) {
+  let actor;
   try {
-    await resolveActorUserId(request, { write: true });
+    actor = await resolveActorUserId(request, { write: true });
   } catch (error) {
     const authResponse = authErrorResponse(error);
     if (authResponse) {
@@ -53,6 +54,7 @@ export async function POST(request: Request) {
       ? await solveAndExpandFromVision(vision, {
           deploymentName: textDeploymentName,
           mode: qualityMode,
+          grade: actor.user.grade,
         })
       : sampleAnalysis;
 
@@ -60,6 +62,7 @@ export async function POST(request: Request) {
       analysis = await refineSolutionAnalysisForAccurateMode(analysis, {
         deploymentName: textDeploymentName,
         mode: qualityMode,
+        grade: actor.user.grade,
       });
     }
 

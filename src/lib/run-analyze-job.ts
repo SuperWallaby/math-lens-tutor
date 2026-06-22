@@ -100,9 +100,11 @@ export async function runAnalyzeJob(params: {
 
       emitProgress("tutor");
 
+      const userForTutor = await findUserById(userId);
       let tutorAnalysis = await solveAndExpandFromVision(vision, {
         deploymentName: textDeploymentName,
         mode: qualityMode,
+        grade: userForTutor?.grade,
       });
       emitPartial({
         type: "partial",
@@ -116,6 +118,7 @@ export async function runAnalyzeJob(params: {
           {
             deploymentName: textDeploymentName,
             mode: qualityMode,
+            grade: userForTutor?.grade,
           },
         );
         emitPartial({

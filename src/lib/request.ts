@@ -24,7 +24,40 @@ export type ResolvedActor = {
   user: User;
   role: UserRole;
   isGuardianView: boolean;
+  isGuest: boolean;
 };
+
+function buildGuestUser(actorUserId: string): User {
+  const deviceRaw = actorUserId.startsWith("device:")
+    ? actorUserId.slice("device:".length)
+    : actorUserId;
+
+  return {
+    id: actorUserId,
+    role: "student",
+    displayName: "게스트",
+    grade: "중1",
+    profileComplete: true,
+    oauthProvider: "google",
+    oauthSubject: `guest:${deviceRaw}`,
+    linkedDeviceIds: deviceRaw ? [deviceRaw] : [],
+    createdAt: new Date().toISOString(),
+  };
+}
+
+function resolveGuestActor(request: Request): ResolvedActor {
+  const actorUserId = getRequestUserId(request);
+  const user = buildGuestUser(actorUserId);
+
+  return {
+    authUserId: actorUserId,
+    actorUserId,
+    user,
+    role: "student",
+    isGuardianView: false,
+    isGuest: true,
+  };
+}
 
 export function getRequestUserId(request: Request): string {
   const raw = request.headers.get(DEVICE_ID_HEADER)?.trim();
@@ -75,8 +108,19 @@ export async function requireAuthenticatedUser(
 
 export async function resolveActorUserId(
   request: Request,
-  options?: { write?: boolean },
+  options?: { write?: boolean; requireAuth?: boolean },
 ): Promise<ResolvedActor> {
+  const authUserId = getSessionUserId(request);
+  if (!authUserId) {
+    if (options?.requireAuth) {
+      throw new RequestAuthError(
+        401,
+        "로그인이 필요합니다. 간편 가입 후 이용해 주세요.",
+      );
+    }
+    return resolveGuestActor(request);
+  }
+
   const user = await requireAuthenticatedUser(request);
 
   if (user.role === "student") {
@@ -86,6 +130,7 @@ export async function resolveActorUserId(
       user,
       role: user.role,
       isGuardianView: false,
+      isGuest: false,
     };
   }
 
@@ -126,6 +171,7 @@ export async function resolveActorUserId(
     user,
     role: user.role as UserRole,
     isGuardianView: true,
+    isGuest: false,
   };
 }
 

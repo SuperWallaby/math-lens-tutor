@@ -1,8 +1,10 @@
 import {
-  CHAIN_WARNINGS,
+  GRADE_BAND_ORDER,
+  GRADE_BAND_REPRESENTATIVE,
   gradeToBand,
   matchUnitForConcept,
   unitsForGrade,
+  type GradeBand,
 } from "./curriculum";
 import {
   getAttempts,
@@ -10,10 +12,19 @@ import {
   getSubmissionsByUserId,
 } from "./store";
 import {
+  aggregateUnitPracticeForUser,
+  countActiveBankItemsGroupedByUnit,
   getPracticeMistakesForUser,
   getScannedProblemsForUser,
+  type UnitPracticeAggregate,
 } from "./problem-bank-store";
 import { buildSampleInsight } from "./sample";
+import { buildTrainingSnapshot } from "./concept-training";
+import {
+  buildParentCoachingCard,
+  buildParentWrongExplains,
+  pickGradingPoint,
+} from "./parent-coaching";
 import type {
   ConceptStatusItem,
   CurriculumUnitProgress,
@@ -197,62 +208,127 @@ function buildConceptStatus(
       ];
 }
 
+function legacyUnitKeywordSignal(
+  unit: { id: string },
+  grade: string | undefined,
+  misses: Map<string, number>,
+  submissions: SolutionSubmission[],
+  mistakes: PracticeMistakeRecord[],
+  scanned: ScannedProblemRecord[],
+): { hitCount: number; missCount: number } {
+  let missCount = 0;
+  let hitCount = 0;
+
+  for (const [concept, count] of misses) {
+    if (matchUnitForConcept(concept, grade)?.id === unit.id) {
+      missCount += count;
+    }
+  }
+
+  const textSources = [
+    ...submissions.map((submission) =>
+      [
+        ...submission.analysis.weakConcepts,
+        submission.analysis.errorSummary,
+        submission.analysis.problemText,
+      ].join(" "),
+    ),
+    ...scanned.map((record) =>
+      [
+        ...record.weakConcepts,
+        ...record.conceptTags,
+        record.errorSummary,
+        record.problemText,
+      ].join(" "),
+    ),
+    ...mistakes.map((record) =>
+      [...record.conceptTags, record.conceptPrimary, record.feedback].join(" "),
+    ),
+  ];
+
+  for (const text of textSources) {
+    if (matchUnitForConcept(text, grade)?.id === unit.id) {
+      hitCount += 1;
+    }
+  }
+
+  return { hitCount, missCount };
+}
+
+function computeUnitPercent(params: {
+  poolSize: number;
+  practice: {
+    attemptedUnique: number;
+    correctUnique: number;
+    gradedCount: number;
+    correctCount: number;
+  };
+  legacy: { hitCount: number; missCount: number };
+}): { percent: number; status: CurriculumUnitProgress["status"] } {
+  const { poolSize, practice, legacy } = params;
+
+  if (practice.attemptedUnique > 0) {
+    const targetPool = Math.max(poolSize, practice.attemptedUnique, 10);
+    const coverage = (practice.attemptedUnique / targetPool) * 100;
+    const accuracy =
+      practice.gradedCount > 0
+        ? (practice.correctCount / practice.gradedCount) * 100
+        : 0;
+    const mastery = (practice.correctUnique / targetPool) * 100;
+    const percent = Math.min(
+      100,
+      Math.round(coverage * 0.4 + accuracy * 0.35 + mastery * 0.25),
+    );
+
+    let status: CurriculumUnitProgress["status"] = "learning";
+    if (percent >= 80 && accuracy >= 70 && practice.correctUnique >= 3) {
+      status = "done";
+    } else if (percent < 35 || (practice.gradedCount >= 5 && accuracy < 45)) {
+      status = "weak";
+    }
+    return { percent, status };
+  }
+
+  if (legacy.hitCount > 0 || legacy.missCount > 0) {
+    const percent = Math.max(
+      5,
+      Math.min(35, 28 - legacy.missCount * 4 + Math.min(legacy.hitCount, 3) * 2),
+    );
+    return { percent, status: "learning" };
+  }
+
+  return { percent: 0, status: "none" };
+}
+
 function buildCurriculumUnits(
   grade: string | undefined,
   misses: Map<string, number>,
   submissions: SolutionSubmission[],
   mistakes: PracticeMistakeRecord[],
   scanned: ScannedProblemRecord[],
+  unitPractice: Map<string, UnitPracticeAggregate>,
+  poolByUnit: Map<string, number>,
 ): CurriculumUnitProgress[] {
   const units = unitsForGrade(grade);
   if (units.length === 0) return [];
 
   return units.map((unit) => {
-    let missCount = 0;
-    let hitCount = 0;
-
-    for (const [concept, count] of misses) {
-      if (matchUnitForConcept(concept, grade)?.id === unit.id) {
-        missCount += count;
-      }
-    }
-
-    const textSources = [
-      ...submissions.map((submission) =>
-        [
-          ...submission.analysis.weakConcepts,
-          submission.analysis.errorSummary,
-          submission.analysis.problemText,
-        ].join(" "),
-      ),
-      ...scanned.map((record) =>
-        [
-          ...record.weakConcepts,
-          ...record.conceptTags,
-          record.errorSummary,
-          record.problemText,
-        ].join(" "),
-      ),
-      ...mistakes.map((record) =>
-        [...record.conceptTags, record.conceptPrimary, record.feedback].join(" "),
-      ),
-    ];
-
-    for (const text of textSources) {
-      if (matchUnitForConcept(text, grade)?.id === unit.id) {
-        hitCount += 1;
-      }
-    }
-
-    let percent = 0;
-    let status: CurriculumUnitProgress["status"] = "none";
-
-    if (hitCount > 0 || missCount > 0) {
-      percent = Math.max(20, Math.min(95, 85 - missCount * 8));
-      if (percent >= 80) status = "done";
-      else if (percent >= 50) status = "learning";
-      else status = "weak";
-    }
+    const practice = unitPractice.get(unit.id) ?? {
+      attemptedUnique: 0,
+      correctUnique: 0,
+      gradedCount: 0,
+      correctCount: 0,
+    };
+    const poolSize = poolByUnit.get(unit.id) ?? 0;
+    const legacy = legacyUnitKeywordSignal(
+      unit,
+      grade,
+      misses,
+      submissions,
+      mistakes,
+      scanned,
+    );
+    const { percent, status } = computeUnitPercent({ poolSize, practice, legacy });
 
     return {
       id: unit.id,
@@ -263,6 +339,29 @@ function buildCurriculumUnits(
       status,
     };
   });
+}
+
+function buildCurriculumByBand(
+  misses: Map<string, number>,
+  submissions: SolutionSubmission[],
+  mistakes: PracticeMistakeRecord[],
+  scanned: ScannedProblemRecord[],
+  unitPractice: Map<string, UnitPracticeAggregate>,
+  poolByUnit: Map<string, number>,
+): Record<GradeBand, CurriculumUnitProgress[]> {
+  const byBand = {} as Record<GradeBand, CurriculumUnitProgress[]>;
+  for (const band of GRADE_BAND_ORDER) {
+    byBand[band] = buildCurriculumUnits(
+      GRADE_BAND_REPRESENTATIVE[band],
+      misses,
+      submissions,
+      mistakes,
+      scanned,
+      unitPractice,
+      poolByUnit,
+    );
+  }
+  return byBand;
 }
 
 async function buildMission(
@@ -290,15 +389,37 @@ async function buildMission(
 }
 
 async function buildParentActions(
-  profile: Omit<LearningProfile, "parentActions">,
+  profile: Omit<
+    LearningProfile,
+    "parentActions" | "parentCoachingCard" | "parentWrongExplains"
+  >,
+  coaching: ReturnType<typeof buildParentCoachingCard>,
+  wrongExplains: ReturnType<typeof buildParentWrongExplains>,
 ): Promise<ParentActionItem[]> {
   const actions: ParentActionItem[] = [];
 
-  if (profile.mission && profile.mission.remainingCount > 0) {
+  if (coaching) {
     actions.push({
       icon: "💬",
-      title: "오늘 유사문제 풀었는지 확인해주세요",
+      title: "오늘 코칭 질문 해보기",
+      subtitle: coaching.question,
+    });
+  }
+
+  if (profile.mission && profile.mission.remainingCount > 0) {
+    actions.push({
+      icon: "✅",
+      title: "유사문제 풀었는지 확인하기",
       subtitle: `${profile.mission.title} · ${profile.mission.remainingCount}개 남음`,
+    });
+  }
+
+  if (wrongExplains.length > 0) {
+    const first = wrongExplains[0];
+    actions.push({
+      icon: "📖",
+      title: "틀린 문제, 이렇게 설명해 주세요",
+      subtitle: truncatePlain(first.easyExplain, 72),
     });
   }
 
@@ -306,33 +427,33 @@ async function buildParentActions(
     const top = profile.strongConcepts[0];
     actions.push({
       icon: "🎉",
-      title: `${top.concept} 잘하고 있어요! 칭찬해주세요`,
-      subtitle: `최근 학습에서 안정적으로 보이는 개념입니다.`,
+      title: `${top.concept} 잘하고 있어요 — 칭찬해 주세요`,
+      subtitle: "짧은 격려가 다음 학습 동기가 됩니다.",
     });
   }
 
-  if (profile.conceptStatus.some((c) => c.status === "weak")) {
-    const weak = profile.conceptStatus.find((c) => c.status === "weak");
-    actions.push({
-      icon: "📌",
-      title: `${weak?.concept ?? "약점 개념"} 집중 공랄을 권해요`,
-      subtitle: "틀린 문제 사진을 더 올리면 AI가 유사문제를 만들어줍니다.",
-    });
-  }
+  return actions.slice(0, 4);
+}
 
-  return actions.slice(0, 3);
+function truncatePlain(text: string, max: number): string {
+  const t = text.replace(/\s+/g, " ").trim();
+  if (t.length <= max) return t;
+  return `${t.slice(0, max - 1)}…`;
 }
 
 export async function buildLearningProfile(
   userId: string,
   grade?: string | null,
 ): Promise<LearningProfile> {
-  const [attempts, submissions, mistakes, scanned] = await Promise.all([
-    getAttempts(userId),
-    getSubmissionsByUserId(userId, 30),
-    getPracticeMistakesForUser(userId),
-    getScannedProblemsForUser(userId),
-  ]);
+  const [attempts, submissions, mistakes, scanned, unitPractice, poolByUnit] =
+    await Promise.all([
+      getAttempts(userId),
+      getSubmissionsByUserId(userId, 30),
+      getPracticeMistakesForUser(userId),
+      getScannedProblemsForUser(userId),
+      aggregateUnitPracticeForUser(userId),
+      countActiveBankItemsGroupedByUnit(),
+    ]);
 
   const insight = buildSampleInsight(attempts);
   const weeklyTrend = buildWeeklyTrend(attempts);
@@ -345,13 +466,16 @@ export async function buildLearningProfile(
   const lastAcc = accuracyOf(lastWeek);
   const misses = collectConceptMisses(attempts, submissions, mistakes, scanned);
   const conceptStatus = buildConceptStatus(misses);
-  const curriculumUnits = buildCurriculumUnits(
-    grade ?? undefined,
+  const curriculumByBand = buildCurriculumByBand(
     misses,
     submissions,
     mistakes,
     scanned,
+    unitPractice,
+    poolByUnit,
   );
+  const band = gradeToBand(grade);
+  const curriculumUnits = curriculumByBand[band];
 
   const scores = collectConceptScores(attempts, submissions);
   const strongConcepts = [...scores.entries()]
@@ -364,12 +488,18 @@ export async function buildLearningProfile(
     .slice(0, 4);
 
   const mission = await buildMission(userId, attempts);
-  const band = gradeToBand(grade);
-  const weakest = curriculumUnits
-    .filter((u) => u.status === "weak")
-    .sort((a, b) => a.percent - b.percent)[0];
+  const training = await buildTrainingSnapshot({
+    userId,
+    attempts,
+    mistakes,
+    scanned,
+    submissions,
+  });
 
-  const base: Omit<LearningProfile, "parentActions"> = {
+  const base: Omit<
+    LearningProfile,
+    "parentActions" | "parentCoachingCard" | "parentWrongExplains"
+  > = {
     grade: grade?.trim() || "중1",
     insight: {
       ...insight,
@@ -381,7 +511,7 @@ export async function buildLearningProfile(
             {
               label: "주차별 정답률",
               data: weeklyTrend.map((w) => w.accuracy),
-              backgroundColor: ["#FF6B6B", "#FB923C", "#FBBF24", "#34D399"],
+              backgroundColor: ["#FF8C00", "#B8860B", "#2ECC40", "#007BFF"],
             },
           ],
         },
@@ -396,11 +526,13 @@ export async function buildLearningProfile(
       streakWeeks: computeStreakWeeks(attempts),
     },
     mission,
+    training,
     conceptStatus,
     strongConcepts,
     weeklyTrend,
     curriculumUnits,
-    chainWarning: weakest ? CHAIN_WARNINGS[band] : null,
+    curriculumByBand,
+    chainWarning: null,
     weeklyReport: {
       weekLabel: "이번 주",
       period: formatWeekPeriod(startOfWeek(new Date())),
@@ -412,9 +544,21 @@ export async function buildLearningProfile(
     },
   };
 
-  const parentActions = await buildParentActions(base);
+  const parentWrongExplains = buildParentWrongExplains({
+    submissions,
+    mistakes,
+  });
+  const parentCoachingCard = buildParentCoachingCard({
+    submissions,
+    mistakes,
+  });
+  const parentActions = await buildParentActions(
+    base,
+    parentCoachingCard,
+    parentWrongExplains,
+  );
 
-  return { ...base, parentActions };
+  return { ...base, parentCoachingCard, parentWrongExplains, parentActions };
 }
 
 function formatWeekPeriod(start: Date): string {
@@ -468,6 +612,30 @@ function buildWeeklyCycle(
         thisAcc >= lastAcc
           ? "꾸준히 정답률이 개선되고 있어요!"
           : "이번 주는 다시 한번 유사문제 연습이 필요해요.",
+    },
+    {
+      step: 5,
+      label: "부모 확인",
+      title: "부모님이 확인할 것",
+      text: latest
+        ? "자녀가 유사문제를 끝까지 풀었는지, 포기하지 않았는지 확인해 주세요."
+        : "이번 주 학습 기록을 함께 살펴보세요.",
+    },
+    {
+      step: 6,
+      label: "대화하기",
+      title: "오늘의 코칭 질문",
+      text: latest
+        ? `「${pickGradingPoint(latest.analysis)}」 — 왜 그렇게 생각했는지 물어보세요.`
+        : `${weak} 개념을 일상 예시로 설명해 보세요.`,
+    },
+    {
+      step: 7,
+      label: "채점 포인트",
+      title: "핵심 채점 포인트",
+      text: latest
+        ? pickGradingPoint(latest.analysis)
+        : "틀린 문제의 핵심 개념을 아이에게 설명해 달라고 요청해 보세요.",
     },
   ];
 }

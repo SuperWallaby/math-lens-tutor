@@ -37,6 +37,19 @@ AnalyzeResult storeScreenshotAnalyzeResult() {
     learningGoal: '꼭짓점과 구간에서의 최솟값을 빠르게 판별합니다.',
     problems: [
       GeneratedProblem(
+        id: 'p_seq',
+        type: 'free_response',
+        title: '수의 순서',
+        prompt: r'다음 수를 순서대로 쓸 때, □에 알맞은 수는? $4,\ 5,\ \square,\ 7,\ 8$',
+        choices: const [],
+        correctAnswer: '6',
+        explanation: '5 다음 6, 그다음 7이므로 □에는 6이 들어갑니다.',
+        difficulty: 'easy',
+        conceptTags: ['수의 순서'],
+        answerFormat: 'short_numeric',
+        chart: null,
+      ),
+      GeneratedProblem(
         id: 'p1',
         type: 'multiple_choice',
         title: '개념 확인',
@@ -71,6 +84,7 @@ AnalyzeResult storeScreenshotAnalyzeResult() {
         explanation: 'f(x) = (x − 3)² + 1',
         difficulty: 'medium',
         conceptTags: ['완전제곱'],
+        answerFormat: 'short_answer',
         chart: null,
       ),
     ],

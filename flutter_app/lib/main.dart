@@ -1,21 +1,43 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import 'dev/app_restart.dart';
+import 'dev/design_review_shell.dart';
+import 'dev/dev_menu_overlay.dart';
 import 'dev/store_screenshot_shell.dart';
 import 'services/api_base_url.dart';
 import 'services/api_client.dart';
 import 'services/auth_session.dart';
+import 'services/magic_link_auth.dart';
 import 'services/oauth_service.dart';
 import 'screens/auth_gate.dart';
+import 'theme/app_design_system.dart';
 
 const _storeScreenshot = String.fromEnvironment(
   'STORE_SCREENSHOT',
   defaultValue: '',
 );
 
+String resolveDesignReviewKey() {
+  const fromDefine = String.fromEnvironment('DESIGN_REVIEW', defaultValue: '');
+  if (fromDefine.trim().isNotEmpty) {
+    return fromDefine.trim();
+  }
+  if (kIsWeb) {
+    final q = Uri.base.queryParameters['design_review'];
+    if (q != null && q.trim().isNotEmpty) {
+      return q.trim();
+    }
+  }
+  return '';
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await initializeOAuthSdk();
+  unawaited(initializeOAuthSdk());
+  unawaited(initializeMagicLinkAuth());
   if (kDebugMode) {
     debugPrint('[study] API baseUrl=${resolveApiBaseUrl()}');
   }
@@ -23,12 +45,16 @@ Future<void> main() async {
   final authSession = AuthSession();
   final apiClient = ApiClient(authSession: authSession);
   final oauthService = OAuthService();
+  final designReviewKey = resolveDesignReviewKey();
 
   runApp(
-    MathLensTutorApp(
-      apiClient: apiClient,
-      authSession: authSession,
-      oauthService: oauthService,
+    AppRestart(
+      child: MathLensTutorApp(
+        apiClient: apiClient,
+        authSession: authSession,
+        oauthService: oauthService,
+        designReviewKey: designReviewKey,
+      ),
     ),
   );
 }
@@ -39,11 +65,13 @@ class MathLensTutorApp extends StatelessWidget {
     required this.apiClient,
     required this.authSession,
     required this.oauthService,
+    this.designReviewKey = '',
   });
 
   final ApiClient apiClient;
   final AuthSession authSession;
   final OAuthService oauthService;
+  final String designReviewKey;
 
   @override
   Widget build(BuildContext context) {
@@ -56,49 +84,40 @@ class MathLensTutorApp extends StatelessWidget {
         }
         final mq = MediaQuery.of(context);
         final scale = mq.size.shortestSide >= 600 ? 1.06 : 1.0;
-        return MediaQuery(
+        Widget wrapped = MediaQuery(
           data: mq.copyWith(textScaler: TextScaler.linear(scale)),
           child: child,
         );
+        return wrapped;
       },
-      theme: ThemeData(
-        colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFF2563EB),
-          brightness: Brightness.dark,
-        ),
-        scaffoldBackgroundColor: const Color(0xFF020617),
-        appBarTheme: const AppBarTheme(
-          backgroundColor: Color(0xFF020617),
-          foregroundColor: Colors.white,
-          centerTitle: false,
-        ),
-        filledButtonTheme: FilledButtonThemeData(
-          style: FilledButton.styleFrom(
-            minimumSize: const Size.fromHeight(52),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-        ),
-        outlinedButtonTheme: OutlinedButtonThemeData(
-          style: OutlinedButton.styleFrom(
-            minimumSize: const Size.fromHeight(52),
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(16),
-            ),
-          ),
-        ),
-      ),
-      home: _storeScreenshot.isEmpty
-          ? AuthGate(
+      theme: buildAppTheme(),
+      home: designReviewKey.isNotEmpty
+          ? DesignReviewShell(
+              reviewKey: designReviewKey,
               apiClient: apiClient,
-              authSession: authSession,
               oauthService: oauthService,
             )
-          : StoreScreenshotShell(
-              screen: _storeScreenshot,
-              apiClient: apiClient,
-            ),
+          : _storeScreenshot.isEmpty
+              ? (kDebugMode
+                  ? DevMenuOverlay(
+                      apiClient: apiClient,
+                      authSession: authSession,
+                      child: AuthGate(
+                        apiClient: apiClient,
+                        authSession: authSession,
+                        oauthService: oauthService,
+                      ),
+                    )
+                  : AuthGate(
+                      apiClient: apiClient,
+                      authSession: authSession,
+                      oauthService: oauthService,
+                    ))
+              : StoreScreenshotShell(
+                  screen: _storeScreenshot,
+                  apiClient: apiClient,
+                  oauthService: oauthService,
+                ),
     );
   }
 }

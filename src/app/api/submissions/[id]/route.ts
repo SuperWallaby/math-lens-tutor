@@ -2,10 +2,9 @@ import { NextResponse } from "next/server";
 
 import {
   authErrorResponse,
-  getAuthenticatedUser,
+  resolveActorUserId,
 } from "@/lib/request";
 import { getProblemSetBySubmission, getSubmission } from "@/lib/store";
-import { isGuardianLinkedToStudent } from "@/lib/users";
 
 export async function GET(
   request: Request,
@@ -22,24 +21,19 @@ export async function GET(
   }
 
   try {
-    const user = await getAuthenticatedUser(request);
-    if (!user.profileComplete || !user.role) {
-      return NextResponse.json(
-        { error: "가입을 완료해 주세요." },
-        { status: 403 },
-      );
-    }
+    const actor = await resolveActorUserId(request);
 
-    if (user.role === "student") {
-      if (submission.userId !== user.id) {
+    if (actor.isGuest || actor.role === "student") {
+      if (submission.userId !== actor.actorUserId) {
         return NextResponse.json(
           { error: "제출 기록을 찾을 수 없습니다." },
           { status: 404 },
         );
       }
     } else {
+      const { isGuardianLinkedToStudent } = await import("@/lib/users");
       const linked = await isGuardianLinkedToStudent(
-        user.id,
+        actor.authUserId,
         submission.userId,
       );
       if (!linked) {

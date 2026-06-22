@@ -1,24 +1,50 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
+import 'package:image_picker/image_picker.dart';
 
 import '../layout/tablet_layout.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
+import '../services/oauth_service.dart';
+import '../theme/app_design_system.dart';
+import '../utils/problem_image_picker.dart';
+import '../widgets/app_card.dart';
 import '../widgets/learning_profile_widgets.dart';
+import 'analysis_screen.dart';
 import 'practice_screen.dart';
-import 'upload_screen.dart';
+import 'signup_screen.dart';
+
+class _HubData {
+  const _HubData({required this.profile, required this.submissions});
+
+  final LearningProfile profile;
+  final List<SubmissionSummary> submissions;
+
+  bool get hasHistory =>
+      submissions.isNotEmpty || profile.stats.totalProblems > 0;
+}
 
 class StudentHubScreen extends StatefulWidget {
-  const StudentHubScreen({super.key, required this.apiClient});
+  const StudentHubScreen({
+    super.key,
+    required this.apiClient,
+    required this.oauthService,
+    this.demoProfile,
+    this.demoSubmissions,
+    this.demoIsGuest,
+  });
 
   final ApiClient apiClient;
+  final OAuthService oauthService;
+  final LearningProfile? demoProfile;
+  final List<SubmissionSummary>? demoSubmissions;
+  final bool? demoIsGuest;
 
   @override
   State<StudentHubScreen> createState() => _StudentHubScreenState();
 }
 
 class _StudentHubScreenState extends State<StudentHubScreen> {
-  Future<LearningProfile>? _profileFuture;
+  Future<_HubData>? _hubFuture;
 
   @override
   void initState() {
@@ -28,27 +54,110 @@ class _StudentHubScreenState extends State<StudentHubScreen> {
 
   void _reload() {
     setState(() {
-      _profileFuture = widget.apiClient.getLearningProfile();
+      _hubFuture = _loadHub();
     });
   }
 
-  Future<void> _copyStudentCode() async {
-    final code = widget.apiClient.authSession.user?.studentCode;
-    if (code == null) return;
-    await Clipboard.setData(ClipboardData(text: code));
-    if (!mounted) return;
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(content: Text('학생 고유번호가 복사되었습니다.')),
+  Future<_HubData> _loadHub() async {
+    if (widget.demoProfile != null) {
+      return _HubData(
+        profile: widget.demoProfile!,
+        submissions: widget.demoSubmissions ?? const [],
+      );
+    }
+    final results = await Future.wait([
+      widget.apiClient.getLearningProfile(),
+      widget.apiClient.getSubmissionSummaries(),
+    ]);
+    return _HubData(
+      profile: results[0] as LearningProfile,
+      submissions: results[1] as List<SubmissionSummary>,
     );
+  }
+
+  Future<void> _captureAndAnalyze() async {
+    final picked = await pickProblemImage(
+      source: primaryProblemImageSource,
+      context: context,
+    );
+    if (picked == null || !mounted) return;
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AnalysisScreen(
+          apiClient: widget.apiClient,
+          imageBytes: picked.bytes,
+          uploadFilename: picked.filename,
+        ),
+      ),
+    );
+    _reload();
+  }
+
+  Future<void> _openGalleryAndAnalyze() async {
+    final picked = await pickProblemImage(
+      source: ImageSource.gallery,
+      context: context,
+    );
+    if (picked == null || !mounted) return;
+
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AnalysisScreen(
+          apiClient: widget.apiClient,
+          imageBytes: picked.bytes,
+          uploadFilename: picked.filename,
+        ),
+      ),
+    );
+    _reload();
+  }
+
+  Future<void> _openSignup() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => SignupScreen(
+          apiClient: widget.apiClient,
+          oauthService: widget.oauthService,
+          signupOnly: true,
+          onSignedIn: () {
+            if (mounted) Navigator.of(context).pop();
+            _reload();
+          },
+          onContinueAsGuest: () {
+            if (mounted) Navigator.of(context).pop();
+          },
+        ),
+      ),
+    );
+  }
+
+  Future<void> _openSubmission(SubmissionSummary item) async {
+    try {
+      final result = await widget.apiClient.getSubmissionDetail(item.id);
+      if (!mounted) return;
+      await Navigator.of(context).push(
+        MaterialPageRoute(
+          builder: (_) =>
+              AnalysisScreen(apiClient: widget.apiClient, result: result),
+        ),
+      );
+      _reload();
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
+    }
   }
 
   Future<void> _openMission(TodayMission mission) async {
     final setId = mission.setId;
     if (setId == null || setId.isEmpty) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('진행 중인 문제 세트가 없습니다. 먼저 풀이를 분석해 주세요.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('진행 중인 문제 세트가 없습니다.')));
       return;
     }
 
@@ -57,187 +166,635 @@ class _StudentHubScreenState extends State<StudentHubScreen> {
       if (!mounted) return;
       await Navigator.of(context).push(
         MaterialPageRoute(
-          builder: (_) => PracticeScreen(
-            apiClient: widget.apiClient,
-            problemSet: set,
-          ),
+          builder: (_) =>
+              PracticeScreen(apiClient: widget.apiClient, problemSet: set),
         ),
       );
       _reload();
     } catch (error) {
       if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text(error.toString())),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text(error.toString())));
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    final user = widget.apiClient.authSession.user;
+    final isGuest = widget.demoIsGuest ?? widget.apiClient.authSession.isGuest;
 
     return RefreshIndicator(
       onRefresh: () async => _reload(),
-      child: FutureBuilder<LearningProfile>(
-        future: _profileFuture,
+      child: FutureBuilder<_HubData>(
+        future: _hubFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
             return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
               children: const [
-                SizedBox(height: 200, child: Center(child: CircularProgressIndicator())),
+                SizedBox(
+                  height: 240,
+                  child: Center(child: CircularProgressIndicator()),
+                ),
               ],
             );
           }
           if (snapshot.hasError) {
             return ListView(
+              physics: const AlwaysScrollableScrollPhysics(),
+              padding: TabletLayout.pagePadding(context),
               children: [
                 ProfileLoadingError(error: snapshot.error, onRetry: _reload),
               ],
             );
           }
 
-          final profile = snapshot.data!;
-          return ListView(
-            padding: TabletLayout.pagePadding(context),
-            children: [
-              StatsHero(
-                greeting: '안녕하세요 👋',
-                name: user?.displayName ?? '학생',
-                stats: profile.stats,
-              ),
-              SectionLabel('틀린 문제 올리기'),
-              Material(
-                color: const Color(0xFF0F172A),
-                borderRadius: BorderRadius.circular(20),
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(20),
-                  onTap: () async {
-                    await Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => UploadScreen(apiClient: widget.apiClient),
-                      ),
-                    );
-                    _reload();
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: const Color(0xFF2563EB).withValues(alpha: 0.25),
-                        width: 1.5,
-                      ),
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 44,
-                          height: 44,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: const Color(0xFF1E3A8A),
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: const Text(
-                            '사진\n업로드',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              color: Color(0xFF60A5FA),
-                              fontSize: 11,
-                              fontWeight: FontWeight.w800,
-                              height: 1.2,
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 14),
-                        const Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                '틀린 문제 사진 찍기',
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w800,
-                                  fontSize: 14,
-                                ),
-                              ),
-                              SizedBox(height: 3),
-                              Text(
-                                'AI가 왜 틀렸는지 분석해드려요',
-                                style: TextStyle(
-                                  color: Color(0xFF94A3B8),
-                                  fontSize: 12,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const Icon(Icons.chevron_right_rounded, color: Color(0xFF60A5FA)),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              if (profile.mission != null) ...[
-                SectionLabel('오늘의 미션'),
-                MissionCard(
-                  mission: profile.mission!,
-                  onTap: () => _openMission(profile.mission!),
-                ),
-              ],
-              SectionLabel('지금 약한 개념'),
-              ConceptStatusCard(items: profile.conceptStatus),
-              if (user?.studentCode != null) ...[
-                SectionLabel('연결 코드'),
-                Container(
-                  padding: const EdgeInsets.all(14),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF0F172A),
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: const Color(0xFF2563EB).withValues(alpha: 0.2),
-                      width: 1.5,
-                    ),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              '부모님 · 선생님께 이 코드를 알려주세요',
-                              style: TextStyle(
-                                color: Color(0xFF94A3B8),
-                                fontSize: 11,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              user!.studentCode!,
-                              style: const TextStyle(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w900,
-                                color: Color(0xFF60A5FA),
-                                letterSpacing: 2,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      OutlinedButton(
-                        onPressed: _copyStudentCode,
-                        child: const Text('복사'),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-              const SizedBox(height: 24),
-            ],
+          final data = snapshot.data!;
+          if (!data.hasHistory) {
+            return _FirstTimeHome(
+              onCapture: _captureAndAnalyze,
+              onPickGallery: _openGalleryAndAnalyze,
+            );
+          }
+
+          return _ReturningHome(
+            data: data,
+            isGuest: isGuest,
+            apiBaseUrl: widget.apiClient.baseUrl,
+            onCapture: _captureAndAnalyze,
+            onPickGallery: _openGalleryAndAnalyze,
+            onSignup: _openSignup,
+            onOpenSubmission: _openSubmission,
+            onOpenMission: _openMission,
           );
         },
       ),
     );
   }
+}
+
+class _FirstTimeHome extends StatelessWidget {
+  const _FirstTimeHome({required this.onCapture, required this.onPickGallery});
+
+  final VoidCallback onCapture;
+  final VoidCallback onPickGallery;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: TabletLayout.pagePadding(context),
+      children: [
+        SizedBox(height: MediaQuery.sizeOf(context).height * 0.12),
+        Text(
+          '우열',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            color: AppColors.primary,
+            fontWeight: FontWeight.w800,
+            fontSize: TabletLayout.bodySmall(context),
+            letterSpacing: 1.2,
+          ),
+        ),
+        const SizedBox(height: 16),
+        Text(
+          '틀린 문제,\n사진 한 장이면 됩니다',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: TabletLayout.titleSection(context) + 6,
+            fontWeight: FontWeight.w900,
+            height: 1.2,
+          ),
+        ),
+        const SizedBox(height: 12),
+        const Text(
+          '풀이 사진을 찍으면 AI가 왜 틀렸는지 분석하고\n비슷한 문제로 바로 훈련해요.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: AppColors.textSub, height: 1.6, fontSize: 16),
+        ),
+        const SizedBox(height: 40),
+        if (supportsProblemImageCamera) ...[
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: onCapture,
+              icon: const Icon(Icons.camera_alt_rounded, size: 26),
+              label: const Text(
+                '문제 사진 촬영하기',
+                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+              ),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(
+                  AppSizes.buttonHeightKeyAction,
+                ),
+                padding: const EdgeInsets.symmetric(horizontal: 24),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
+        SizedBox(
+          width: double.infinity,
+          child: OutlinedButton.icon(
+            onPressed: onPickGallery,
+            icon: Icon(problemImageGalleryIcon, size: 26),
+            label: Text(
+              supportsProblemImageCamera ? '앨범에서 선택' : '이미지 파일 선택',
+              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
+            ),
+            style: OutlinedButton.styleFrom(
+              minimumSize: const Size.fromHeight(
+                AppSizes.buttonHeightKeyAction,
+              ),
+              padding: const EdgeInsets.symmetric(horizontal: 24),
+            ),
+          ),
+        ),
+        const SizedBox(height: 48),
+      ],
+    );
+  }
+}
+
+class _ReturningHome extends StatelessWidget {
+  const _ReturningHome({
+    required this.data,
+    required this.isGuest,
+    required this.apiBaseUrl,
+    required this.onCapture,
+    required this.onPickGallery,
+    required this.onSignup,
+    required this.onOpenSubmission,
+    required this.onOpenMission,
+  });
+
+  final _HubData data;
+  final bool isGuest;
+  final String apiBaseUrl;
+  final VoidCallback onCapture;
+  final VoidCallback onPickGallery;
+  final VoidCallback onSignup;
+  final ValueChanged<SubmissionSummary> onOpenSubmission;
+  final ValueChanged<TodayMission> onOpenMission;
+
+  @override
+  Widget build(BuildContext context) {
+    final recent = data.submissions.take(5).toList();
+    final mission = data.profile.mission;
+
+    return ListView(
+      physics: const AlwaysScrollableScrollPhysics(),
+      padding: TabletLayout.pagePadding(context),
+      children: [
+        _TodayLearningCard(
+          profile: data.profile,
+          mission: mission,
+          onPrimaryAction: supportsProblemImageCamera
+              ? onCapture
+              : onPickGallery,
+          onSecondaryAction: supportsProblemImageCamera ? onPickGallery : null,
+          onOpenMission: mission == null ? null : () => onOpenMission(mission),
+        ),
+        if (isGuest) ...[
+          const SizedBox(height: AppSpacing.lg),
+          _GuestSaveBanner(onSignup: onSignup),
+        ],
+        if (recent.isNotEmpty) ...[
+          const SizedBox(height: AppSpacing.section),
+          _SectionHeader(title: '최근 분석', caption: '${recent.length}개 기록'),
+          const SizedBox(height: AppSpacing.md),
+          for (final item in recent) ...[
+            _RecentSubmissionTile(
+              item: item,
+              apiBaseUrl: apiBaseUrl,
+              onTap: () => onOpenSubmission(item),
+            ),
+            const SizedBox(height: AppSpacing.sm),
+          ],
+        ],
+        const SizedBox(height: AppSpacing.xxl),
+      ],
+    );
+  }
+}
+
+class _TodayLearningCard extends StatelessWidget {
+  const _TodayLearningCard({
+    required this.profile,
+    required this.mission,
+    required this.onPrimaryAction,
+    required this.onOpenMission,
+    this.onSecondaryAction,
+  });
+
+  final LearningProfile profile;
+  final TodayMission? mission;
+  final VoidCallback onPrimaryAction;
+  final VoidCallback? onSecondaryAction;
+  final VoidCallback? onOpenMission;
+
+  @override
+  Widget build(BuildContext context) {
+    final missionTitle = mission?.title.trim();
+    final hasMission = missionTitle != null && missionTitle.isNotEmpty;
+    final title = hasMission ? '오늘은 이어서 훈련해요' : '오늘의 문제를 등록해요';
+    final body = hasMission
+        ? missionTitle
+        : '풀이 사진을 올리면 오답 원인과 비슷한 문제를 바로 만들어요.';
+    final accuracy = profile.stats.accuracy;
+    final totalProblems = profile.stats.totalProblems;
+    final grade = profile.grade.trim().isNotEmpty ? profile.grade.trim() : '중1';
+
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg + 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    TagChip('$grade 맞춤', color: AppColors.primary),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        height: 1.22,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                    Text(
+                      body,
+                      style: const TextStyle(
+                        color: AppColors.textSub,
+                        height: 1.5,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.lg),
+              Image.asset(
+                'assets/icons/3d/training_active.png',
+                width: 66,
+                height: 66,
+                fit: BoxFit.contain,
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          Row(
+            children: [
+              _StatPill(
+                label: '정답률',
+                value: accuracy > 0 ? '$accuracy%' : '시작 전',
+                color: AppColors.success,
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              _StatPill(
+                label: '푼 문제',
+                value: '$totalProblems개',
+                color: AppColors.warning,
+              ),
+            ],
+          ),
+          if (hasMission && onOpenMission != null) ...[
+            const SizedBox(height: AppSpacing.lg),
+            OutlinedButton.icon(
+              onPressed: onOpenMission,
+              icon: const Icon(Icons.play_arrow_rounded),
+              label: Text(
+                mission!.remainingCount > 0
+                    ? '이어서 ${mission!.remainingCount}문제 풀기'
+                    : '이어서 훈련하기',
+              ),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
+              ),
+            ),
+          ],
+          const SizedBox(height: AppSpacing.md),
+          FilledButton.icon(
+            onPressed: onPrimaryAction,
+            icon: Icon(
+              supportsProblemImageCamera
+                  ? Icons.camera_alt_rounded
+                  : problemImageGalleryIcon,
+            ),
+            label: Text(supportsProblemImageCamera ? '새 문제 찍기' : '새 문제 등록'),
+            style: FilledButton.styleFrom(
+              minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
+            ),
+          ),
+          if (onSecondaryAction != null) ...[
+            const SizedBox(height: AppSpacing.sm),
+            Center(
+              child: TextButton.icon(
+                onPressed: onSecondaryAction,
+                icon: Icon(problemImageGalleryIcon, size: 20),
+                label: Text(problemImageGalleryLabel),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _StatPill extends StatelessWidget {
+  const _StatPill({
+    required this.label,
+    required this.value,
+    required this.color,
+  });
+
+  final String label;
+  final String value;
+  final Color color;
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.md,
+          vertical: AppSpacing.sm - 1,
+        ),
+        decoration: BoxDecoration(
+          color: color.withValues(alpha: 0.12),
+          borderRadius: BorderRadius.circular(AppRadii.md),
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: AppColors.textSub,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              value,
+              style: TextStyle(
+                color: Color.lerp(color, AppColors.text, 0.25),
+                fontSize: 14,
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _GuestSaveBanner extends StatelessWidget {
+  const _GuestSaveBanner({required this.onSignup});
+
+  final VoidCallback onSignup;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(
+        horizontal: AppSpacing.lg,
+        vertical: AppSpacing.md,
+      ),
+      decoration: BoxDecoration(
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 34,
+            height: 34,
+            alignment: Alignment.center,
+            decoration: BoxDecoration(
+              color: AppColors.success.withValues(alpha: 0.1),
+              borderRadius: BorderRadius.circular(AppRadii.sm),
+            ),
+            child: const Icon(
+              Icons.lock_outline_rounded,
+              color: AppColors.success,
+              size: 20,
+            ),
+          ),
+          const SizedBox(width: AppSpacing.md),
+          const Expanded(
+            child: Text(
+              '로그인하면 분석 기록과 훈련 데이터를 이어갈 수 있어요.',
+              style: TextStyle(
+                color: AppColors.textSub,
+                height: 1.4,
+                fontSize: 13,
+              ),
+            ),
+          ),
+          TextButton(
+            onPressed: onSignup,
+            style: TextButton.styleFrom(foregroundColor: AppColors.success),
+            child: const Text('로그인'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _SectionHeader extends StatelessWidget {
+  const _SectionHeader({required this.title, required this.caption});
+
+  final String title;
+  final String caption;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: Text(
+            title,
+            style: const TextStyle(fontWeight: FontWeight.w900, fontSize: 18),
+          ),
+        ),
+        Text(
+          caption,
+          style: const TextStyle(
+            color: AppColors.textMuted,
+            fontSize: 12,
+            fontWeight: FontWeight.w700,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _RecentSubmissionTile extends StatelessWidget {
+  const _RecentSubmissionTile({
+    required this.item,
+    required this.apiBaseUrl,
+    required this.onTap,
+  });
+
+  final SubmissionSummary item;
+  final String apiBaseUrl;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = ApiClient.resolveImageUrl(apiBaseUrl, item.imageUrl);
+    final weakConcepts = item.weakConcepts
+        .map((concept) => concept.trim())
+        .where((concept) => concept.isNotEmpty)
+        .toList();
+    final primaryConcept = weakConcepts.isNotEmpty ? weakConcepts.first : null;
+
+    return Material(
+      color: AppColors.surface,
+      borderRadius: BorderRadius.circular(AppRadii.md),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.all(AppSpacing.md),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(AppRadii.md),
+            border: Border.all(color: AppColors.border),
+          ),
+          child: Row(
+            children: [
+              _SubmissionThumbnail(imageUrl: imageUrl),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.title,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                        height: 1.35,
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                    if (item.createdAt.isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        _formatSubmissionDate(item.createdAt),
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                    if (primaryConcept != null) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      _MiniStatusChip(primaryConcept),
+                    ],
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textMuted,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _SubmissionThumbnail extends StatelessWidget {
+  const _SubmissionThumbnail({required this.imageUrl});
+
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    const size = 56.0;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadii.sm),
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: imageUrl == null
+            ? Container(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                alignment: Alignment.center,
+                child: Icon(
+                  Icons.image_outlined,
+                  color: AppColors.primary.withValues(alpha: 0.55),
+                  size: 24,
+                ),
+              )
+            : Image.network(
+                imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.broken_image_outlined,
+                    color: AppColors.primary.withValues(alpha: 0.55),
+                    size: 24,
+                  ),
+                ),
+              ),
+      ),
+    );
+  }
+}
+
+class _MiniStatusChip extends StatelessWidget {
+  const _MiniStatusChip(this.label);
+
+  final String label;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 96),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: AppColors.accent.withValues(alpha: 0.12),
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+      ),
+      child: Text(
+        label,
+        maxLines: 1,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(
+          color: Color.lerp(AppColors.accent, AppColors.text, 0.25),
+          fontSize: 11,
+          fontWeight: FontWeight.w800,
+        ),
+      ),
+    );
+  }
+}
+
+String _formatSubmissionDate(String raw) {
+  final parsed = DateTime.tryParse(raw);
+  if (parsed == null) return raw;
+  final local = parsed.toLocal();
+  return '${local.month}월 ${local.day}일';
 }

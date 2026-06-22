@@ -120,6 +120,7 @@ class GeneratedProblem {
     required this.conceptTags,
     required this.chart,
     this.jsxGraph,
+    this.answerFormat,
     this.source = 'generated',
     this.bankItemId,
   });
@@ -140,6 +141,7 @@ class GeneratedProblem {
       conceptTags: _stringList(json['conceptTags']),
       chart: (json['chart'] as Map?)?.cast<String, dynamic>(),
       jsxGraph: (json['jsxGraph'] as Map?)?.cast<String, dynamic>(),
+      answerFormat: json['answerFormat'] as String?,
       source: json['source'] as String? ?? 'generated',
       bankItemId: json['bankItemId'] as String?,
     );
@@ -156,11 +158,63 @@ class GeneratedProblem {
   final List<String> conceptTags;
   final Map<String, dynamic>? chart;
   final Map<String, dynamic>? jsxGraph;
+  /// `short_numeric` | `short_answer` | `long_solution` (free_response only)
+  final String? answerFormat;
   final String source;
   final String? bankItemId;
 
   bool get isMultipleChoice => type == 'multiple_choice' && choices.isNotEmpty;
   bool get isFromBank => source == 'bank';
+}
+
+class PracticeAvailabilityPreview {
+  const PracticeAvailabilityPreview({
+    required this.bankCount,
+    required this.setSize,
+    required this.needsGeneration,
+    required this.generateCount,
+  });
+
+  factory PracticeAvailabilityPreview.fromJson(Map<String, dynamic> json) {
+    return PracticeAvailabilityPreview(
+      bankCount: json['bankCount'] as int? ?? 0,
+      setSize: json['setSize'] as int? ?? 5,
+      needsGeneration: json['needsGeneration'] as bool? ?? true,
+      generateCount: json['generateCount'] as int? ?? 0,
+    );
+  }
+
+  final int bankCount;
+  final int setSize;
+  final bool needsGeneration;
+  final int generateCount;
+}
+
+class StartPracticeResult {
+  const StartPracticeResult({
+    required this.problemSet,
+    required this.meta,
+  });
+
+  factory StartPracticeResult.fromJson(Map<String, dynamic> json) {
+    return StartPracticeResult(
+      problemSet: GeneratedProblemSet.fromJson(
+        (json['problemSet'] as Map).cast<String, dynamic>(),
+      ),
+      meta: PracticeAvailabilityPreview.fromJson(
+        (json['meta'] as Map?)?.cast<String, dynamic>() ??
+            const {
+              'bankCount': 0,
+              'setSize': 5,
+              'needsGeneration': true,
+              'generateCount': 5,
+            },
+      ),
+    );
+  }
+
+  final GeneratedProblemSet problemSet;
+  final PracticeAvailabilityPreview meta;
 }
 
 class GeneratedProblemSet {
@@ -220,6 +274,7 @@ class ProblemAttempt {
     required this.answer,
     required this.isCorrect,
     required this.feedback,
+    this.relearnedConcepts = const [],
   });
 
   factory ProblemAttempt.fromJson(Map<String, dynamic> json) {
@@ -229,6 +284,7 @@ class ProblemAttempt {
       answer: json['answer'] as String? ?? '',
       isCorrect: json['isCorrect'] as bool? ?? false,
       feedback: json['feedback'] as String? ?? '',
+      relearnedConcepts: _stringList(json['relearnedConcepts']),
     );
   }
 
@@ -237,6 +293,7 @@ class ProblemAttempt {
   final String answer;
   final bool isCorrect;
   final String feedback;
+  final List<String> relearnedConcepts;
 }
 
 class LearningInsight {
@@ -324,10 +381,13 @@ class AppUser {
     required this.displayName,
     required this.profileComplete,
     this.role,
+    this.age,
     this.grade,
     this.organizationName,
     this.studentCode,
     this.oauthProvider,
+    this.email,
+    this.profileImageUrl,
   });
 
   factory AppUser.fromJson(Map<String, dynamic> json) {
@@ -336,10 +396,13 @@ class AppUser {
       displayName: json['displayName'] as String? ?? '',
       profileComplete: json['profileComplete'] as bool? ?? false,
       role: AppUserRoleX.fromApi(json['role'] as String?),
+      age: (json['age'] as num?)?.toInt(),
       grade: json['grade'] as String?,
       organizationName: json['organizationName'] as String?,
       studentCode: json['studentCode'] as String?,
       oauthProvider: json['oauthProvider'] as String?,
+      email: json['email'] as String?,
+      profileImageUrl: json['profileImageUrl'] as String?,
     );
   }
 
@@ -348,20 +411,50 @@ class AppUser {
     'displayName': displayName,
     'profileComplete': profileComplete,
     'role': role?.apiValue,
+    'age': age,
     'grade': grade,
     'organizationName': organizationName,
     'studentCode': studentCode,
     'oauthProvider': oauthProvider,
+    'email': email,
+    'profileImageUrl': profileImageUrl,
   };
+
+  AppUser copyWith({
+    String? displayName,
+    bool? profileComplete,
+    AppUserRole? role,
+    int? age,
+    String? grade,
+    String? organizationName,
+    String? studentCode,
+    String? profileImageUrl,
+  }) {
+    return AppUser(
+      id: id,
+      displayName: displayName ?? this.displayName,
+      profileComplete: profileComplete ?? this.profileComplete,
+      role: role ?? this.role,
+      age: age ?? this.age,
+      grade: grade ?? this.grade,
+      organizationName: organizationName ?? this.organizationName,
+      studentCode: studentCode ?? this.studentCode,
+      oauthProvider: oauthProvider,
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+    );
+  }
 
   final String id;
   final String displayName;
   final bool profileComplete;
   final AppUserRole? role;
+  final int? age;
   final String? grade;
   final String? organizationName;
   final String? studentCode;
   final String? oauthProvider;
+  final String? email;
+  final String? profileImageUrl;
 
   bool get isGuardian => role?.isGuardian ?? false;
   bool get isStudent => role == AppUserRole.student;
@@ -397,27 +490,188 @@ class LinkedStudent {
 class SubmissionSummary {
   const SubmissionSummary({
     required this.id,
-    required this.imageName,
+    required this.title,
     required this.createdAt,
-    required this.errorSummary,
     required this.weakConcepts,
+    this.imageUrl,
+    this.imageName = '',
   });
 
   factory SubmissionSummary.fromJson(Map<String, dynamic> json) {
+    final legacyTitle = (json['imageName'] as String? ?? '').trim();
+    final title = (json['title'] as String? ?? '').trim();
+
     return SubmissionSummary(
       id: json['id'] as String? ?? '',
-      imageName: json['imageName'] as String? ?? '',
+      title: title.isNotEmpty
+          ? title
+          : (legacyTitle.isNotEmpty ? legacyTitle : '풀이 분석'),
       createdAt: json['createdAt'] as String? ?? '',
-      errorSummary: json['errorSummary'] as String? ?? '',
+      imageUrl: json['imageUrl'] as String?,
+      imageName: json['imageName'] as String? ?? '',
       weakConcepts: _stringList(json['weakConcepts']),
     );
   }
 
   final String id;
-  final String imageName;
+  final String title;
   final String createdAt;
-  final String errorSummary;
+  final String? imageUrl;
+  final String imageName;
   final List<String> weakConcepts;
+}
+
+class TrainingFocusItem {
+  const TrainingFocusItem({
+    required this.concept,
+    required this.missScore,
+    required this.status,
+    required this.label,
+  });
+
+  factory TrainingFocusItem.fromJson(Map<String, dynamic> json) {
+    return TrainingFocusItem(
+      concept: json['concept'] as String? ?? '',
+      missScore: json['missScore'] as int? ?? 0,
+      status: json['status'] as String? ?? 'needs_training',
+      label: json['label'] as String? ?? '',
+    );
+  }
+
+  final String concept;
+  final int missScore;
+  final String status;
+  final String label;
+
+  bool get isRelearned => status == 'relearned';
+}
+
+class TrainingSnapshot {
+  const TrainingSnapshot({
+    required this.available,
+    required this.hasLearningData,
+    required this.headline,
+    required this.description,
+    required this.focusConcepts,
+    required this.focusItems,
+    required this.activeSetId,
+    required this.remainingCount,
+    required this.totalMisses,
+    required this.relearnedCount,
+  });
+
+  factory TrainingSnapshot.fromJson(Map<String, dynamic> json) {
+    return TrainingSnapshot(
+      available: json['available'] as bool? ?? false,
+      hasLearningData: json['hasLearningData'] as bool? ?? false,
+      headline: json['headline'] as String? ?? '',
+      description: json['description'] as String? ?? '',
+      focusConcepts: _stringList(json['focusConcepts']),
+      focusItems: ((json['focusItems'] as List?) ?? [])
+          .whereType<Map>()
+          .map((e) => TrainingFocusItem.fromJson(e.cast<String, dynamic>()))
+          .toList(),
+      activeSetId: json['activeSetId'] as String?,
+      remainingCount: json['remainingCount'] as int? ?? 0,
+      totalMisses: json['totalMisses'] as int? ?? 0,
+      relearnedCount: json['relearnedCount'] as int? ?? 0,
+    );
+  }
+
+  static const empty = TrainingSnapshot(
+    available: false,
+    hasLearningData: false,
+    headline: '',
+    description: '',
+    focusConcepts: [],
+    focusItems: [],
+    activeSetId: null,
+    remainingCount: 0,
+    totalMisses: 0,
+    relearnedCount: 0,
+  );
+
+  final bool available;
+  final bool hasLearningData;
+  final String headline;
+  final String description;
+  final List<String> focusConcepts;
+  final List<TrainingFocusItem> focusItems;
+  final String? activeSetId;
+  final int remainingCount;
+  final int totalMisses;
+  final int relearnedCount;
+}
+
+class TrainingFeedItem {
+  const TrainingFeedItem({
+    required this.id,
+    required this.bankItemId,
+    required this.concept,
+    required this.difficulty,
+    required this.reason,
+    required this.title,
+    required this.promptPreview,
+  });
+
+  factory TrainingFeedItem.fromJson(Map<String, dynamic> json) {
+    return TrainingFeedItem(
+      id: json['id'] as String? ?? '',
+      bankItemId: json['bankItemId'] as String? ?? '',
+      concept: json['concept'] as String? ?? '',
+      difficulty: json['difficulty'] as String? ?? 'medium',
+      reason: json['reason'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      promptPreview: json['promptPreview'] as String? ?? '',
+    );
+  }
+
+  final String id;
+  final String bankItemId;
+  final String concept;
+  final String difficulty;
+  final String reason;
+  final String title;
+  final String promptPreview;
+
+  String get difficultyLabel {
+    switch (difficulty) {
+      case 'easy':
+        return '쉬움';
+      case 'hard':
+        return '어려움';
+      default:
+        return '보통';
+    }
+  }
+}
+
+class TrainingFeedResponse {
+  const TrainingFeedResponse({
+    required this.items,
+    required this.source,
+    required this.updatedAt,
+    required this.refreshPending,
+  });
+
+  factory TrainingFeedResponse.fromJson(Map<String, dynamic> json) {
+    return TrainingFeedResponse(
+      items: ((json['items'] as List?) ?? [])
+          .whereType<Map>()
+          .map((e) => TrainingFeedItem.fromJson(e.cast<String, dynamic>()))
+          .toList(),
+      source: json['source'] as String? ?? 'fallback',
+      updatedAt: json['updatedAt'] as String?,
+      refreshPending: json['refreshPending'] as bool? ?? false,
+    );
+  }
+
+  final List<TrainingFeedItem> items;
+  final String source;
+  final String? updatedAt;
+  final bool refreshPending;
+
+  bool get isPrecomputed => source == 'precomputed';
 }
 
 class LearningProfile {
@@ -429,13 +683,38 @@ class LearningProfile {
     required this.strongConcepts,
     required this.weeklyTrend,
     required this.curriculumUnits,
+    required this.curriculumByBand,
     required this.parentActions,
     required this.weeklyReport,
+    required this.training,
     this.mission,
     this.chainWarning,
+    this.parentCoachingCard,
+    this.parentWrongExplains = const [],
   });
 
   factory LearningProfile.fromJson(Map<String, dynamic> json) {
+    final curriculumUnits = ((json['curriculumUnits'] as List?) ?? [])
+        .whereType<Map>()
+        .map((e) => CurriculumUnitProgress.fromJson(e.cast<String, dynamic>()))
+        .toList();
+    final byBandRaw = json['curriculumByBand'];
+    final curriculumByBand = byBandRaw is Map
+        ? byBandRaw.map(
+            (key, value) => MapEntry(
+              key.toString(),
+              ((value as List?) ?? [])
+                  .whereType<Map>()
+                  .map(
+                    (e) => CurriculumUnitProgress.fromJson(
+                      e.cast<String, dynamic>(),
+                    ),
+                  )
+                  .toList(),
+            ),
+          )
+        : <String, List<CurriculumUnitProgress>>{};
+
     return LearningProfile(
       grade: json['grade'] as String? ?? '중1',
       insight: LearningInsight.fromJson(
@@ -461,18 +740,30 @@ class LearningProfile {
           .whereType<Map>()
           .map((e) => WeeklyTrendPoint.fromJson(e.cast<String, dynamic>()))
           .toList(),
-      curriculumUnits: ((json['curriculumUnits'] as List?) ?? [])
-          .whereType<Map>()
-          .map((e) => CurriculumUnitProgress.fromJson(e.cast<String, dynamic>()))
-          .toList(),
+      curriculumUnits: curriculumUnits,
+      curriculumByBand: curriculumByBand,
       chainWarning: json['chainWarning'] as String?,
       parentActions: ((json['parentActions'] as List?) ?? [])
           .whereType<Map>()
           .map((e) => ParentActionItem.fromJson(e.cast<String, dynamic>()))
           .toList(),
+      parentCoachingCard: json['parentCoachingCard'] == null
+          ? null
+          : ParentCoachingCard.fromJson(
+              (json['parentCoachingCard'] as Map).cast<String, dynamic>(),
+            ),
+      parentWrongExplains: ((json['parentWrongExplains'] as List?) ?? [])
+          .whereType<Map>()
+          .map((e) => ParentWrongExplainItem.fromJson(e.cast<String, dynamic>()))
+          .toList(),
       weeklyReport: WeeklyReport.fromJson(
         (json['weeklyReport'] as Map?)?.cast<String, dynamic>() ?? {},
       ),
+      training: json['training'] == null
+          ? TrainingSnapshot.empty
+          : TrainingSnapshot.fromJson(
+              (json['training'] as Map).cast<String, dynamic>(),
+            ),
     );
   }
 
@@ -480,13 +771,25 @@ class LearningProfile {
   final LearningInsight insight;
   final LearningStats stats;
   final TodayMission? mission;
+  final TrainingSnapshot training;
   final List<ConceptStatusItem> conceptStatus;
   final List<StrongConcept> strongConcepts;
   final List<WeeklyTrendPoint> weeklyTrend;
   final List<CurriculumUnitProgress> curriculumUnits;
+  final Map<String, List<CurriculumUnitProgress>> curriculumByBand;
   final String? chainWarning;
   final List<ParentActionItem> parentActions;
+  final ParentCoachingCard? parentCoachingCard;
+  final List<ParentWrongExplainItem> parentWrongExplains;
   final WeeklyReport weeklyReport;
+
+  List<CurriculumUnitProgress> unitsForGradeTab(int tabIndex) {
+    const keys = ['e12', 'e34', 'e56', 'm1', 'm2', 'm3', 'h1', 'h2', 'h3'];
+    if (tabIndex < 0 || tabIndex >= keys.length) {
+      return curriculumUnits;
+    }
+    return curriculumByBand[keys[tabIndex]] ?? curriculumUnits;
+  }
 }
 
 class LearningStats {
@@ -645,6 +948,76 @@ class ParentActionItem {
   final String icon;
   final String title;
   final String subtitle;
+}
+
+class ParentCoachingCard {
+  const ParentCoachingCard({
+    required this.label,
+    required this.question,
+    required this.gradingPoint,
+    required this.context,
+    required this.sourceType,
+    required this.sourceId,
+    required this.problemLabel,
+  });
+
+  factory ParentCoachingCard.fromJson(Map<String, dynamic> json) {
+    return ParentCoachingCard(
+      label: json['label'] as String? ?? '오늘의 부모 코칭',
+      question: json['question'] as String? ?? '',
+      gradingPoint: json['gradingPoint'] as String? ?? '',
+      context: json['context'] as String? ?? '',
+      sourceType: json['sourceType'] as String? ?? 'fallback',
+      sourceId: json['sourceId'] as String?,
+      problemLabel: json['problemLabel'] as String?,
+    );
+  }
+
+  final String label;
+  final String question;
+  final String gradingPoint;
+  final String context;
+  final String sourceType;
+  final String? sourceId;
+  final String? problemLabel;
+}
+
+class ParentWrongExplainItem {
+  const ParentWrongExplainItem({
+    required this.id,
+    required this.sourceType,
+    required this.sourceId,
+    required this.title,
+    required this.concept,
+    required this.easyExplain,
+    required this.parentScript,
+    required this.problemSetId,
+    required this.createdAt,
+  });
+
+  factory ParentWrongExplainItem.fromJson(Map<String, dynamic> json) {
+    return ParentWrongExplainItem(
+      id: json['id'] as String? ?? '',
+      sourceType: json['sourceType'] as String? ?? 'submission',
+      sourceId: json['sourceId'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      concept: json['concept'] as String? ?? '',
+      easyExplain: json['easyExplain'] as String? ?? '',
+      parentScript: json['parentScript'] as String? ?? '',
+      problemSetId: json['problemSetId'] as String?,
+      createdAt: json['createdAt'] as String? ?? '',
+    );
+  }
+
+  final String id;
+  final String sourceType;
+  final String sourceId;
+  final String title;
+  final String concept;
+  final String easyExplain;
+  final String parentScript;
+  final String? problemSetId;
+  final String createdAt;
 }
 
 class WeeklyReport {

@@ -1,7 +1,9 @@
 import { createHash } from "crypto";
 
+import { difficultyRank, meetsMinDifficulty } from "./problem-difficulty";
 import { getMongoDb } from "./mongodb";
 import type {
+  GeneratedProblem,
   PracticeMistakeRecord,
   ProblemBankItem,
   ScannedProblemRecord,
@@ -51,6 +53,13 @@ export async function ensureProblemBankIndexes() {
     db.collection<ProblemBankItem>("problem_bank_items").createIndex({
       conceptTags: 1,
     }),
+    db.collection<ProblemBankItem>("problem_bank_items").createIndex({
+      active: 1,
+      gradeBand: 1,
+      unitId: 1,
+      deliveryCount: 1,
+      createdAt: -1,
+    }),
     db.collection<UserProblemDelivery>("user_problem_deliveries").createIndex(
       { userId: 1, bankItemId: 1 },
       { unique: true },
@@ -78,6 +87,70 @@ export async function ensureProblemBankIndexes() {
   ]);
 
   indexesEnsured = true;
+}
+
+const UNIT_POOL_COUNT_TTL_MS = 60_000;
+const unitPoolCountCache = new Map<
+  string,
+  { count: number; expiresAt: number }
+>();
+
+export function invalidateUnitPoolCountCache(unitId?: string) {
+  if (!unitId) {
+    unitPoolCountCache.clear();
+    return;
+  }
+  unitPoolCountCache.delete(unitId.trim());
+}
+
+/** 단원별 bank 풀 크기 — countDocuments 반복을 줄입니다 (UI 표시 없음). */
+export async function getActiveBankCountByUnit(unitId: string): Promise<number> {
+  const normalized = unitId.trim();
+  if (!normalized) return 0;
+
+  const cached = unitPoolCountCache.get(normalized);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.count;
+  }
+
+  const count = await countActiveBankItemsByUnit(normalized);
+  unitPoolCountCache.set(normalized, {
+    count,
+    expiresAt: Date.now() + UNIT_POOL_COUNT_TTL_MS,
+  });
+  return count;
+}
+
+export async function usesMemoryProblemBankStore(): Promise<boolean> {
+  const store = await requireProblemBankStore();
+  return "bankItems" in store;
+}
+
+function deliveryExcludeLookupStages(userId: string) {
+  return [
+    {
+      $lookup: {
+        from: "user_problem_deliveries",
+        let: { bankItemId: "$id" },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ["$bankItemId", "$$bankItemId"] },
+                  { $eq: ["$userId", userId] },
+                ],
+              },
+            },
+          },
+          { $limit: 1 },
+        ],
+        as: "_delivered",
+      },
+    },
+    { $match: { _delivered: { $size: 0 } } },
+    { $project: { _delivered: 0 } },
+  ];
 }
 
 async function requireProblemBankStore() {
@@ -115,6 +188,21 @@ export async function findBankItemByHash(
     .findOne({ contentHash }, { projection: { _id: 0 } });
 }
 
+export async function findBankItemById(
+  bankItemId: string,
+): Promise<ProblemBankItem | null> {
+  const normalized = bankItemId.trim();
+  if (!normalized) return null;
+  const store = await requireProblemBankStore();
+  if ("bankItems" in store) {
+    return store.bankItems.find((item) => item.id === normalized) ?? null;
+  }
+
+  return store
+    .collection<ProblemBankItem>("problem_bank_items")
+    .findOne({ id: normalized, active: true }, { projection: { _id: 0 } });
+}
+
 export async function insertBankItem(
   item: ProblemBankItem,
 ): Promise<ProblemBankItem> {
@@ -123,11 +211,17 @@ export async function insertBankItem(
     const existing = store.bankItems.find((i) => i.contentHash === item.contentHash);
     if (existing) return existing;
     store.bankItems.unshift(item);
+    if (item.unitId?.trim()) {
+      invalidateUnitPoolCountCache(item.unitId);
+    }
     return item;
   }
 
   try {
     await store.collection<ProblemBankItem>("problem_bank_items").insertOne(item);
+    if (item.unitId?.trim()) {
+      invalidateUnitPoolCountCache(item.unitId);
+    }
     return item;
   } catch (error) {
     const duplicate =
@@ -180,8 +274,16 @@ export async function findAvailableBankItems(params: {
   gradeBand: string;
   conceptTags: string[];
   limit: number;
+  minDifficulty?: GeneratedProblem["difficulty"];
+  preferHarder?: boolean;
+  excludeDelivered?: boolean;
+  deliveredIds?: ReadonlySet<string>;
 }): Promise<ProblemBankItem[]> {
-  const delivered = await getDeliveredBankItemIds(params.userId);
+  const excludeDelivered = params.excludeDelivered !== false;
+  const delivered =
+    excludeDelivered
+      ? (params.deliveredIds ?? (await getDeliveredBankItemIds(params.userId)))
+      : new Set<string>();
   const store = await requireProblemBankStore();
   const normalizedTargets = params.conceptTags.map((t) => t.trim().toLowerCase());
 
@@ -194,18 +296,25 @@ export async function findAvailableBankItems(params: {
         !delivered.has(item.id),
     );
   } else {
-    candidates = await store
-      .collection<ProblemBankItem>("problem_bank_items")
-      .find(
-        {
+    const pipeline: Record<string, unknown>[] = [
+      {
+        $match: {
           active: true,
           gradeBand: params.gradeBand,
-          id: { $nin: [...delivered] },
         },
-        { projection: { _id: 0 } },
-      )
-      .sort({ deliveryCount: 1, createdAt: -1 })
-      .limit(200)
+      },
+    ];
+    if (excludeDelivered) {
+      pipeline.push(...deliveryExcludeLookupStages(params.userId));
+    }
+    pipeline.push(
+      { $sort: { deliveryCount: 1, createdAt: -1 } },
+      { $limit: Math.max(params.limit * 8, 40) },
+      { $project: { _id: 0 } },
+    );
+    candidates = await store
+      .collection<ProblemBankItem>("problem_bank_items")
+      .aggregate<ProblemBankItem>(pipeline)
       .toArray();
   }
 
@@ -224,10 +333,21 @@ export async function findAvailableBankItems(params: {
       )
         ? 2
         : 0;
-      return { item, score: overlap + primaryMatch };
+      const difficultyBonus = params.preferHarder
+        ? difficultyRank(item.difficulty) * 0.5
+        : 0;
+      return { item, score: overlap + primaryMatch + difficultyBonus };
     })
     .filter((row) => row.score > 0)
+    .filter(
+      (row) =>
+        !params.minDifficulty ||
+        meetsMinDifficulty(row.item.difficulty, params.minDifficulty),
+    )
     .sort((a, b) => {
+      if (params.preferHarder && b.item.difficulty !== a.item.difficulty) {
+        return difficultyRank(b.item.difficulty) - difficultyRank(a.item.difficulty);
+      }
       if (b.score !== a.score) return b.score - a.score;
       if (a.item.deliveryCount !== b.item.deliveryCount) {
         return a.item.deliveryCount - b.item.deliveryCount;
@@ -255,6 +375,219 @@ export async function findAvailableBankItems(params: {
   }
 
   return picked.slice(0, params.limit);
+}
+
+export async function countActiveBankItemsByUnit(unitId: string): Promise<number> {
+  const normalized = unitId.trim();
+  if (!normalized) return 0;
+  const store = await requireProblemBankStore();
+
+  if ("bankItems" in store) {
+    return store.bankItems.filter(
+      (item) => item.active && item.unitId === normalized,
+    ).length;
+  }
+
+  return store.collection<ProblemBankItem>("problem_bank_items").countDocuments({
+    active: true,
+    unitId: normalized,
+  });
+}
+
+export type UnitPracticeAggregate = {
+  attemptedUnique: number;
+  correctUnique: number;
+  gradedCount: number;
+  correctCount: number;
+};
+
+/** 단원별 누적 연습 — 배송·채점 이력 기준 (현재 세트만이 아님) */
+export async function aggregateUnitPracticeForUser(
+  userId: string,
+): Promise<Map<string, UnitPracticeAggregate>> {
+  const store = await requireProblemBankStore();
+  const empty = () =>
+    ({
+      attemptedUnique: 0,
+      correctUnique: 0,
+      gradedCount: 0,
+      correctCount: 0,
+    }) satisfies UnitPracticeAggregate;
+
+  type Mutable = {
+    attempted: Set<string>;
+    correct: Set<string>;
+    graded: number;
+    correctGrades: number;
+  };
+  const byUnit = new Map<string, Mutable>();
+
+  const bump = (unitId: string, bankItemId: string, outcome: UserProblemDelivery["outcome"]) => {
+    const row =
+      byUnit.get(unitId) ??
+      ({
+        attempted: new Set<string>(),
+        correct: new Set<string>(),
+        graded: 0,
+        correctGrades: 0,
+      } satisfies Mutable);
+    row.attempted.add(bankItemId);
+    if (outcome === "correct" || outcome === "incorrect") {
+      row.graded += 1;
+      if (outcome === "correct") {
+        row.correctGrades += 1;
+        row.correct.add(bankItemId);
+      }
+    }
+    byUnit.set(unitId, row);
+  };
+
+  if ("deliveries" in store) {
+    const bankUnit = new Map(
+      store.bankItems
+        .filter((item) => item.active && item.unitId)
+        .map((item) => [item.id, item.unitId!.trim()] as const),
+    );
+    for (const delivery of store.deliveries) {
+      if (delivery.userId !== userId) continue;
+      const unitId = bankUnit.get(delivery.bankItemId);
+      if (!unitId) continue;
+      bump(unitId, delivery.bankItemId, delivery.outcome);
+    }
+  } else {
+    const deliveries = await store
+      .collection<UserProblemDelivery>("user_problem_deliveries")
+      .find({ userId }, { projection: { bankItemId: 1, outcome: 1, _id: 0 } })
+      .toArray();
+    if (deliveries.length === 0) return new Map();
+
+    const bankIds = [...new Set(deliveries.map((d) => d.bankItemId))];
+    const items = await store
+      .collection<ProblemBankItem>("problem_bank_items")
+      .find(
+        { id: { $in: bankIds }, active: true, unitId: { $exists: true, $ne: "" } },
+        { projection: { id: 1, unitId: 1, _id: 0 } },
+      )
+      .toArray();
+    const bankUnit = new Map(
+      items.map((item) => [item.id, item.unitId!.trim()] as const),
+    );
+
+    for (const delivery of deliveries) {
+      const unitId = bankUnit.get(delivery.bankItemId);
+      if (!unitId) continue;
+      bump(unitId, delivery.bankItemId, delivery.outcome);
+    }
+  }
+
+  const out = new Map<string, UnitPracticeAggregate>();
+  for (const [unitId, row] of byUnit) {
+    out.set(unitId, {
+      attemptedUnique: row.attempted.size,
+      correctUnique: row.correct.size,
+      gradedCount: row.graded,
+      correctCount: row.correctGrades,
+    });
+  }
+  return out;
+}
+
+export async function countActiveBankItemsGroupedByUnit(): Promise<Map<string, number>> {
+  const store = await requireProblemBankStore();
+  const counts = new Map<string, number>();
+
+  if ("bankItems" in store) {
+    for (const item of store.bankItems) {
+      if (!item.active || !item.unitId?.trim()) continue;
+      const id = item.unitId.trim();
+      counts.set(id, (counts.get(id) ?? 0) + 1);
+    }
+    return counts;
+  }
+
+  const rows = await store
+    .collection<ProblemBankItem>("problem_bank_items")
+    .aggregate<{ _id: string; count: number }>([
+      { $match: { active: true, unitId: { $exists: true, $ne: "" } } },
+      { $group: { _id: "$unitId", count: { $sum: 1 } } },
+    ])
+    .toArray();
+
+  for (const row of rows) {
+    if (row._id?.trim()) counts.set(row._id.trim(), row.count);
+  }
+  return counts;
+}
+
+export async function findBankItemsByUnit(params: {
+  userId: string;
+  gradeBand: string;
+  unitId: string;
+  limit: number;
+  minDifficulty?: GeneratedProblem["difficulty"];
+  preferHarder?: boolean;
+  excludeDelivered?: boolean;
+  deliveredIds?: ReadonlySet<string>;
+}): Promise<ProblemBankItem[]> {
+  const normalizedUnitId = params.unitId.trim();
+  if (!normalizedUnitId) return [];
+
+  const excludeDelivered = params.excludeDelivered !== false;
+  const delivered =
+    excludeDelivered
+      ? (params.deliveredIds ?? (await getDeliveredBankItemIds(params.userId)))
+      : new Set<string>();
+  const store = await requireProblemBankStore();
+
+  let candidates: ProblemBankItem[] = [];
+  if ("bankItems" in store) {
+    candidates = store.bankItems.filter(
+      (item) =>
+        item.active &&
+        item.gradeBand === params.gradeBand &&
+        item.unitId === normalizedUnitId &&
+        !delivered.has(item.id),
+    );
+  } else {
+    const pipeline: Record<string, unknown>[] = [
+      {
+        $match: {
+          active: true,
+          gradeBand: params.gradeBand,
+          unitId: normalizedUnitId,
+        },
+      },
+    ];
+    if (excludeDelivered) {
+      pipeline.push(...deliveryExcludeLookupStages(params.userId));
+    }
+    pipeline.push(
+      { $sort: { deliveryCount: 1, createdAt: -1 } },
+      { $limit: Math.max(params.limit, 20) },
+      { $project: { _id: 0 } },
+    );
+    candidates = await store
+      .collection<ProblemBankItem>("problem_bank_items")
+      .aggregate<ProblemBankItem>(pipeline)
+      .toArray();
+  }
+
+  return candidates
+    .filter(
+      (item) =>
+        !params.minDifficulty ||
+        meetsMinDifficulty(item.difficulty, params.minDifficulty),
+    )
+    .sort((a, b) => {
+      if (params.preferHarder && a.difficulty !== b.difficulty) {
+        return difficultyRank(b.difficulty) - difficultyRank(a.difficulty);
+      }
+      if (a.deliveryCount !== b.deliveryCount) {
+        return a.deliveryCount - b.deliveryCount;
+      }
+      return b.createdAt.localeCompare(a.createdAt);
+    })
+    .slice(0, params.limit);
 }
 
 export async function saveUserProblemDeliveries(
@@ -405,6 +738,75 @@ export async function getPracticeMistakesForUser(
     .sort({ createdAt: -1 })
     .limit(limit)
     .toArray();
+}
+
+export async function resolvePracticeMistakesForRelearn(params: {
+  userId: string;
+  conceptTags: string[];
+  conceptPrimary: string;
+  attemptId: string;
+}): Promise<string[]> {
+  const store = await requireProblemBankStore();
+  const targets = [params.conceptPrimary, ...params.conceptTags]
+    .map((value) => value.trim())
+    .filter(Boolean);
+  if (targets.length === 0) return [];
+
+  const relearned: string[] = [];
+  const now = new Date().toISOString();
+
+  const matches = (record: PracticeMistakeRecord) => {
+    if (record.userId !== params.userId || record.resolvedAt) return false;
+    const recordConcepts = [record.conceptPrimary, ...record.conceptTags];
+    return recordConcepts.some((concept) =>
+      targets.some((target) => {
+        const x = concept.trim().toLowerCase();
+        const y = target.trim().toLowerCase();
+        return x === y || x.includes(y) || y.includes(x);
+      }),
+    );
+  };
+
+  if ("practiceMistakes" in store) {
+    const unresolved = store.practiceMistakes
+      .filter(matches)
+      .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+    const target = unresolved[0];
+    if (!target) return [];
+    target.resolvedAt = now;
+    target.resolveAttemptId = params.attemptId;
+    relearned.push(target.conceptPrimary.trim() || targets[0]!);
+    return relearned;
+  }
+
+  const candidate = await store
+    .collection<PracticeMistakeRecord>("practice_mistake_records")
+    .findOne(
+      {
+        userId: params.userId,
+        resolvedAt: { $exists: false },
+        $or: [
+          { conceptPrimary: { $in: targets } },
+          { conceptTags: { $in: targets } },
+        ],
+      },
+      { projection: { _id: 0 }, sort: { createdAt: -1 } },
+    );
+
+  if (!candidate) return [];
+
+  await store.collection<PracticeMistakeRecord>("practice_mistake_records").updateOne(
+    { id: candidate.id },
+    {
+      $set: {
+        resolvedAt: now,
+        resolveAttemptId: params.attemptId,
+      },
+    },
+  );
+
+  relearned.push(candidate.conceptPrimary.trim() || targets[0]!);
+  return relearned;
 }
 
 export async function getScannedProblemsForUser(

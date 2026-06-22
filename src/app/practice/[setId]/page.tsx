@@ -19,14 +19,14 @@ export default async function PracticePage({
   return (
     <AppShell>
       <div className="mb-8">
-        <p className="text-sm font-medium text-blue-200">Step 2</p>
+        <p className="text-sm font-medium text-wy-primary">Step 2</p>
         <MathMixedRich
           text={problemSet.title}
           className="mt-3 text-4xl font-black leading-tight"
         />
         <MathMixedRich
           text={problemSet.learningGoal}
-          className="mt-4 max-w-3xl leading-8 text-slate-300"
+          className="mt-4 max-w-3xl leading-8 text-wy-text-sub"
         />
       </div>
       <PracticeRunner problemSet={problemSet} />

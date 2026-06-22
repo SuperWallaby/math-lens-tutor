@@ -14,7 +14,7 @@ export async function GET(request: Request) {
     const student = await findUserById(actor.actorUserId);
     const profile = await buildLearningProfile(
       actor.actorUserId,
-      student?.grade ?? "중1",
+      student?.grade ?? actor.user.grade ?? "중1",
     );
 
     return NextResponse.json({ profile });

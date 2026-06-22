@@ -1,0 +1,65 @@
+{
+  "capturedAt": "2026-05-26T15:39:45.638Z",
+  "items": [
+    {
+      "key": "student_hub__first_visit",
+      "url": "http://127.0.0.1:8080/?design_review=student_hub__first_visit",
+      "file": "design-review/captures/student_hub/first_visit.png"
+    },
+    {
+      "key": "student_hub__returning",
+      "url": "http://127.0.0.1:8080/?design_review=student_hub__returning",
+      "file": "design-review/captures/student_hub/returning.png"
+    },
+    {
+      "key": "upload__idle",
+      "url": "http://127.0.0.1:8080/?design_review=upload__idle",
+      "file": "design-review/captures/upload/idle.png"
+    },
+    {
+      "key": "analysis__analyzing",
+      "url": "http://127.0.0.1:8080/?design_review=analysis__analyzing",
+      "file": "design-review/captures/upload/analyzing.png"
+    },
+    {
+      "key": "analysis__result_weak",
+      "url": "http://127.0.0.1:8080/?design_review=analysis__result_weak",
+      "file": "design-review/captures/analysis/result_weak.png"
+    },
+    {
+      "key": "analysis__result_ok",
+      "url": "http://127.0.0.1:8080/?design_review=analysis__result_ok",
+      "file": "design-review/captures/analysis/result_ok.png"
+    },
+    {
+      "key": "practice__question",
+      "url": "http://127.0.0.1:8080/?design_review=practice__question",
+      "file": "design-review/captures/practice/question.png"
+    },
+    {
+      "key": "practice__feedback_correct",
+      "url": "http://127.0.0.1:8080/?design_review=practice__feedback_correct",
+      "file": "design-review/captures/practice/feedback_correct.png"
+    },
+    {
+      "key": "practice__feedback_wrong",
+      "url": "http://127.0.0.1:8080/?design_review=practice__feedback_wrong",
+      "file": "design-review/captures/practice/feedback_wrong.png"
+    },
+    {
+      "key": "student_progress__grade_e12",
+      "url": "http://127.0.0.1:8080/?design_review=student_progress__grade_e12",
+      "file": "design-review/captures/student_progress/grade_e12.png"
+    },
+    {
+      "key": "student_progress__grade_m1",
+      "url": "http://127.0.0.1:8080/?design_review=student_progress__grade_m1",
+      "file": "design-review/captures/student_progress/grade_m1.png"
+    },
+    {
+      "key": "student_progress__chain_warning",
+      "url": "http://127.0.0.1:8080/?design_review=student_progress__chain_warning",
+      "file": "design-review/captures/student_progress/chain_warning.png"
+    }
+  ]
+}

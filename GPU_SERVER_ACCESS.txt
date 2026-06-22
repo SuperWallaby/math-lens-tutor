@@ -1,0 +1,227 @@
+================================================================================
+GPU 서버 접속 정보 (v100 프로젝트)
+================================================================================
+작성 기준: 2026-05-22
+주의: 비밀번호, PIN, API 키, HF 토큰 등 비밀 값은 이 파일에 적지 마세요.
+
+================================================================================
+1. 서버 구성 요약
+================================================================================
+
+  [마스터]  공인 IP 218.39.226.104  — SSH·HTTP 프록시(역프록시)
+  [워커]    내부 IP 10.10.10.14     — GPU 계산 노드 (hostname: calnode02)
+
+  연결 흐름 (운영):
+    로컬 PC (local_gateway 등)
+      → 마스터 HTTP :9080
+      → 워커 gpu_worker :9000
+
+  마스터는 특정 출발지 IP만 인바운드 허용될 수 있음.
+  로컬에서 API 호출 시 허용된 네트워크/VPN에서 실행할 것.
+
+================================================================================
+2. SSH 접속
+================================================================================
+
+2-1. ~/.ssh/config 별칭 (권장)
+
+  Host lab-master
+    HostName 218.39.226.104
+    User user
+    Port 22
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+
+  Host lab-worker
+    HostName 10.10.10.14
+    User user
+    Port 22
+    IdentityFile ~/.ssh/id_ed25519
+    IdentitiesOnly yes
+    ProxyJump lab-master
+
+2-2. 접속 명령
+
+  마스터:
+    ssh lab-master
+
+  워커 (ProxyJump, 한 번에):
+    ssh lab-worker
+
+  워커에서 원격 명령 실행:
+    ssh lab-worker 'hostname'
+    ssh lab-worker 'curl -sS http://127.0.0.1:9000/health'
+
+2-3. config 없을 때 (명시적)
+
+  마스터:
+    ssh -i ~/.ssh/id_ed25519 user@218.39.226.104
+
+  마스터 경유 워커 (수동):
+    ssh user@218.39.226.104
+    ssh user@10.10.10.14
+
+2-4. SSH 포트 포워딩 (개발·터널)
+
+  로컬 PC에서 워커 API를 직접 붙일 때:
+    ssh -L 9000:10.10.10.14:9000 user@218.39.226.104
+
+  터널 유지 중 로컬에서:
+    http://127.0.0.1:9000/health
+
+  이 경우 local_gateway/.env:
+    REMOTE_BASE_URL=http://127.0.0.1:9000
+
+2-5. SSH 키
+
+  개인키: ~/.ssh/id_ed25519
+  공개키는 마스터·워커 양쪽 ~/.ssh/authorized_keys 에 등록 필요.
+
+================================================================================
+3. HTTP / API 엔드포인트
+================================================================================
+
+3-1. 포트
+
+  마스터 프록시:  9080  (외부에서 접근)
+  워커 API:       9000  (내부망·SSH 터널)
+  로컬 게이트웨이: 8080  (local_gateway UI/API)
+
+3-2. URL
+
+  원격 health (허용 IP에서):
+    http://218.39.226.104:9080/health
+
+  워커 직통 (마스터 또는 워커 SSH 세션에서):
+    http://10.10.10.14:9000/health
+    http://127.0.0.1:9000/health   (워커 로컬)
+
+  로컬 게이트웨이 UI:
+    http://127.0.0.1:8080/ui/
+
+  로컬 게이트웨이 health:
+    http://127.0.0.1:8080/health
+
+3-3. local_gateway 설정 (local_gateway/.env)
+
+  REMOTE_BASE_URL=http://218.39.226.104:9080
+
+  (선택) REMOTE_API_KEY, LOCAL_GATEWAY_API_KEY — 값은 .env에만 보관
+
+3-4. API 예시 (로컬 게이트웨이 기준)
+
+  작업 생성:
+    curl -sS -X POST http://127.0.0.1:8080/v1/jobs \
+      -F 'prompt=1girl, masterpiece, best quality' \
+      -F 'steps=28' \
+      -F 'width=1024' \
+      -F 'height=1024'
+
+  상태 조회:
+    curl -sS http://127.0.0.1:8080/v1/jobs/<job_id>
+
+  이미지 다운로드:
+    curl -sS -o out.png http://127.0.0.1:8080/v1/jobs/<job_id>/image
+
+================================================================================
+4. 워커(GPU) 서버 상세
+================================================================================
+
+  호스트명:     calnode02
+  내부 IP:      10.10.10.14
+  OS 사용자:    user
+  GPU:          Tesla V100 32GB × 2
+  RAM:          약 755GB
+  CUDA:         12.2 (환경에 따라 다를 수 있음)
+
+  코드 경로:    ~/v100/gpu_worker
+  출력 PNG:     ~/v100/gpu_worker/outputs/
+  런타임 설정:  ~/v100/gpu_worker/worker-runtime.env
+  로그:         ~/v100/gpu_worker/uvicorn.log
+
+  현재 백엔드 (2026-05-22 기준):
+    IMAGE_BACKEND=sdxl
+    IMAGE_MODEL_ID=cagliostrolab/animagine-xl-3.1
+    (Flux는 V100 32GB에서 OOM → worker-runtime.env에서 flux 줄 주석 처리)
+
+  워커 기동:
+    cd ~/v100/gpu_worker
+    bash scripts/run_uvicorn.sh
+
+  워커 health 확인:
+    curl -sS http://127.0.0.1:9000/health
+
+================================================================================
+5. 마스터 서버 상세
+================================================================================
+
+  공인 IP:      218.39.226.104
+  OS 사용자:    user
+  HTTP 프록시:  :9080 → 10.10.10.14:9000
+
+  (nginx 미사용 시) TCP 역프록시:
+    ~/tcp_reverse_proxy.py  (9080 → 워커 9000)
+
+  마스터에서 워커 확인:
+    curl -sS http://10.10.10.14:9000/health
+    curl -sS http://127.0.0.1:9080/health
+
+================================================================================
+6. 로컬 게이트웨이 기동
+================================================================================
+
+  cd local_gateway
+  python3 -m venv .venv
+  .venv/bin/pip install -r requirements.txt
+  cp .env.example .env    # REMOTE_BASE_URL 설정
+  .venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8080
+
+  생성 이미지 저장:
+    local_gateway/artifacts/<job_id>.png
+
+================================================================================
+7. 연결 검증 순서
+================================================================================
+
+  1) ssh lab-worker 'curl -sS http://127.0.0.1:9000/health'
+  2) ssh lab-master 'curl -sS http://127.0.0.1:9080/health'
+  3) (허용 IP PC) curl -sS http://218.39.226.104:9080/health
+  4) curl -sS http://127.0.0.1:8080/health
+  5) UI에서 프롬프트 입력 후 생성 테스트
+
+================================================================================
+8. 관련 문서
+================================================================================
+
+  docs/SSH_LAB_ACCESS.md       — SSH·배포 요약 (Markdown)
+  gpu_worker/ssh-remote.mdc    — 에이전트용 SSH 별칭
+  deploy/README.md             — nginx·systemd 배포
+  gpu_worker/README-GPU.md     — GPU 워커 설치·환경변수
+  README.md                    — 프로젝트 전체 안내
+
+================================================================================
+9. 우열 training-feed worker (2026-06-13)
+================================================================================
+
+  경로:       ~/v100/study-worker
+  env:        ~/v100/study-worker/.env  (MONGODB_URI, GPU_LLM_* — 비밀 값은 git 금지)
+  systemd:    wooyeol-training-feed.service (user unit)
+
+  Ollama (HTTP):
+    http://127.0.0.1:11434
+    모델: qwen2.5:7b (피드 reason), bge-m3 (embedding, 기존)
+
+  로컬에서 배포:
+    npm run v100:setup-worker
+    npm run v100:check-worker
+
+  워커 상태:
+    ssh lab-worker 'systemctl --user status wooyeol-training-feed'
+    ssh lab-worker 'journalctl --user -u wooyeol-training-feed -f'
+
+  수동 1회 실행:
+    ssh lab-worker 'cd ~/v100/study-worker && source ~/.nvm/nvm.sh && node --env-file=.env --import tsx scripts/worker-process-jobs.ts -- --once'
+
+  Atlas Network Access: 마스터 egress IP 218.39.226.104 허용 필요
+
+================================================================================

@@ -2,16 +2,21 @@ import 'package:flutter/material.dart';
 
 import '../layout/tablet_layout.dart';
 import '../services/api_client.dart';
+import '../theme/app_design_system.dart';
+import '../utils/pending_student_link.dart';
+import '../utils/student_code_format.dart';
+import '../widgets/student_code_input_field.dart';
+import '../widgets/student_link_guide.dart';
 
 class LinkStudentScreen extends StatefulWidget {
   const LinkStudentScreen({
     super.key,
     required this.apiClient,
-    this.skippable = false,
+    this.onLinked,
   });
 
   final ApiClient apiClient;
-  final bool skippable;
+  final VoidCallback? onLinked;
 
   @override
   State<LinkStudentScreen> createState() => _LinkStudentScreenState();
@@ -21,35 +26,127 @@ class _LinkStudentScreenState extends State<LinkStudentScreen> {
   final _controller = TextEditingController();
   bool _loading = false;
   String? _error;
+  String? _lastSubmittedCode;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller.addListener(_onCodeChanged);
+    _applyPendingLinkCode();
+  }
+
+  Future<void> _applyPendingLinkCode() async {
+    final pending = await consumePendingStudentLinkCode();
+    if (pending == null || !mounted) return;
+    _controller.text = pending;
+  }
+
+  Future<void> _pasteCode() async {
+    if (_loading) return;
+    final pasted = await pasteStudentCodeInto(_controller);
+    if (!pasted && mounted) {
+      setState(() => _error = '클립보드에 학생 코드가 없습니다.');
+    } else if (mounted) {
+      setState(() => _error = null);
+    }
+  }
+
+  Widget? get _fieldSuffix {
+    if (_loading) {
+      return const Padding(
+        padding: EdgeInsets.all(14),
+        child: SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      );
+    }
+    return IconButton(
+      onPressed: _pasteCode,
+      icon: const Icon(Icons.content_paste_rounded),
+      tooltip: '붙여넣기',
+    );
+  }
 
   @override
   void dispose() {
+    _controller.removeListener(_onCodeChanged);
     _controller.dispose();
     super.dispose();
   }
 
-  Future<void> _link() async {
-    final code = _controller.text.trim();
-    if (code.isEmpty) {
+  void _onCodeChanged() {
+    if (_loading) return;
+    final raw = _controller.text.trim();
+    final code = parseStudentCodeFromText(raw);
+
+    if (raw.length >= 6 && code == null) {
+      setState(
+        () => _error = '올바른 학생 고유번호 형식이 아닙니다. (WY-XXXXXX)',
+      );
+      return;
+    }
+
+    if (code == null || !isCompleteStudentCode(code)) {
+      if (_error != null && mounted) {
+        setState(() => _error = null);
+      }
+      return;
+    }
+    if (_lastSubmittedCode == code) return;
+    _link(code: code, auto: true);
+  }
+
+  Future<void> _link({String? code, bool auto = false}) async {
+    if (widget.apiClient.authSession.isGuest) {
+      setState(
+        () => _error = '학생 연결은 가입 후 이용할 수 있습니다. 설정에서 로그인해 주세요.',
+      );
+      return;
+    }
+
+    final normalized =
+        (code ?? parseStudentCodeFromText(_controller.text))?.trim().toUpperCase();
+    if (normalized == null || normalized.isEmpty) {
       setState(() => _error = '학생 고유번호를 입력해 주세요.');
+      return;
+    }
+    if (!isCompleteStudentCode(normalized)) {
+      setState(
+        () => _error = auto
+            ? '올바른 학생 고유번호 형식이 아닙니다. (WY-XXXXXX)'
+            : '학생 고유번호를 확인해 주세요.',
+      );
       return;
     }
 
     setState(() {
       _loading = true;
       _error = null;
+      _lastSubmittedCode = normalized;
     });
 
     try {
-      await widget.apiClient.linkStudent(code);
+      final student = await widget.apiClient.linkStudent(normalized);
       if (!mounted) return;
+      widget.onLinked?.call();
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('${student.displayName} 학생과 연결되었습니다.')),
+      );
       Navigator.of(context).pop(true);
     } on ApiException catch (error) {
-      setState(() => _error = error.message);
+      setState(() {
+        _error = error.message;
+        _lastSubmittedCode = null;
+      });
+    } catch (_) {
+      setState(() {
+        _error = '연결에 실패했습니다. 잠시 후 다시 시도해 주세요.';
+        _lastSubmittedCode = null;
+      });
     } finally {
-      if (mounted) {
-        setState(() => _loading = false);
-      }
+      if (mounted) setState(() => _loading = false);
     }
   }
 
@@ -62,7 +159,7 @@ class _LinkStudentScreenState extends State<LinkStudentScreen> {
           child: Padding(
             padding: TabletLayout.pagePadding(context),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
                 Text(
                   '학생 고유번호 입력',
@@ -73,47 +170,38 @@ class _LinkStudentScreenState extends State<LinkStudentScreen> {
                 ),
                 const SizedBox(height: 12),
                 const Text(
-                  '학생 계정에 표시된 WY-XXXXXX 코드를 입력하면 활동과 수준을 확인할 수 있습니다.',
-                  style: TextStyle(color: Color(0xFFCBD5E1), height: 1.5),
+                  '복사한 코드를 붙여넣거나 직접 입력하세요.',
+                  style: TextStyle(color: AppColors.textSub, height: 1.5),
                 ),
                 const SizedBox(height: 24),
-                TextField(
+                StudentCodeInputField(
                   controller: _controller,
-                  textCapitalization: TextCapitalization.characters,
-                  decoration: InputDecoration(
-                    hintText: 'WY-7K3M9P',
-                    filled: true,
-                    fillColor: const Color(0xFF0F172A),
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(16),
-                      borderSide: BorderSide.none,
-                    ),
-                  ),
+                  enabled: !_loading,
+                  onSubmitted: _loading ? null : (_) => _link(),
+                  suffixIcon: _fieldSuffix,
                 ),
                 if (_error != null) ...[
                   const SizedBox(height: 12),
-                  Text(_error!, style: const TextStyle(color: Color(0xFFF87171))),
-                ],
-                const SizedBox(height: 20),
-                FilledButton(
-                  onPressed: _loading ? null : _link,
-                  child: _loading
-                      ? const SizedBox(
-                          width: 22,
-                          height: 22,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Text('학생 연결하기'),
-                ),
-                if (widget.skippable) ...[
-                  const SizedBox(height: 12),
-                  OutlinedButton(
-                    onPressed: _loading
-                        ? null
-                        : () => Navigator.of(context).pop(false),
-                    child: const Text('나중에 연결하기'),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(AppSpacing.md),
+                    decoration: BoxDecoration(
+                      color: AppColors.accent.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(AppRadii.md),
+                      border: Border.all(
+                        color: AppColors.accent.withValues(alpha: 0.35),
+                      ),
+                    ),
+                    child: Text(
+                      _error!,
+                      style: const TextStyle(color: AppColors.accent, height: 1.45),
+                    ),
                   ),
                 ],
+                const SizedBox(height: AppSpacing.md),
+                StudentLinkGuide(
+                  role: widget.apiClient.authSession.user?.role,
+                ),
               ],
             ),
           ),

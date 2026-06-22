@@ -7,6 +7,7 @@ import '../widgets/app_card.dart';
 import '../widgets/learning_profile_widgets.dart';
 import 'link_student_screen.dart';
 import 'student_progress_screen.dart';
+import '../theme/app_design_system.dart';
 
 class TeacherHomeScreen extends StatefulWidget {
   const TeacherHomeScreen({super.key, required this.apiClient});
@@ -65,25 +66,22 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                 width: double.infinity,
                 padding: const EdgeInsets.all(20),
                 decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(24),
-                  gradient: const LinearGradient(
-                    colors: [Color(0xFF0891B2), Color(0xFF0E7490)],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
+                  borderRadius: BorderRadius.circular(AppRadii.lg),
+                  color: AppColors.teacher.withValues(alpha: 0.12),
+                  border: Border.all(color: AppColors.teacher.withValues(alpha: 0.25)),
                 ),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Text(
-                      '안녕하세요 👩‍🏫',
-                      style: TextStyle(color: Color(0xCCFFFFFF), fontSize: 13),
+                      '안녕하세요',
+                      style: TextStyle(color: AppColors.textSub, fontSize: 13),
                     ),
                     const SizedBox(height: 4),
                     Text(
                       user?.displayName ?? '선생님',
                       style: const TextStyle(
-                        color: Colors.white,
+                        color: AppColors.text,
                         fontSize: 22,
                         fontWeight: FontWeight.w900,
                       ),
@@ -93,7 +91,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                       Text(
                         overview.organizationName!,
                         style: const TextStyle(
-                          color: Color(0xB3FFFFFF),
+                          color: AppColors.textSub,
                           fontSize: 13,
                         ),
                       ),
@@ -128,7 +126,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
               ),
               const SizedBox(height: 12),
               Material(
-                color: const Color(0xFF0F172A),
+                color: AppColors.surface,
                 borderRadius: BorderRadius.circular(18),
                 child: InkWell(
                   borderRadius: BorderRadius.circular(18),
@@ -138,13 +136,13 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(18),
                       border: Border.all(
-                        color: const Color(0xFF0891B2).withValues(alpha: 0.3),
+                        color: AppColors.teacher.withValues(alpha: 0.3),
                         width: 1.5,
                       ),
                     ),
                     child: const Row(
                       children: [
-                        Text('+', style: TextStyle(fontSize: 24, color: Color(0xFF0891B2))),
+                        Text('+', style: TextStyle(fontSize: 24, color: AppColors.teacher)),
                         SizedBox(width: 12),
                         Expanded(
                           child: Column(
@@ -160,7 +158,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                               Text(
                                 '학생 코드를 입력하세요',
                                 style: TextStyle(
-                                  color: Color(0xFF94A3B8),
+                                  color: AppColors.textSub,
                                   fontSize: 12,
                                 ),
                               ),
@@ -178,16 +176,17 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                   width: double.infinity,
                   padding: const EdgeInsets.all(14),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF7F1D1D).withValues(alpha: 0.35),
+                    color: AppColors.accent.withValues(alpha: 0.12).withValues(alpha: 0.35),
                     borderRadius: BorderRadius.circular(18),
                     border: Border.all(
-                      color: const Color(0xFFEF4444).withValues(alpha: 0.3),
+                      color: AppColors.accent.withValues(alpha: 0.3),
                     ),
                   ),
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('🚨', style: TextStyle(fontSize: 22)),
+                      Icon(Icons.warning_amber_rounded,
+                          size: 22, color: AppColors.accent),
                       const SizedBox(width: 10),
                       Expanded(
                         child: Column(
@@ -196,7 +195,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                             Text(
                               '${overview.atRiskCount}명이 정답률 40% 미만이에요!',
                               style: const TextStyle(
-                                color: Color(0xFFFCA5A5),
+                                color: AppColors.accent,
                                 fontWeight: FontWeight.w800,
                                 fontSize: 13,
                               ),
@@ -207,7 +206,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                                   .map((s) => s.displayName)
                                   .join(' · '),
                               style: const TextStyle(
-                                color: Color(0xFFCBD5E1),
+                                color: AppColors.textSub,
                                 fontSize: 12,
                                 height: 1.45,
                               ),
@@ -224,7 +223,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                 const AppCard(
                   child: Text(
                     '연결된 학생이 없습니다. 학생 코드로 추가해 주세요.',
-                    style: TextStyle(color: Color(0xFF94A3B8), height: 1.5),
+                    style: TextStyle(color: AppColors.textSub, height: 1.5),
                   ),
                 )
               else
@@ -233,7 +232,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                     children: [
                       for (var i = 0; i < overview.students.length; i++) ...[
                         if (i > 0)
-                          const Divider(height: 20, color: Color(0xFF1E293B)),
+                          const Divider(height: 20, color: AppColors.border),
                         _TeacherStudentRow(
                           student: overview.students[i],
                           onTap: () async {
@@ -270,10 +269,10 @@ class _TeacherStudentRow extends StatelessWidget {
 
   Color get _color {
     return switch (student.status) {
-      'danger' => const Color(0xFFEF4444),
-      'warning' => const Color(0xFFF59E0B),
-      'good' => const Color(0xFF22C55E),
-      _ => const Color(0xFF2563EB),
+      'danger' => AppColors.accent,
+      'warning' => AppColors.warning,
+      'good' => AppColors.success,
+      _ => AppColors.primary,
     };
   }
 
@@ -308,7 +307,7 @@ class _TeacherStudentRow extends StatelessWidget {
                   student.weakConcept.isNotEmpty
                       ? '${student.weakConcept} · ${student.statusLabel}'
                       : student.statusLabel,
-                  style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                  style: const TextStyle(color: AppColors.textSub, fontSize: 11),
                 ),
                 const SizedBox(height: 6),
                 ClipRRect(
@@ -316,7 +315,7 @@ class _TeacherStudentRow extends StatelessWidget {
                   child: LinearProgressIndicator(
                     value: student.accuracy / 100,
                     minHeight: 5,
-                    backgroundColor: const Color(0xFF1E293B),
+                    backgroundColor: AppColors.surfaceMuted,
                     color: _color,
                   ),
                 ),
@@ -381,7 +380,7 @@ class _TeacherStudentDetailScreenState extends State<TeacherStudentDetailScreen>
           const AppCard(
             child: Text(
               '홈 탭에서 학생을 선택하면 상세 현황을 볼 수 있습니다.',
-              style: TextStyle(color: Color(0xFF94A3B8), height: 1.5),
+              style: TextStyle(color: AppColors.textSub, height: 1.5),
             ),
           ),
         ],
@@ -405,8 +404,8 @@ class _TeacherStudentDetailScreenState extends State<TeacherStudentDetailScreen>
             Row(
               children: [
                 CircleAvatar(
-                  backgroundColor: const Color(0xFFEF4444).withValues(alpha: 0.15),
-                  foregroundColor: const Color(0xFFEF4444),
+                  backgroundColor: AppColors.accent.withValues(alpha: 0.15),
+                  foregroundColor: AppColors.accent,
                   child: Text(
                     selected.displayName.isNotEmpty
                         ? selected.displayName[0]
@@ -428,7 +427,7 @@ class _TeacherStudentDetailScreenState extends State<TeacherStudentDetailScreen>
                       ),
                       Text(
                         selected.studentCode,
-                        style: const TextStyle(color: Color(0xFF94A3B8)),
+                        style: const TextStyle(color: AppColors.textSub),
                       ),
                     ],
                   ),
@@ -447,13 +446,13 @@ class _TeacherStudentDetailScreenState extends State<TeacherStudentDetailScreen>
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.w900,
-                            color: Color(0xFFEF4444),
+                            color: AppColors.accent,
                           ),
                         ),
                         const SizedBox(height: 4),
                         const Text(
                           '이번 주 정답률',
-                          style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                          style: TextStyle(color: AppColors.textSub, fontSize: 11),
                         ),
                       ],
                     ),
@@ -469,13 +468,13 @@ class _TeacherStudentDetailScreenState extends State<TeacherStudentDetailScreen>
                           style: const TextStyle(
                             fontSize: 24,
                             fontWeight: FontWeight.w900,
-                            color: Color(0xFFF97316),
+                            color: AppColors.warning,
                           ),
                         ),
                         const SizedBox(height: 4),
                         const Text(
                           '푼 문제',
-                          style: TextStyle(color: Color(0xFF94A3B8), fontSize: 11),
+                          style: TextStyle(color: AppColors.textSub, fontSize: 11),
                         ),
                       ],
                     ),
@@ -496,7 +495,7 @@ class _TeacherStudentDetailScreenState extends State<TeacherStudentDetailScreen>
                       child: Text(
                         '• $feedback',
                         style: const TextStyle(
-                          color: Color(0xFFCBD5E1),
+                          color: AppColors.textSub,
                           height: 1.45,
                         ),
                       ),
@@ -565,7 +564,7 @@ class _TeacherClassProgressScreenState extends State<TeacherClassProgressScreen>
               child: Column(
                 children: [
                   for (var i = 0; i < overview.classUnitAverages.length; i++) ...[
-                    if (i > 0) const Divider(height: 20, color: Color(0xFF1E293B)),
+                    if (i > 0) const Divider(height: 20, color: AppColors.border),
                     _UnitMasteryRow(unit: overview.classUnitAverages[i]),
                   ],
                 ],
@@ -620,15 +619,16 @@ class _TeacherStatBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.12),
-        borderRadius: BorderRadius.circular(16),
+        color: AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         children: [
           Text(
             value,
             style: const TextStyle(
-              color: Colors.white,
+              color: AppColors.text,
               fontSize: 18,
               fontWeight: FontWeight.w900,
             ),
@@ -636,7 +636,7 @@ class _TeacherStatBox extends StatelessWidget {
           const SizedBox(height: 4),
           Text(
             label,
-            style: const TextStyle(color: Color(0xCCFFFFFF), fontSize: 11),
+            style: const TextStyle(color: AppColors.textSub, fontSize: 11),
             textAlign: TextAlign.center,
           ),
         ],
@@ -653,10 +653,10 @@ class _UnitMasteryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = unit.percent >= 80
-        ? const Color(0xFF22C55E)
+        ? AppColors.success
         : unit.percent >= 60
-            ? const Color(0xFFF59E0B)
-            : const Color(0xFFEF4444);
+            ? AppColors.warning
+            : AppColors.accent;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -684,7 +684,7 @@ class _UnitMasteryRow extends StatelessWidget {
           child: LinearProgressIndicator(
             value: unit.percent / 100,
             minHeight: 6,
-            backgroundColor: const Color(0xFF1E293B),
+            backgroundColor: AppColors.surfaceMuted,
             color: color,
           ),
         ),

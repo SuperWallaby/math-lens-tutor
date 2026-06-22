@@ -1,0 +1,88 @@
+
+> study@0.1.1 seed:problem-bank:all
+> node --env-file=.env.local --import tsx scripts/seed-problem-bank.ts --count 10
+
+[seed] units=65 count=10 deployment=gpt-5.4 dryRun=false skipExisting=true
+[skip] 초1~2 e12-numbers-9 (25 items >= 10)
+[gen] 초1~2 ② 50까지의 수 (e12-numbers-50) +7 (existing 3)
+[ok] e12-numbers-50 inserted=5
+[gen] 초1~2 ③ 덧셈과 뺄셈 (e12-add-sub) +7 (existing 3)
+[ok] e12-add-sub inserted=5
+[gen] 초1~2 ④ 여러 가지 도형 (e12-shapes) +7 (existing 3)
+[ok] e12-shapes inserted=5
+[gen] 초1~2 ⑤ 길이와 시간 (e12-measure) +7 (existing 3)
+[ok] e12-measure inserted=5
+[gen] 초1~2 ⑥ 규칙 찾기 (e12-patterns) +7 (existing 3)
+[ok] e12-patterns inserted=5
+[gen] 초3~4 ① 곱셈과 나눗셈 (e34-mult-div) +7 (existing 3)
+[ok] e34-mult-div inserted=5
+[gen] 초3~4 ② 분수 (e34-fractions) +7 (existing 3)
+[ok] e34-fractions inserted=5
+[gen] 초3~4 ③ 원 (e34-circle) +7 (existing 3)
+[ok] e34-circle inserted=5
+[gen] 초3~4 ④ 여러 가지 도형 (e34-polygon) +7 (existing 3)
+[ok] e34-polygon inserted=5
+[gen] 초3~4 ⑤ 들이와 무게·길이와 시간 (e34-measure) +7 (existing 3)
+[ok] e34-measure inserted=5
+[gen] 초3~4 ⑥ 규칙과 대응 (e34-correspondence) +7 (existing 3)
+[ok] e34-correspondence inserted=5
+[gen] 초3~4 ⑦ 자료의 정리 (e34-data) +7 (existing 3)
+[ok] e34-data inserted=5
+[gen] 초5~6 ① 자연수의 혼합 계산 (e56-mixed) +7 (existing 3)
+[ok] e56-mixed inserted=5
+[gen] 초5~6 ② 약수와 배수 (e56-factor) +7 (existing 3)
+[ok] e56-factor inserted=5
+[gen] 초5~6 ③ 분수와 소수 (e56-fraction-decimal) +7 (existing 3)
+[ok] e56-fraction-decimal inserted=5
+[gen] 초5~6 ④ 비와 비율 (e56-ratio) +7 (existing 3)
+[ok] e56-ratio inserted=5
+[gen] 초5~6 ⑤ 정비례와 반비례 (e56-proportion) +7 (existing 3)
+[ok] e56-proportion inserted=5
+[gen] 초5~6 ⑥ 다각형의 넓이·원의 넓이 (e56-area) +7 (existing 3)
+[ok] e56-area inserted=5
+[gen] 초5~6 ⑦ 입체도형 (e56-solid) +7 (existing 3)
+[ok] e56-solid inserted=5
+[gen] 초5~6 ⑧ 평균과 가능성 (e56-stats) +7 (existing 3)
+[ok] e56-stats inserted=5
+[skip] 중1 m1-factor (23 items >= 10)
+[gen] 중1 ② 정수와 유리수 (m1-integers) +3 (existing 7)
+[ok] m1-integers inserted=3
+[skip] 중1 m1-expressions (14 items >= 10)
+[gen] 중1 ④ 일차방정식 (m1-equations) +7 (existing 3)
+[ok] m1-equations inserted=5
+[gen] 중1 ⑤ 좌표평면과 그래프 (m1-coordinates) +5 (existing 5)
+[ok] m1-coordinates inserted=5
+[gen] 중1 ⑥ 정비례와 반비례 (m1-proportion-graph) +5 (existing 5)
+[ok] m1-proportion-graph inserted=5
+[gen] 중1 ⑦ 기본 도형 (m1-basic-shapes) +7 (existing 3)
+[ok] m1-basic-shapes inserted=5
+[gen] 중1 ⑧ 평면도형 (m1-plane-shapes) +7 (existing 3)
+[ok] m1-plane-shapes inserted=5
+[skip] 중1 m1-statistics (17 items >= 10)
+[gen] 중2 ① 유리수와 순환소수 (m2-rational) +3 (existing 7)
+[ok] m2-rational inserted=3
+[gen] 중2 ② 연립일차방정식 (m2-systems) +7 (existing 3)
+[ok] m2-systems inserted=5
+[gen] 중2 ③ 일차함수 (m2-functions) +7 (existing 3)
+[ok] m2-functions inserted=5
+[gen] 중2 ④ 도형의 성질 (m2-shape-properties) +7 (existing 3)
+[ok] m2-shape-properties inserted=5
+[gen] 중2 ⑤ 도형의 닮음 (m2-similarity) +7 (existing 3)
+[ok] m2-similarity inserted=5
+[gen] 중2 ⑥ 확률 (m2-probability) +7 (existing 3)
+[ok] m2-probability inserted=5
+[gen] 중3 ① 제곱근과 실수 (m3-sqrt) +7 (existing 3)
+[ok] m3-sqrt inserted=5
+[gen] 중3 ② 다항식의 곱셈과 인수분해 (m3-factorization) +7 (existing 3)
+[ok] m3-factorization inserted=5
+[gen] 중3 ③ 이차방정식 (m3-quadratic-eq) +7 (existing 3)
+[ok] m3-quadratic-eq inserted=5
+[gen] 중3 ④ 이차함수 (m3-quadratic-fn) +7 (existing 3)
+[ok] m3-quadratic-fn inserted=5
+[gen] 중3 ⑤ 삼각비 (m3-trig) +7 (existing 3)
+[ok] m3-trig inserted=5
+[gen] 중3 ⑥ 통계 (m3-statistics) +7 (existing 3)
+[ok] m3-statistics inserted=5
+[gen] 고1 ① 다항식 (h1-polynomial) +7 (existing 3)
+[ok] h1-polynomial inserted=5
+[gen] 고1 ② 방정식과 부등식 (h1-equations) +7 (existing 3)

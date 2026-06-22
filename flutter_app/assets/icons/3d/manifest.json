@@ -1,0 +1,275 @@
+{
+  "version": 2,
+  "style": "ultra-minimal-clay-3d",
+  "deployment": "kaja-gpt-image-15",
+  "model": "gpt-image-1.5",
+  "size": "1024x1024",
+  "quality": "low",
+  "masterPrompt": "Ultra-minimal 3D icon for Korean math app \"우열\". Exactly ONE chunky object centered on canvas (~70% size). Soft matte clay, smooth surfaces, big rounded shapes, toy-like simplicity. Use at most 2 flat brand colors plus white. Bold silhouette readable at 48px. Transparent background. NO second object, NO scene, NO props, NO text, NO faces, NO sparkles, NO particles, NO badges, NO stacks, NO orbit rings, NO tiny details, NO ground shadow plate. Negative: busy illustration, realistic render, emoji, flat 2D vector, neon, dark background, watermark, confetti.",
+  "icons": [
+    {
+      "id": "onboarding_camera",
+      "file": "onboarding_camera.png",
+      "color": "#007BFF",
+      "usage": "온보딩 / 홈 히어로",
+      "priority": 1,
+      "prompt": "Single chunky clay smartphone, front view, plain screen, blue #007BFF body."
+    },
+    {
+      "id": "upload_empty",
+      "file": "upload_empty.png",
+      "color": "#007BFF",
+      "usage": "업로드 탭 — 사진 없음",
+      "priority": 1,
+      "prompt": "Single clay camera icon, rounded body, blue #007BFF."
+    },
+    {
+      "id": "upload_gallery",
+      "file": "upload_gallery.png",
+      "color": "#007BFF",
+      "usage": "갤러리에서 선택",
+      "priority": 2,
+      "prompt": "Single clay photo rectangle with small folded corner, blue #007BFF border."
+    },
+    {
+      "id": "analyzing",
+      "file": "analyzing.png",
+      "color": "#007BFF",
+      "usage": "AI 분석 중",
+      "priority": 1,
+      "prompt": "Single clay magnifying glass, large round lens, blue #007BFF handle."
+    },
+    {
+      "id": "analysis_done",
+      "file": "analysis_done.png",
+      "color": "#2ECC40",
+      "usage": "분석 완료",
+      "priority": 2,
+      "prompt": "Single clay checkmark, thick rounded stroke, green #2ECC40."
+    },
+    {
+      "id": "analysis_fail",
+      "file": "analysis_fail.png",
+      "color": "#FF8C00",
+      "usage": "분석 실패 / 이미지 불량",
+      "priority": 2,
+      "prompt": "Single clay warning triangle, soft rounded corners, orange #FF8C00."
+    },
+    {
+      "id": "practice_start",
+      "file": "practice_start.png",
+      "color": "#007BFF",
+      "usage": "연습 시작",
+      "priority": 2,
+      "prompt": "Single clay pencil, short and chunky, blue #007BFF."
+    },
+    {
+      "id": "practice_correct",
+      "file": "practice_correct.png",
+      "color": "#2ECC40",
+      "usage": "정답",
+      "priority": 2,
+      "prompt": "Single clay circle with checkmark cutout feel, green #2ECC40."
+    },
+    {
+      "id": "practice_wrong",
+      "file": "practice_wrong.png",
+      "color": "#FF8C00",
+      "usage": "오답",
+      "priority": 2,
+      "prompt": "Single clay X mark, two thick rounded bars, orange #FF8C00."
+    },
+    {
+      "id": "loop_result_perfect",
+      "file": "loop_result_perfect.png",
+      "color": "#2ECC40",
+      "usage": "세트 전부 정답",
+      "priority": 2,
+      "prompt": "Single clay five-point star, chunky, green #2ECC40."
+    },
+    {
+      "id": "loop_result_partial",
+      "file": "loop_result_partial.png",
+      "color": "#FF8C00",
+      "usage": "일부 오답",
+      "priority": 2,
+      "prompt": "Single clay pie chart wedge, one slice highlighted, orange #FF8C00."
+    },
+    {
+      "id": "training_empty_new",
+      "file": "training_empty_new.png",
+      "color": "#007BFF",
+      "usage": "훈련 없음 — 기록 없음",
+      "priority": 1,
+      "prompt": "Single clay circular arrow, replay symbol, blue #007BFF."
+    },
+    {
+      "id": "training_empty_done",
+      "file": "training_empty_done.png",
+      "color": "#2ECC40",
+      "usage": "훈련 없음 — 다 잘함",
+      "priority": 1,
+      "prompt": "Single clay thumbs-up shape abstract (no hand detail), green #2ECC40."
+    },
+    {
+      "id": "training_active",
+      "file": "training_active.png",
+      "color": "#FF8C00",
+      "usage": "복습 훈련 진행",
+      "priority": 2,
+      "prompt": "Single clay target circle, bullseye rings simplified to 2 rings, orange #FF8C00."
+    },
+    {
+      "id": "relearn_success",
+      "file": "relearn_success.png",
+      "color": "#2ECC40",
+      "usage": "재학습 성공",
+      "priority": 2,
+      "prompt": "Single clay upward arrow, chunky, green #2ECC40."
+    },
+    {
+      "id": "progress_empty",
+      "file": "progress_empty.png",
+      "color": "#949BB0",
+      "usage": "진도 없음",
+      "priority": 1,
+      "prompt": "Single clay open book, two simple pages, gray #949BB0 cover."
+    },
+    {
+      "id": "progress_learning",
+      "file": "progress_learning.png",
+      "color": "#B8860B",
+      "usage": "학습 중 단원",
+      "priority": 2,
+      "prompt": "Single clay book with one gold #B8860B bookmark ribbon."
+    },
+    {
+      "id": "progress_done",
+      "file": "progress_done.png",
+      "color": "#2ECC40",
+      "usage": "단원 완료",
+      "priority": 2,
+      "prompt": "Single clay closed book with green #2ECC40 cover."
+    },
+    {
+      "id": "weak_concept_empty",
+      "file": "weak_concept_empty.png",
+      "color": "#2ECC40",
+      "usage": "약점 개념 없음",
+      "priority": 2,
+      "prompt": "Single clay shield shape, smooth, green #2ECC40."
+    },
+    {
+      "id": "weak_concept_alert",
+      "file": "weak_concept_alert.png",
+      "color": "#FF8C00",
+      "usage": "약점 개념 있음",
+      "priority": 2,
+      "prompt": "Single clay flag on pole, simple rectangle flag, orange #FF8C00."
+    },
+    {
+      "id": "chart_empty",
+      "file": "chart_empty.png",
+      "color": "#949BB0",
+      "usage": "주간 추이 없음",
+      "priority": 2,
+      "prompt": "Single clay bar chart, three equal short bars, gray #949BB0."
+    },
+    {
+      "id": "streak_weeks",
+      "file": "streak_weeks.png",
+      "color": "#B8860B",
+      "usage": "연속 학습 주",
+      "priority": 3,
+      "prompt": "Single clay calendar page square, gold #B8860B top binding."
+    },
+    {
+      "id": "role_student",
+      "file": "role_student.png",
+      "color": "#007BFF",
+      "usage": "역할 — 학생",
+      "priority": 1,
+      "prompt": "Single clay notebook, blue #007BFF cover."
+    },
+    {
+      "id": "role_parent",
+      "file": "role_parent.png",
+      "color": "#2ECC40",
+      "usage": "역할 — 학부모",
+      "priority": 1,
+      "prompt": "Single clay heart shape, chunky, green #2ECC40."
+    },
+    {
+      "id": "role_teacher",
+      "file": "role_teacher.png",
+      "color": "#9370DB",
+      "usage": "역할 — 교사",
+      "priority": 1,
+      "prompt": "Single clay clipboard, purple #9370DB board."
+    },
+    {
+      "id": "link_student",
+      "file": "link_student.png",
+      "color": "#007BFF",
+      "usage": "학생 연결",
+      "priority": 2,
+      "prompt": "Single clay chain link, one oval link, blue #007BFF."
+    },
+    {
+      "id": "link_empty",
+      "file": "link_empty.png",
+      "color": "#949BB0",
+      "usage": "연결된 학생 없음",
+      "priority": 2,
+      "prompt": "Single clay broken chain link gap, gray #949BB0."
+    },
+    {
+      "id": "guest_mode",
+      "file": "guest_mode.png",
+      "color": "#007BFF",
+      "usage": "게스트 / 로그인 유도",
+      "priority": 3,
+      "prompt": "Single clay key, chunky, blue #007BFF."
+    },
+    {
+      "id": "parent_report",
+      "file": "parent_report.png",
+      "color": "#2ECC40",
+      "usage": "주간 보고서",
+      "priority": 2,
+      "prompt": "Single clay document page, green #2ECC40 corner fold."
+    },
+    {
+      "id": "parent_growth",
+      "file": "parent_growth.png",
+      "color": "#007BFF",
+      "usage": "성장 그래프",
+      "priority": 2,
+      "prompt": "Single clay line trending up, one thick stroke arrow shape, blue #007BFF."
+    },
+    {
+      "id": "teacher_class",
+      "file": "teacher_class.png",
+      "color": "#9370DB",
+      "usage": "반 진도",
+      "priority": 2,
+      "prompt": "Single clay horizontal bar, purple #9370DB, simple progress bar."
+    },
+    {
+      "id": "teacher_at_risk",
+      "file": "teacher_at_risk.png",
+      "color": "#FF8C00",
+      "usage": "즉시 관리 필요",
+      "priority": 2,
+      "prompt": "Single clay bell, rounded school bell shape, orange #FF8C00."
+    },
+    {
+      "id": "teacher_no_students",
+      "file": "teacher_no_students.png",
+      "color": "#949BB0",
+      "usage": "담당 학생 없음",
+      "priority": 2,
+      "prompt": "Single clay desk chair silhouette simplified, gray #949BB0."
+    }
+  ]
+}

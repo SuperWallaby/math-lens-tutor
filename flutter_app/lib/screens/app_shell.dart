@@ -2,7 +2,9 @@ import 'package:flutter/material.dart';
 
 import '../models/app_models.dart';
 import '../services/api_client.dart';
+import '../services/oauth_service.dart';
 import 'onboarding_screen.dart';
+import 'parent_explain_screen.dart';
 import 'parent_screens.dart';
 import 'settings_screen.dart';
 import 'student_hub_screen.dart';
@@ -12,9 +14,14 @@ import 'teacher_screens.dart';
 import 'upload_screen.dart';
 
 class AppShell extends StatefulWidget {
-  const AppShell({super.key, required this.apiClient});
+  const AppShell({
+    super.key,
+    required this.apiClient,
+    required this.oauthService,
+  });
 
   final ApiClient apiClient;
+  final OAuthService oauthService;
 
   @override
   State<AppShell> createState() => _AppShellState();
@@ -22,6 +29,17 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _index = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      if (widget.apiClient.authSession.user != null) {
+        widget.apiClient.getLearningProfile();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,31 +94,34 @@ class _AppShellState extends State<AppShell> {
             screen: ParentHomeScreen(apiClient: widget.apiClient),
           ),
           _ShellTab(
-            label: '보고서',
-            icon: Icons.description_outlined,
-            selectedIcon: Icons.description_rounded,
+            label: '설명',
+            icon: Icons.menu_book_outlined,
+            selectedIcon: Icons.menu_book_rounded,
+            screen: ParentExplainScreen(apiClient: widget.apiClient),
+          ),
+          _ShellTab(
+            label: '이번 주',
+            icon: Icons.task_alt_outlined,
+            selectedIcon: Icons.task_alt_rounded,
             screen: ParentReportScreen(apiClient: widget.apiClient),
           ),
           _ShellTab(
             label: '진도',
-            icon: Icons.menu_book_outlined,
-            selectedIcon: Icons.menu_book_rounded,
+            icon: Icons.route_outlined,
+            selectedIcon: Icons.route_rounded,
             screen: StudentProgressScreen(
               apiClient: widget.apiClient,
               viewAsGuardian: true,
             ),
           ),
           _ShellTab(
-            label: '성장',
-            icon: Icons.show_chart_outlined,
-            selectedIcon: Icons.show_chart_rounded,
-            screen: ParentGrowthScreen(apiClient: widget.apiClient),
-          ),
-          _ShellTab(
             label: '설정',
             icon: Icons.settings_outlined,
             selectedIcon: Icons.settings_rounded,
-            screen: SettingsScreen(apiClient: widget.apiClient),
+            screen: SettingsScreen(
+              apiClient: widget.apiClient,
+              oauthService: widget.oauthService,
+            ),
           ),
         ];
       case AppUserRole.teacher:
@@ -127,7 +148,10 @@ class _AppShellState extends State<AppShell> {
             label: '설정',
             icon: Icons.settings_outlined,
             selectedIcon: Icons.settings_rounded,
-            screen: SettingsScreen(apiClient: widget.apiClient),
+            screen: SettingsScreen(
+              apiClient: widget.apiClient,
+              oauthService: widget.oauthService,
+            ),
           ),
         ];
       case AppUserRole.student:
@@ -137,7 +161,10 @@ class _AppShellState extends State<AppShell> {
             label: '홈',
             icon: Icons.home_outlined,
             selectedIcon: Icons.home_rounded,
-            screen: StudentHubScreen(apiClient: widget.apiClient),
+            screen: StudentHubScreen(
+              apiClient: widget.apiClient,
+              oauthService: widget.oauthService,
+            ),
           ),
           _ShellTab(
             label: '업로드',
@@ -164,7 +191,10 @@ class _AppShellState extends State<AppShell> {
             label: '설정',
             icon: Icons.settings_outlined,
             selectedIcon: Icons.settings_rounded,
-            screen: SettingsScreen(apiClient: widget.apiClient),
+            screen: SettingsScreen(
+              apiClient: widget.apiClient,
+              oauthService: widget.oauthService,
+            ),
           ),
         ];
     }
@@ -186,9 +216,14 @@ class _ShellTab {
 }
 
 class AppBootstrap extends StatefulWidget {
-  const AppBootstrap({super.key, required this.apiClient});
+  const AppBootstrap({
+    super.key,
+    required this.apiClient,
+    required this.oauthService,
+  });
 
   final ApiClient apiClient;
+  final OAuthService oauthService;
 
   @override
   State<AppBootstrap> createState() => _AppBootstrapState();
@@ -218,10 +253,14 @@ class _AppBootstrapState extends State<AppBootstrap> {
 
     if (_onboardingDone == false) {
       return OnboardingScreen(
+        apiClient: widget.apiClient,
         onComplete: () => setState(() => _onboardingDone = true),
       );
     }
 
-    return AppShell(apiClient: widget.apiClient);
+    return AppShell(
+      apiClient: widget.apiClient,
+      oauthService: widget.oauthService,
+    );
   }
 }

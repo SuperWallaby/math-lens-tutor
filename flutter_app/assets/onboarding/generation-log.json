@@ -1,0 +1,12 @@
+{
+  "generatedAt": "2026-06-13T05:29:51.056Z",
+  "deployment": "kaja-gpt-image-15",
+  "size": "1024x1536",
+  "results": [
+    {
+      "id": "parent_02_photo_upload",
+      "file": "parent/02_photo_upload.png",
+      "status": "ok"
+    }
+  ]
+}

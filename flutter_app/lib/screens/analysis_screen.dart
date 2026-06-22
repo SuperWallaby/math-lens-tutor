@@ -1,17 +1,18 @@
 import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../layout/tablet_layout.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
+import '../services/app_prefs.dart';
 import '../utils/problem_set_pdf.dart';
 import '../widgets/app_card.dart';
 import '../widgets/mixed_math_text.dart';
 import '../widgets/skeleton_box.dart';
 import '../widgets/skeleton_lines.dart';
 import 'practice_screen.dart';
+import '../theme/app_design_system.dart';
 
 const String _weakConceptPlaceholderLegacy = '사진만으로는 부족한 개념을 특정하기 어렵습니다.';
 const String _recommendedFocusPlaceholderLegacy =
@@ -39,12 +40,14 @@ class AnalysisScreen extends StatefulWidget {
     this.result,
     this.imageBytes,
     this.uploadFilename,
-  }) : assert(result != null || imageBytes != null);
+    this.demoLoading = false,
+  }) : assert(demoLoading || result != null || imageBytes != null);
 
   final ApiClient apiClient;
   final AnalyzeResult? result;
   final Uint8List? imageBytes;
   final String? uploadFilename;
+  final bool demoLoading;
 
   @override
   State<AnalysisScreen> createState() => _AnalysisScreenState();
@@ -62,7 +65,11 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.result != null) {
+    if (widget.demoLoading) {
+      _running = true;
+      _progressMessage = '풀이 사진을 읽는 중…';
+      _progressStep = 'vision';
+    } else if (widget.result != null) {
       _finalResult = widget.result;
       _analysis = widget.result!.submission.analysis;
       _problemSet = widget.result!.problemSet;
@@ -168,7 +175,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
         },
       );
       if (!mounted) return;
-      final prefs = await SharedPreferences.getInstance();
+      final prefs = await getAppPrefs();
       await prefs.setBool(_kStudyReturnUser, true);
       setState(() {
         _running = false;
@@ -196,7 +203,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(_error!, style: const TextStyle(color: Color(0xFFFCA5A5))),
+                Text(_error!, style: const TextStyle(color: AppColors.accent)),
                 const SizedBox(height: 16),
                 FilledButton(
                   onPressed: () => Navigator.of(context).pop(),
@@ -220,8 +227,8 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
       fontWeight: FontWeight.w900,
     );
     final bodyStyle = TextStyle(
-      color: const Color(0xFFCBD5E1),
-      height: 1.55,
+      color: AppColors.textSub,
+      height: 1.45,
       fontSize: TabletLayout.body(context),
     );
 
@@ -250,7 +257,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                     Text(
                       '제출한 풀이 사진',
                       style: TextStyle(
-                        color: const Color(0xFF94A3B8),
+                        color: AppColors.textSub,
                         fontSize: TabletLayout.body(context) - 1,
                       ),
                     ),
@@ -299,7 +306,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                             child: Center(
                               child: Text(
                                 '이미지를 불러올 수 없습니다.',
-                                style: TextStyle(color: Color(0xFF94A3B8)),
+                                style: TextStyle(color: AppColors.textSub),
                               ),
                             ),
                           ),
@@ -323,7 +330,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                   child: Text(
                     _progressMessage,
                     style: const TextStyle(
-                      color: Color(0xFF93C5FD),
+                      color: AppColors.primary,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
@@ -339,7 +346,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                   if (visionReady && analysis!.imageQualityWarning)
                     const TagChip(
                       '이미지가 흐린 것 같아요',
-                      color: Color(0xFFF59E0B),
+                      color: AppColors.warning,
                     ),
                 ],
               ),
@@ -405,7 +412,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                           child: Row(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Text('• ', style: bodyStyle.copyWith(color: const Color(0xFF6EE7B7))),
+                              Text('• ', style: bodyStyle.copyWith(color: AppColors.success)),
                               Expanded(
                                 child: MixedMathText(
                                   step,
@@ -451,7 +458,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                     else if (visionReady)
                       Text(
                         '읽을 수 있는 손글씨 단계가 없습니다.',
-                        style: bodyStyle.copyWith(color: const Color(0xFF94A3B8)),
+                        style: bodyStyle.copyWith(color: AppColors.textSub),
                       )
                     else
                       const SkeletonLines(
@@ -464,21 +471,35 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                       Text(
                         tutorReady ? '오답 진단' : '오답 진단 중…',
                         style: TextStyle(
-                          color: const Color(0xFF94A3B8),
+                          color: AppColors.textSub,
                           fontSize: TabletLayout.body(context) - 1,
                           fontWeight: FontWeight.w600,
                         ),
                       ),
                       const SizedBox(height: 10),
                       if (tutorReady && analysis != null)
-                        MixedMathText(
-                          analysis.errorSummary,
-                          style: TextStyle(
-                            color: const Color(0xFFFCA5A5),
-                            height: 1.5,
-                            fontSize: TabletLayout.body(context),
+                        Container(
+                          width: double.infinity,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 12,
+                            vertical: 10,
                           ),
-                          readableSolutionStep: true,
+                          decoration: BoxDecoration(
+                            color: AppColors.accent.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(AppRadii.md),
+                            border: Border.all(
+                              color: AppColors.accent.withValues(alpha: 0.28),
+                            ),
+                          ),
+                          child: MixedMathText(
+                            analysis.errorSummary,
+                            style: TextStyle(
+                              color: AppColors.text,
+                              height: 1.55,
+                              fontSize: TabletLayout.body(context),
+                            ),
+                            readableSolutionStep: true,
+                          ),
                         )
                       else
                         const SkeletonLines(
@@ -548,7 +569,10 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                 OutlinedButton.icon(
                   onPressed: () async {
                     try {
-                      await openSimilarProblemsPdf(_finalResult!.problemSet);
+                      await openSimilarProblemsPdf(
+                        context,
+                        _finalResult!.problemSet,
+                      );
                     } catch (e) {
                       if (!context.mounted) return;
                       ScaffoldMessenger.of(context).showSnackBar(
@@ -605,7 +629,7 @@ class _AnswerBox extends StatelessWidget {
     return Container(
       padding: EdgeInsets.all(wide ? 16 : 12),
       decoration: BoxDecoration(
-        color: const Color(0xFF020617),
+        color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(16),
       ),
       child: Column(
@@ -614,7 +638,7 @@ class _AnswerBox extends StatelessWidget {
           Text(
             title,
             style: TextStyle(
-              color: const Color(0xFF94A3B8),
+              color: AppColors.textSub,
               fontSize: wide ? 14 : 12,
             ),
           ),
@@ -623,7 +647,7 @@ class _AnswerBox extends StatelessWidget {
           MixedMathText(
             value!,
             style: TextStyle(
-              color: Colors.white,
+              color: AppColors.text,
               fontWeight: valueBold ? FontWeight.w800 : FontWeight.w600,
               fontSize: wide ? 18 : 16,
             ),

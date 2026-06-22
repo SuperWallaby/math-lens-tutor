@@ -151,13 +151,35 @@ export const solutionAnalysisSchema = z.object({
   visionExtractionConfidence: z.number().min(0).max(1).optional(),
 });
 
+/** API 스키마·저장용 conceptTags 정규화 (최대 2개). */
+export function normalizeConceptTags(
+  tags: unknown,
+  max = 2,
+): string[] {
+  if (!Array.isArray(tags)) return ["수학 연습"];
+  const normalized = tags
+    .filter((t): t is string => typeof t === "string")
+    .map((t) => t.trim())
+    .filter(Boolean);
+  if (normalized.length === 0) return ["수학 연습"];
+  return normalized.slice(0, max);
+}
+
 export const generatedProblemSchema = z.preprocess((raw) => {
   if (!raw || typeof raw !== "object") return raw;
   const o = raw as Record<string, unknown>;
+  const next: Record<string, unknown> = { ...o };
   if (!("jsxGraph" in o)) {
-    return { ...o, jsxGraph: null };
+    next.jsxGraph = null;
   }
-  return o;
+  // MongoDB / migration may store null; Zod .optional() rejects null.
+  if (next.choices === null || next.type === "free_response") {
+    delete next.choices;
+  }
+  if (next.type === "multiple_choice") {
+    delete next.answerFormat;
+  }
+  return next;
 }, z.object({
   id: z.string(),
   type: z.enum(["multiple_choice", "free_response"]),
@@ -174,7 +196,9 @@ export const generatedProblemSchema = z.preprocess((raw) => {
   correctAnswer: z.string(),
   explanation: z.string(),
   difficulty: z.enum(["easy", "medium", "hard"]),
-  conceptTags: z.array(z.string()).min(1),
+  conceptTags: z.array(z.string()).min(1).max(2),
+  /** free_response 전용 — short_numeric | short_answer 만 허용 */
+  answerFormat: z.enum(["short_numeric", "short_answer"]).optional(),
   chart: chartConfigSchema,
   /** 필요할 때만: 좌표평면 도형 (JSXGraph). 불필요하면 null */
   jsxGraph: jsxGraphDiagramSchema,
@@ -189,6 +213,15 @@ export const generatedProblemSetSchema = z.object({
   title: z.string(),
   learningGoal: z.string(),
   problems: z.array(generatedProblemSchema).length(5),
+});
+
+/** Azure 생성 시 1~5문항 (은행 보충·단원 시드) */
+export const generatedProblemSetFlexibleSchema = z.object({
+  id: z.string(),
+  submissionId: z.string(),
+  title: z.string(),
+  learningGoal: z.string(),
+  problems: z.array(generatedProblemSchema).min(1).max(5),
 });
 
 /** 한 번의 비전 호출로 분석 + 유사 문제 세트를 함께 받을 때 */
@@ -298,6 +331,28 @@ export type ParentActionItem = {
   subtitle: string;
 };
 
+export type ParentCoachingCard = {
+  label: string;
+  question: string;
+  gradingPoint: string;
+  context: string;
+  sourceType: "submission" | "practice" | "fallback";
+  sourceId: string | null;
+  problemLabel: string | null;
+};
+
+export type ParentWrongExplainItem = {
+  id: string;
+  sourceType: "submission" | "practice";
+  sourceId: string;
+  title: string;
+  concept: string;
+  easyExplain: string;
+  parentScript: string;
+  problemSetId: string | null;
+  createdAt: string;
+};
+
 export type WeeklyReportCycleStep = {
   step: number;
   label: string;
@@ -316,11 +371,18 @@ export type LearningProfile = {
     streakWeeks: number;
   };
   mission: TodayMission | null;
+  training: TrainingSnapshot;
   conceptStatus: ConceptStatusItem[];
   strongConcepts: { concept: string; score: number }[];
   weeklyTrend: WeeklyTrendPoint[];
   curriculumUnits: CurriculumUnitProgress[];
+  curriculumByBand: Record<
+    "e12" | "e34" | "e56" | "m1" | "m2" | "m3" | "h1" | "h2" | "h3",
+    CurriculumUnitProgress[]
+  >;
   chainWarning: string | null;
+  parentCoachingCard: ParentCoachingCard | null;
+  parentWrongExplains: ParentWrongExplainItem[];
   parentActions: ParentActionItem[];
   weeklyReport: {
     weekLabel: string;
@@ -355,15 +417,19 @@ export type TeacherClassOverview = {
 
 export type UserRole = "student" | "parent" | "teacher";
 
-export type OAuthProvider = "kakao" | "google" | "apple";
+export type OAuthProvider = "kakao" | "google" | "apple" | "email";
 
 export type User = {
   id: string;
   role: UserRole | null;
   displayName: string;
+  /** 가입 온보딩에서 수집한 나이 */
+  age?: number;
   grade?: string;
   organizationName?: string;
   studentCode?: string;
+  profileImageUrl?: string;
+  email?: string;
   oauthProvider: OAuthProvider;
   oauthSubject: string;
   linkedDeviceIds: string[];
@@ -403,6 +469,8 @@ export type ProblemBankItem = {
   /** 검색·매칭용 대표 개념 */
   conceptPrimary: string;
   gradeBand: string;
+  /** 교육과정 단원 ID (예: m1-linear-equations) */
+  unitId?: string;
   source: "ai_generated" | "imported";
   originSubmissionId?: string;
   active: boolean;
@@ -459,4 +527,85 @@ export type PracticeMistakeRecord = {
   conceptPrimary: string;
   feedback: string;
   createdAt: string;
+  /** 이후 같은 개념에서 정답을 맞춰 재학습 처리된 시각 */
+  resolvedAt?: string;
+  resolveAttemptId?: string;
+};
+
+export type TrainingFocusItem = {
+  concept: string;
+  missScore: number;
+  status: "needs_training" | "relearned";
+  label: string;
+};
+
+export type TrainingSnapshot = {
+  available: boolean;
+  hasLearningData: boolean;
+  headline: string;
+  description: string;
+  focusConcepts: string[];
+  focusItems: TrainingFocusItem[];
+  activeSetId: string | null;
+  remainingCount: number;
+  totalMisses: number;
+  relearnedCount: number;
+};
+
+export type DifficultyStats = {
+  attempts: number;
+  correct: number;
+  incorrect: number;
+};
+
+export type ConceptMasteryEntry = {
+  concept: string;
+  easy: DifficultyStats;
+  medium: DifficultyStats;
+  hard: DifficultyStats;
+  targetDifficulty: GeneratedProblem["difficulty"];
+};
+
+export type UserConceptMastery = {
+  userId: string;
+  concepts: Record<string, ConceptMasteryEntry>;
+  updatedAt: string;
+};
+
+export type TrainingFeedItem = {
+  id: string;
+  bankItemId: string;
+  concept: string;
+  difficulty: GeneratedProblem["difficulty"];
+  reason: string;
+  title: string;
+  promptPreview: string;
+};
+
+export type UserFeedQueue = {
+  userId: string;
+  items: TrainingFeedItem[];
+  source: "precomputed" | "fallback";
+  updatedAt: string;
+};
+
+export type AnalysisJobType = "refresh_user_feed";
+
+export type AnalysisJob = {
+  id: string;
+  userId: string;
+  type: AnalysisJobType;
+  status: "pending" | "processing" | "done" | "failed";
+  createdAt: string;
+  startedAt?: string;
+  finishedAt?: string;
+  error?: string;
+  attempts: number;
+};
+
+export type TrainingFeedResponse = {
+  items: TrainingFeedItem[];
+  source: UserFeedQueue["source"];
+  updatedAt: string | null;
+  refreshPending: boolean;
 };

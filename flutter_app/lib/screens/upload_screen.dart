@@ -5,14 +5,9 @@ import 'package:image_picker/image_picker.dart';
 import '../io_compat/read_path_bytes.dart';
 import '../layout/tablet_layout.dart';
 import '../services/api_client.dart';
+import '../utils/problem_image_picker.dart';
 import 'analysis_screen.dart';
-
-/// 모바일(iOS/Android)만 `ImageSource.camera` 를 지원합니다.
-/// macOS/Windows/Linux 는 cameraDelegate 없이 예외가 납니다.
-bool get _supportsImagePickerCamera =>
-    !kIsWeb &&
-    (defaultTargetPlatform == TargetPlatform.android ||
-        defaultTargetPlatform == TargetPlatform.iOS);
+import '../theme/app_design_system.dart';
 
 /// 데스크톱에서 Finder 등으로 드롭 받기 (`desktop_drop`).
 bool get _supportsDesktopDrop =>
@@ -20,10 +15,6 @@ bool get _supportsDesktopDrop =>
     (defaultTargetPlatform == TargetPlatform.macOS ||
         defaultTargetPlatform == TargetPlatform.windows ||
         defaultTargetPlatform == TargetPlatform.linux);
-
-/// macOS·Windows·Linux 에서 `ImageSource.gallery` 는 사진 앱이 아니라 파일 선택 패널입니다.
-String get _galleryButtonLabel =>
-    _supportsImagePickerCamera ? '앨범' : '이미지 파일';
 
 Iterable<DropItem> _flattenDropItems(List<DropItem> items) sync* {
   for (final item in items) {
@@ -83,7 +74,6 @@ class UploadScreen extends StatefulWidget {
 }
 
 class _UploadScreenState extends State<UploadScreen> {
-  final _picker = ImagePicker();
   Uint8List? _imageBytes;
   String _uploadFilename = 'upload.jpg';
   String? _error;
@@ -157,38 +147,15 @@ class _UploadScreenState extends State<UploadScreen> {
   }
 
   Future<void> _pick(ImageSource source) async {
-    if (source == ImageSource.camera && !_supportsImagePickerCamera) {
-      if (!mounted) return;
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text(
-            'macOS·데스크톱에서는 카메라를 쓸 수 없습니다. 이미지 파일을 선택해 주세요.',
-          ),
-        ),
-      );
-      return;
-    }
-    final picked = await _picker.pickImage(
-      source: source,
-      imageQuality: 88,
-      maxWidth: 1200,
-    );
-
-    if (picked == null) {
-      return;
-    }
-
-    final bytes = await picked.readAsBytes();
-    final name = picked.name.trim().isNotEmpty
-        ? picked.name
-        : 'capture_${DateTime.now().millisecondsSinceEpoch}.jpg';
+    final picked = await pickProblemImage(source: source, context: context);
+    if (picked == null || !mounted) return;
 
     setState(() {
-      _imageBytes = bytes;
-      _uploadFilename = name;
+      _imageBytes = picked.bytes;
+      _uploadFilename = picked.filename;
       _error = null;
     });
-    _openStreamingAnalysis(bytes, name);
+    _openStreamingAnalysis(picked.bytes, picked.filename);
   }
 
   void _onPrimaryButton() {
@@ -214,19 +181,18 @@ class _UploadScreenState extends State<UploadScreen> {
             const SizedBox(height: 6),
             const Text(
               'AI가 왜 틀렸는지 분석해드려요',
-              style: TextStyle(color: Color(0xFF94A3B8)),
+              style: TextStyle(color: AppColors.textSub),
             ),
             const SizedBox(height: 16),
           ],
           Text(
-              kIsWeb
-                  ? '풀이 과정과 선택 답안이 보이도록 이미지 파일을 선택하세요. (웹 브라우저)'
-                  : _supportsImagePickerCamera
-                      ? '풀이 과정과 선택 답안이 보이도록 사진을 찍거나 앨범에서 선택하세요.'
-                      : '풀이 과정과 선택 답안이 보이도록 이미지 파일을 고르거나, 아래 상자로 끌어다 놓으세요. '
-                          '(macOS·Windows 등: 파일 창 또는 드래그 앤 드롭. 카메라는 모바일만)',
+              supportsProblemImageCamera
+                  ? '풀이 과정과 선택 답안이 보이도록 사진을 찍거나 앨범에서 선택하세요.'
+                  : kIsWeb
+                      ? '풀이 과정과 선택 답안이 보이도록 이미지 파일을 선택하세요.'
+                      : '풀이 과정과 선택 답안이 보이도록 이미지 파일을 고르거나, 아래 상자로 끌어다 놓으세요.',
               style: TextStyle(
-                color: const Color(0xFFCBD5E1),
+                color: AppColors.textSub,
                 height: 1.5,
                 fontSize: TabletLayout.body(context),
               ),
@@ -234,30 +200,10 @@ class _UploadScreenState extends State<UploadScreen> {
             const SizedBox(height: 18),
             _buildPreviewDropZone(context),
             const SizedBox(height: 16),
-            Row(
-              children: [
-                Expanded(
-                  child: OutlinedButton.icon(
-                    onPressed: () => _pick(ImageSource.gallery),
-                    icon: Icon(
-                      _supportsImagePickerCamera
-                          ? Icons.photo_library_rounded
-                          : Icons.folder_open_rounded,
-                    ),
-                    label: Text(_galleryButtonLabel),
-                  ),
-                ),
-                if (_supportsImagePickerCamera) ...[
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: OutlinedButton.icon(
-                      onPressed: () => _pick(ImageSource.camera),
-                      icon: const Icon(Icons.camera_alt_rounded),
-                      label: const Text('카메라'),
-                    ),
-                  ),
-                ],
-              ],
+            OutlinedButton.icon(
+              onPressed: () => _pick(ImageSource.gallery),
+              icon: Icon(problemImageGalleryIcon),
+              label: Text(problemImageGalleryLabel),
             ),
             const SizedBox(height: 14),
             FilledButton.icon(
@@ -269,7 +215,7 @@ class _UploadScreenState extends State<UploadScreen> {
               const SizedBox(height: 14),
               Text(
                 _error!,
-                style: const TextStyle(color: Color(0xFFFCA5A5), height: 1.45),
+                style: const TextStyle(color: AppColors.accent, height: 1.45),
               ),
             ],
         ],
@@ -287,54 +233,104 @@ class _UploadScreenState extends State<UploadScreen> {
   }
 
   Widget _buildPreviewDropZone(BuildContext context) {
+    final isEmpty = _imageBytes == null;
+    final emptyLabel = supportsProblemImageCamera
+        ? '문제 사진 촬영하기'
+        : '이미지 파일 선택하기';
+
     final preview = DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
-        borderRadius: BorderRadius.circular(24),
+        color: isEmpty ? AppColors.primary.withValues(alpha: 0.04) : AppColors.surface,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
         border: Border.all(
           color: _dragHover
-              ? const Color(0xFF38BDF8)
-              : Colors.white.withValues(alpha: 0.08),
+              ? AppColors.primary
+              : isEmpty
+                  ? AppColors.primary.withValues(alpha: 0.35)
+                  : AppColors.border,
           width: _dragHover ? 2 : 1,
         ),
       ),
-      child: _imageBytes == null
-          ? Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    _dragHover ? Icons.file_download_rounded : Icons.add_photo_alternate_rounded,
-                    size: 48,
-                  ),
-                  const SizedBox(height: 12),
-                  const Text('이미지 미리보기'),
-                  if (_supportsDesktopDrop) ...[
-                    const SizedBox(height: 10),
-                    Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20),
-                      child: Text(
-                        'Finder·탐색기에서 이미지를 이 상자로 드래그해 놓을 수 있어요.',
-                        textAlign: TextAlign.center,
-                        style: TextStyle(
-                          color: Color(0xFF94A3B8),
-                          fontSize: 13,
-                          height: 1.4,
+      child: isEmpty
+          ? Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => _pick(primaryProblemImageSource),
+                borderRadius: BorderRadius.circular(AppRadii.lg),
+                child: Center(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        _dragHover
+                            ? Icons.file_download_rounded
+                            : Icons.camera_alt_rounded,
+                        size: 36,
+                        color: AppColors.primary,
+                      ),
+                      const SizedBox(height: 10),
+                      Text(
+                        emptyLabel,
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w700,
+                          fontSize: 16,
                         ),
                       ),
-                    ),
-                  ],
-                ],
+                      if (_supportsDesktopDrop) ...[
+                        const SizedBox(height: 8),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 20),
+                          child: Text(
+                            '또는 Finder·탐색기에서 이미지를 드래그해 놓을 수 있어요.',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(
+                              color: AppColors.textSub,
+                              fontSize: 13,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
               ),
             )
           : ClipRRect(
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(AppRadii.lg),
               child: Image.memory(_imageBytes!, fit: BoxFit.contain),
             ),
     );
 
-    final previewAr =
-        TabletLayout.isTablet(context) ? 1.02 : 0.78;
+    if (isEmpty) {
+      const emptyPreviewHeight = 168.0;
+      if (!_supportsDesktopDrop) {
+        return SizedBox(
+          height: emptyPreviewHeight,
+          width: double.infinity,
+          child: preview,
+        );
+      }
+
+      return SizedBox(
+        height: emptyPreviewHeight,
+        width: double.infinity,
+        child: DropTarget(
+          enable: true,
+          onDragEntered: (_) {
+            setState(() => _dragHover = true);
+          },
+          onDragExited: (_) {
+            setState(() => _dragHover = false);
+          },
+          onDragDone: _onDropDone,
+          child: preview,
+        ),
+      );
+    }
+
+    final previewAr = TabletLayout.isTablet(context) ? 1.02 : 0.78;
 
     if (!_supportsDesktopDrop) {
       return AspectRatio(aspectRatio: previewAr, child: preview);

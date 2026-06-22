@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { useReactToPrint } from "react-to-print";
 import { MathMixedRich } from "@/components/MathMixedRich";
 import type { GeneratedProblem, GeneratedProblemSet } from "@/lib/types";
+import { formatDifficultyLabel } from "@/lib/problem-labels";
 
 function documentTitleFromSet(set: GeneratedProblemSet) {
   const raw = set.title.replace(/[/\\?%*:|"<>]/g, " ").trim();
@@ -24,7 +25,7 @@ function ProblemPrintBlock({
   return (
     <section className="break-inside-avoid border-b border-black/20 pb-4">
       <p className="text-sm text-black/70">
-        문제 {index + 1} · {problem.difficulty}
+        문제 {index + 1} · {formatDifficultyLabel(problem.difficulty)}
         {problem.conceptTags.length > 0
           ? ` · ${problem.conceptTags.join(", ")}`
           : ""}
@@ -72,7 +73,7 @@ export function ProblemSetPrintPdfButton({
         onClick={() => void handlePrint()}
         className={
           className ??
-          "rounded-2xl border border-white/15 px-5 py-2.5 text-sm font-semibold text-slate-100 hover:bg-white/10"
+          "rounded-wy-md border border-wy-border-strong px-5 py-2.5 text-sm font-semibold text-foreground hover:bg-wy-surface-muted"
         }
       >
         유사문제 PDF로 받기

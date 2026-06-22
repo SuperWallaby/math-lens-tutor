@@ -1,13 +1,17 @@
 import 'package:flutter/material.dart';
 
+import 'parent_explain_screen.dart';
 import '../layout/tablet_layout.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
 import '../widgets/app_card.dart';
 import '../widgets/guardian_learning_gate.dart';
 import '../widgets/learning_profile_widgets.dart';
-import '../widgets/student_picker.dart';
-import 'link_student_screen.dart';
+import '../widgets/hero_icon_3d.dart';
+import '../widgets/linked_children_panel.dart';
+import '../widgets/student_link_guide.dart';
+import '../widgets/parent_tab_scaffold.dart';
+import '../theme/app_design_system.dart';
 
 class ParentHomeScreen extends StatefulWidget {
   const ParentHomeScreen({super.key, required this.apiClient});
@@ -44,52 +48,48 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
     final user = widget.apiClient.authSession.user;
 
     if (linked.isEmpty) {
+      final isParent = user?.role == AppUserRole.parent;
       return ListView(
         padding: TabletLayout.pagePadding(context),
         children: [
-          StatsHero(
-            greeting: '안녕하세요 👋',
-            name: user?.displayName ?? '학부모',
-            stats: const LearningStats(
-              accuracy: 0,
-              accuracyDelta: 0,
-              totalProblems: 0,
-              problemsDelta: 0,
-              streakWeeks: 0,
-            ),
-            accent: const Color(0xFF059669),
-          ),
-          const SizedBox(height: 20),
-          AppCard(
-            child: Column(
-              children: [
-                const Text(
-                  '연결된 학생이 없습니다',
-                  style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-                ),
-                const SizedBox(height: 8),
-                const Text(
-                  '학생 고유번호로 연결하면 학습 현황을 확인할 수 있어요.',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(color: Color(0xFF94A3B8), height: 1.5),
-                ),
-                const SizedBox(height: 16),
-                FilledButton.icon(
-                  onPressed: () async {
-                    await Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            LinkStudentScreen(apiClient: widget.apiClient),
-                      ),
-                    );
-                    _reload();
-                  },
-                  icon: const Icon(Icons.link_rounded),
-                  label: const Text('학생 연결하기'),
-                ),
-              ],
+          const SizedBox(height: 24),
+          Center(
+            child: HeroIcon3d(
+              asset: 'assets/icons/3d/link_empty.png',
+              tint: isParent ? AppColors.success : AppColors.teacher,
             ),
           ),
+          const SizedBox(height: AppSpacing.xxl),
+          Text(
+            isParent ? '자녀를 연결해 주세요' : '학생을 연결해 주세요',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: TabletLayout.titleSection(context),
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          const Text(
+            '고유번호 6자리를 모두 입력하면 자동으로 연결됩니다.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppColors.textSub, height: 1.55),
+          ),
+          const SizedBox(height: AppSpacing.section),
+          ListenableBuilder(
+            listenable: widget.apiClient.authSession,
+            builder: (context, _) {
+              return LinkedChildrenPanel(
+                apiClient: widget.apiClient,
+                linkedStudents: widget.apiClient.authSession.linkedStudents,
+                compact: true,
+                onChanged: _reload,
+                onAutoLinked: _reload,
+              );
+            },
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          StudentLinkGuide(role: user?.role),
+          SizedBox(height: MediaQuery.paddingOf(context).bottom + AppSpacing.lg),
         ],
       );
     }
@@ -108,126 +108,85 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
             }
 
             final profile = snapshot.data!;
-            return RefreshIndicator(
+            final studentName =
+                widget.apiClient.authSession.selectedStudent?.displayName ??
+                    '자녀';
+
+            Future<void> openExplainDetail(ParentWrongExplainItem item) async {
+              await Navigator.of(context).push(
+                MaterialPageRoute<void>(
+                  builder: (context) => ParentExplainDetailScreen(
+                    apiClient: widget.apiClient,
+                    item: item,
+                  ),
+                ),
+              );
+            }
+
+            return ParentLinkedScrollView(
+              apiClient: widget.apiClient,
+              onStudentChanged: _reload,
               onRefresh: () async => _reload(),
-              child: ListView(
-                padding: TabletLayout.pagePadding(context),
-                children: [
-                  StudentPicker(
-                    authSession: widget.apiClient.authSession,
-                    onChanged: _reload,
-                  ),
-                  const SizedBox(height: 12),
-                  StatsHero(
-                    greeting: '안녕하세요 👋',
-                    name: user?.displayName ?? '학부모',
-                    stats: profile.stats,
-                    accent: const Color(0xFF059669),
-                  ),
-                  if (widget.apiClient.authSession.selectedStudent != null) ...[
-                    const SizedBox(height: 8),
-                    Text(
-                      '${widget.apiClient.authSession.selectedStudent!.displayName} 학습 현황',
-                      style: const TextStyle(color: Color(0xFF94A3B8)),
-                    ),
-                  ],
-                  SectionLabel('이번 주 요약'),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(16),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(20),
-                      gradient: LinearGradient(
-                        colors: user?.isTeacher == true
-                            ? const [Color(0xFF0891B2), Color(0xFF0E7490)]
-                            : const [Color(0xFF059669), Color(0xFF047857)],
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                      ),
-                    ),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          profile.weeklyReport.weekLabel,
-                          style: const TextStyle(
-                            color: Color(0xB3FFFFFF),
-                            fontSize: 12,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          profile.stats.accuracyDelta >= 0
-                              ? '전주 대비 ${profile.stats.accuracyDelta}% 향상!'
-                              : '이번 주 정답률 ${profile.stats.accuracy}%',
-                          style: const TextStyle(
-                            color: Colors.white,
-                            fontSize: 18,
-                            fontWeight: FontWeight.w900,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          profile.conceptStatus.isNotEmpty
-                              ? '${profile.conceptStatus.first.concept} 집중 공략 중이에요'
-                              : '학습 기록이 쌓이고 있어요',
-                          style: const TextStyle(
-                            color: Color(0xBFFFFFFF),
-                            fontSize: 12,
-                          ),
-                        ),
-                      ],
+              children: [
+                Text(
+                  '안녕하세요, ${user?.displayName ?? '학부모'}님',
+                    style: TextStyle(
+                      fontSize: TabletLayout.titleSection(context),
+                      fontWeight: FontWeight.w900,
                     ),
                   ),
-                  SectionLabel('약점'),
-                  ConceptStatusCard(
-                    items: profile.conceptStatus
-                        .where((item) => item.status != 'strong')
-                        .take(4)
-                        .toList(),
+                  const SizedBox(height: 4),
+                  Text(
+                    '오늘은 이렇게 도와주시면 좋아요',
+                    style: const TextStyle(color: AppColors.textSub),
                   ),
-                  SectionLabel('잘하고 있어요'),
-                  if (profile.strongConcepts.isEmpty)
-                    const AppCard(
-                      child: Text(
-                        '아직 강점 개념 데이터가 없습니다.',
-                        style: TextStyle(color: Color(0xFF94A3B8)),
-                      ),
+                  const SizedBox(height: 16),
+                  if (profile.parentCoachingCard != null)
+                    ParentCoachingCardWidget(
+                      card: profile.parentCoachingCard!,
+                      accent: AppColors.success,
                     )
                   else
                     AppCard(
                       child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          for (var i = 0; i < profile.strongConcepts.length; i++) ...[
-                            if (i > 0)
-                              const Divider(height: 20, color: Color(0xFF1E293B)),
-                            Row(
-                              children: [
-                                const Text('🟢', style: TextStyle(fontSize: 14)),
-                                const SizedBox(width: 10),
-                                Expanded(
-                                  child: Text(
-                                    profile.strongConcepts[i].concept,
-                                    style: const TextStyle(
-                                      fontWeight: FontWeight.w800,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ),
-                                TagChip('${profile.strongConcepts[i].score}%',
-                                    color: const Color(0xFF22C55E)),
-                              ],
+                          const Text(
+                            '오늘의 부모 코칭',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w800,
+                              color: AppColors.textSub,
+                              fontSize: 12,
                             ),
-                          ],
+                          ),
+                          const SizedBox(height: 8),
+                          Text(
+                            '$studentName가 문제를 풀면, 대화용 코칭 질문이 여기에 표시됩니다.',
+                            style: const TextStyle(height: 1.5),
+                          ),
                         ],
                       ),
                     ),
-                  SectionLabel('이번 주 부모님이 해주세요'),
-                  ParentActionList(items: profile.parentActions),
+                  const SizedBox(height: 12),
+                  ParentCompactStats(
+                    stats: profile.stats,
+                    studentName: studentName,
+                  ),
+                  const SectionLabel('틀린 문제, 이렇게 도와주세요'),
+                  ParentWrongExplainPreviewList(
+                    items: profile.parentWrongExplains,
+                    onTapItem: openExplainDetail,
+                  ),
+                  const SectionLabel('오늘 할 일'),
+                  ParentActionList(
+                    items: profile.parentActions,
+                    emptyTitle: '오늘 할 일이 비어 있어요',
+                    emptyBody:
+                        '자녀가 문제를 풀거나 틀리면, 확인·대화·칭찬할 항목이 여기에 쌓입니다.',
+                  ),
                   const SizedBox(height: 24),
                 ],
-              ),
-            );
+              );
           },
         );
       },
@@ -263,7 +222,7 @@ class _ParentReportScreenState extends State<ParentReportScreen> {
   Widget build(BuildContext context) {
     return GuardianLearningGate(
       apiClient: widget.apiClient,
-      title: '주간 보고서',
+      title: '이번 주 할 일',
       onStudentChanged: _reload,
       child: FutureBuilder<LearningProfile>(
         future: _profileFuture,
@@ -275,12 +234,17 @@ class _ParentReportScreenState extends State<ParentReportScreen> {
             return ProfileLoadingError(error: snapshot.error, onRetry: _reload);
           }
 
-          final report = snapshot.data!.weeklyReport;
-          return ListView(
-            padding: TabletLayout.pagePadding(context),
+          final profile = snapshot.data!;
+          final report = profile.weeklyReport;
+          final parentSteps =
+              report.cycle.where((step) => step.step >= 5).toList();
+
+          return ParentLinkedScrollView(
+            apiClient: widget.apiClient,
+            onStudentChanged: _reload,
             children: [
               Text(
-                '${report.weekLabel} 보고서',
+                '${report.weekLabel} · 부모 가이드',
                 style: TextStyle(
                   fontSize: TabletLayout.titleSection(context),
                   fontWeight: FontWeight.w900,
@@ -289,19 +253,29 @@ class _ParentReportScreenState extends State<ParentReportScreen> {
               const SizedBox(height: 4),
               Text(
                 report.period,
-                style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                style: const TextStyle(color: AppColors.textSub, fontSize: 12),
               ),
               const SizedBox(height: 16),
+              if (profile.parentCoachingCard != null)
+                ParentCoachingCardWidget(
+                  card: profile.parentCoachingCard!,
+                  accent: AppColors.success,
+                ),
+              const SectionLabel('이번 주 체크리스트'),
+              ParentActionList(
+                items: profile.parentActions,
+                emptyTitle: '이번 주 체크리스트가 비어 있어요',
+                emptyBody:
+                    '학습 기록이 쌓이면 확인·대화·칭찬할 항목이 자동으로 채워집니다. 홈의 코칭 카드도 함께 확인해 보세요.',
+              ),
+              const SectionLabel('학습 루프 · 부모 역할'),
               AppCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      '📌 이번 주 학습 사이클',
-                      style: TextStyle(fontWeight: FontWeight.w900, fontSize: 14),
-                    ),
-                    const SizedBox(height: 12),
-                    for (final step in report.cycle) ...[
+                    for (final step in parentSteps.isNotEmpty
+                        ? parentSteps
+                        : report.cycle) ...[
                       Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
@@ -345,7 +319,7 @@ class _ParentReportScreenState extends State<ParentReportScreen> {
                                 Text(
                                   step.text,
                                   style: const TextStyle(
-                                    color: Color(0xFF94A3B8),
+                                    color: AppColors.textSub,
                                     fontSize: 12,
                                     height: 1.45,
                                   ),
@@ -360,15 +334,20 @@ class _ParentReportScreenState extends State<ParentReportScreen> {
                   ],
                 ),
               ),
-              SectionLabel('단원별 이해도'),
+              SectionLabel('참고 · 단원 이해도'),
               AppCard(
                 child: Column(
                   children: [
                     for (var i = 0; i < report.unitMastery.length; i++) ...[
                       if (i > 0)
-                        const Divider(height: 20, color: Color(0xFF1E293B)),
+                        const Divider(height: 20, color: AppColors.border),
                       _UnitMasteryRow(unit: report.unitMastery[i]),
                     ],
+                    if (report.unitMastery.isEmpty)
+                      const Text(
+                        '진도 데이터가 쌓이면 참고용으로 표시됩니다.',
+                        style: TextStyle(color: AppColors.textSub, fontSize: 12),
+                      ),
                   ],
                 ),
               ),
@@ -382,10 +361,14 @@ class _ParentReportScreenState extends State<ParentReportScreen> {
 
   Color _cycleColor(int step) {
     return switch (step) {
-      1 => const Color(0xFFEF4444),
-      2 => const Color(0xFF2563EB),
-      3 => const Color(0xFF22C55E),
-      _ => const Color(0xFFF59E0B),
+      1 => AppColors.accent,
+      2 => AppColors.primary,
+      3 => AppColors.success,
+      4 => AppColors.warning,
+      5 => AppColors.success,
+      6 => AppColors.primary,
+      7 => AppColors.accent,
+      _ => AppColors.warning,
     };
   }
 }
@@ -398,10 +381,10 @@ class _UnitMasteryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final color = unit.percent >= 80
-        ? const Color(0xFF22C55E)
+        ? AppColors.success
         : unit.percent >= 60
-            ? const Color(0xFFF59E0B)
-            : const Color(0xFFEF4444);
+            ? AppColors.warning
+            : AppColors.accent;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -429,7 +412,7 @@ class _UnitMasteryRow extends StatelessWidget {
           child: LinearProgressIndicator(
             value: unit.percent / 100,
             minHeight: 6,
-            backgroundColor: const Color(0xFF1E293B),
+            backgroundColor: AppColors.surfaceMuted,
             color: color,
           ),
         ),
@@ -494,7 +477,7 @@ class _ParentGrowthScreenState extends State<ParentGrowthScreen> {
               const SizedBox(height: 4),
               const Text(
                 '4주간 정답률 변화',
-                style: TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
+                style: TextStyle(color: AppColors.textSub, fontSize: 12),
               ),
               const SizedBox(height: 16),
               WeeklyTrendChart(points: profile.weeklyTrend),
@@ -504,7 +487,7 @@ class _ParentGrowthScreenState extends State<ParentGrowthScreen> {
                   children: [
                     for (var i = 0; i < profile.weeklyTrend.length; i++) ...[
                       if (i > 0)
-                        const Divider(height: 20, color: Color(0xFF1E293B)),
+                        const Divider(height: 20, color: AppColors.border),
                       Row(
                         children: [
                           Container(
@@ -512,7 +495,7 @@ class _ParentGrowthScreenState extends State<ParentGrowthScreen> {
                             height: 32,
                             alignment: Alignment.center,
                             decoration: BoxDecoration(
-                              color: const Color(0xFF1E3A8A),
+                              color: AppColors.primary.withValues(alpha: 0.12),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: Text(
@@ -520,7 +503,7 @@ class _ParentGrowthScreenState extends State<ParentGrowthScreen> {
                               style: const TextStyle(
                                 fontSize: 11,
                                 fontWeight: FontWeight.w800,
-                                color: Color(0xFF93C5FD),
+                                color: AppColors.primary,
                               ),
                             ),
                           ),
@@ -539,7 +522,7 @@ class _ParentGrowthScreenState extends State<ParentGrowthScreen> {
                                 Text(
                                   profile.weeklyTrend[i].summary,
                                   style: const TextStyle(
-                                    color: Color(0xFF94A3B8),
+                                    color: AppColors.textSub,
                                     fontSize: 11,
                                   ),
                                 ),
@@ -557,8 +540,8 @@ class _ParentGrowthScreenState extends State<ParentGrowthScreen> {
                 TagChip(
                   delta >= 0 ? '+$delta% 향상' : '$delta% 변화',
                   color: delta >= 0
-                      ? const Color(0xFF22C55E)
-                      : const Color(0xFFEF4444),
+                      ? AppColors.success
+                      : AppColors.accent,
                 ),
               ],
               const SizedBox(height: 24),

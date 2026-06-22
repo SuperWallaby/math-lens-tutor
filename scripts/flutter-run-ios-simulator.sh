@@ -6,7 +6,7 @@ cd "$ROOT/flutter_app"
 
 # 기본: iPhone 17 Pro (환경에 맞게 바꿔도 됨)
 DEVICE="${FLUTTER_IOS_DEVICE:-iPhone 17 Pro}"
-API_BASE="${FLUTTER_API_BASE_URL:-http://localhost:3000}"
+API_BASE="${FLUTTER_API_BASE_URL:-$(bash "$ROOT/scripts/dev-api-url.sh")}"
 
 if ! command -v flutter >/dev/null 2>&1; then
   echo "flutter 가 PATH 에 없습니다. 터미널에서 which flutter 로 경로 확인 후 PATH 를 잡거나, 전체 경로로 실행하세요."

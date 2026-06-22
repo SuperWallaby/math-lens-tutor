@@ -5,13 +5,18 @@ import { signSessionToken } from "@/lib/auth";
 import { hasAuthConfig, hasMongoConfig } from "@/lib/env";
 import { verifyOAuthToken } from "@/lib/oauth-verify";
 import { getDeviceUserId } from "@/lib/request";
-import { publicUser, upsertOAuthUser } from "@/lib/users";
+import {
+  OAuthAccountExistsError,
+  publicUser,
+  upsertOAuthUser,
+} from "@/lib/users";
 
 const oauthBodySchema = z.object({
   provider: z.enum(["kakao", "google", "apple"]),
   idToken: z.string().optional(),
   accessToken: z.string().optional(),
   displayName: z.string().optional(),
+  intent: z.enum(["signup", "login"]).optional().default("login"),
 });
 
 export async function POST(request: Request) {
@@ -33,7 +38,9 @@ export async function POST(request: Request) {
     const body = oauthBodySchema.parse(await request.json());
     const identity = await verifyOAuthToken(body);
     const deviceUserId = getDeviceUserId(request);
-    const user = await upsertOAuthUser(identity, deviceUserId);
+    const user = await upsertOAuthUser(identity, deviceUserId, {
+      intent: body.intent,
+    });
     const token = signSessionToken({ userId: user.id });
 
     return NextResponse.json({
@@ -41,6 +48,9 @@ export async function POST(request: Request) {
       user: publicUser(user),
     });
   } catch (error) {
+    if (error instanceof OAuthAccountExistsError) {
+      return NextResponse.json({ error: error.message }, { status: 409 });
+    }
     const message =
       error instanceof Error ? error.message : "간편 가입에 실패했습니다.";
     return NextResponse.json({ error: message }, { status: 400 });

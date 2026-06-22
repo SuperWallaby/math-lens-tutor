@@ -7,6 +7,7 @@ import { completeUserProfile, findUserById, publicUser } from "@/lib/users";
 
 const bodySchema = z.object({
   role: z.enum(["student", "parent", "teacher"]),
+  age: z.number().int().min(8).max(99).optional(),
   grade: z.string().optional(),
   organizationName: z.string().optional(),
 });
@@ -36,7 +37,16 @@ export async function POST(request: Request) {
     }
 
     const body = bodySchema.parse(await request.json());
+
+    if (body.role === "teacher") {
+      return NextResponse.json(
+        { error: "교사 계정은 현재 준비 중입니다. 학생 또는 학부모로 시작해 주세요." },
+        { status: 403 },
+      );
+    }
+
     const user = await completeUserProfile(authUserId, body.role, {
+      age: body.age,
       grade: body.grade,
       organizationName: body.organizationName,
     });

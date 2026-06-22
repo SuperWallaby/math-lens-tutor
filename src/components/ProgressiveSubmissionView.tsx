@@ -62,13 +62,13 @@ export function ProgressiveSubmissionView({
           <div className="space-y-3">
             <Link
               href={`/practice/${problemSet.id}`}
-              className="block rounded-2xl bg-emerald-500 px-6 py-4 text-center font-bold text-white hover:bg-emerald-400"
+              className="block rounded-wy-md bg-wy-success px-6 py-4 text-center font-bold text-white hover:opacity-90"
             >
               유사 문제 5개 풀기
             </Link>
             <ProblemSetPrintPdfButton
               problemSet={problemSet}
-              className="block w-full rounded-2xl border border-white/15 px-6 py-3 text-center text-sm font-semibold text-slate-100 hover:bg-white/10"
+              className="block w-full rounded-wy-md border border-wy-border-strong px-6 py-3 text-center text-sm font-semibold text-foreground hover:bg-wy-surface-muted"
             />
           </div>
         ) : (
@@ -80,9 +80,9 @@ export function ProgressiveSubmissionView({
       </aside>
 
       <section className="space-y-6">
-        <section className="rounded-3xl border border-white/10 bg-white/10 p-6">
-          <p className="text-sm text-slate-400">제출한 풀이 사진</p>
-          <h2 className="mt-1 text-lg font-bold text-slate-100">
+        <section className="rounded-[var(--wy-radius-md)] border border-wy-border bg-wy-surface p-6">
+          <p className="text-sm text-wy-text-muted">제출한 풀이 사진</p>
+          <h2 className="mt-1 text-lg font-bold text-foreground">
             {state.imageName || "풀이 사진"}
           </h2>
           {imageSrc ? (
@@ -92,7 +92,7 @@ export function ProgressiveSubmissionView({
               width={800}
               height={600}
               unoptimized={imageSrc.startsWith("blob:")}
-              className="mt-3 max-h-[min(280px,40vh)] w-full rounded-2xl object-contain"
+              className="mt-3 max-h-[min(280px,40vh)] w-full rounded-wy-md object-contain"
             />
           ) : (
             <div className="mt-3 space-y-2.5">
@@ -102,25 +102,25 @@ export function ProgressiveSubmissionView({
           )}
         </section>
 
-        <p className="text-sm font-medium text-blue-200">{state.progressMessage}</p>
+        <p className="text-sm font-medium text-wy-primary">{state.progressMessage}</p>
 
-        <div className="rounded-3xl border border-white/10 bg-white/10 p-6">
+        <div className="rounded-[var(--wy-radius-md)] border border-wy-border bg-wy-surface p-6">
           <div className="flex flex-wrap items-center gap-3">
             {tutorReady && analysis ? (
-              <span className="rounded-full bg-white/10 px-3 py-1 text-sm text-slate-300">
+              <span className="rounded-full bg-wy-surface-muted px-3 py-1 text-sm text-wy-text-sub">
                 신뢰도 {Math.round(analysis.confidence * 100)}%
               </span>
             ) : (
               <Skeleton className="skeleton-line w-[28%]" />
             )}
             {visionReady && analysis?.imageQualityWarning ? (
-              <span className="rounded-full bg-amber-500/25 px-3 py-1 text-sm font-semibold text-amber-100">
+              <span className="rounded-full bg-[var(--wy-warning-tint)] px-3 py-1 text-sm font-semibold text-foreground">
                 이미지가 흐린 것 같아요
               </span>
             ) : null}
           </div>
           <h2 className="mt-5 text-2xl font-black">풀이 분석</h2>
-          <div className="mt-4 rounded-2xl bg-slate-900 p-4 leading-8 text-slate-200">
+          <div className="mt-4 rounded-wy-md bg-wy-surface-elevated p-4 leading-8 text-foreground">
             {visionReady && analysis ? (
               <MathMixedRich text={analysis.problemText} readableSolutionStep />
             ) : (
@@ -128,8 +128,8 @@ export function ProgressiveSubmissionView({
             )}
           </div>
           <dl className="mt-5 grid gap-4 sm:grid-cols-2">
-            <div className="rounded-2xl bg-slate-900 p-4">
-              <dt className="text-sm text-slate-400">학생 답안</dt>
+            <div className="rounded-wy-md bg-wy-surface-elevated p-4">
+              <dt className="text-sm text-wy-text-muted">학생 답안</dt>
               <dd className="mt-2 font-bold">
                 {visionReady && analysis ? (
                   <MathMixedRich
@@ -145,8 +145,8 @@ export function ProgressiveSubmissionView({
                 )}
               </dd>
             </div>
-            <div className="rounded-2xl bg-slate-900 p-4">
-              <dt className="text-sm text-slate-400">추정 정답</dt>
+            <div className="rounded-wy-md bg-wy-surface-elevated p-4">
+              <dt className="text-sm text-wy-text-muted">추정 정답</dt>
               <dd className="mt-2 font-bold">
                 {tutorReady && analysis ? (
                   <MathMixedRich
@@ -166,7 +166,7 @@ export function ProgressiveSubmissionView({
           </dl>
         </div>
 
-        <div className="rounded-3xl border border-white/10 bg-white/10 p-6">
+        <div className="rounded-[var(--wy-radius-md)] border border-wy-border bg-wy-surface p-6">
           <h2 className="text-xl font-bold">정답 풀이</h2>
           {tutorReady &&
           analysis &&
@@ -175,7 +175,7 @@ export function ProgressiveSubmissionView({
               {analysis.referenceSolutionSteps!.map((step, index) => (
                 <li
                   key={`ref-${index}-${step.slice(0, 24)}`}
-                  className="rounded-2xl bg-emerald-500/10 p-4 pl-4 leading-8 text-slate-200 marker:font-semibold"
+                  className="rounded-wy-md bg-[var(--wy-success-tint)] p-4 pl-4 leading-8 text-foreground marker:font-semibold"
                 >
                   <MathMixedRich text={step} readableSolutionStep />
                 </li>
@@ -189,21 +189,21 @@ export function ProgressiveSubmissionView({
           )}
         </div>
 
-        <div className="rounded-3xl border border-white/10 bg-white/10 p-6">
+        <div className="rounded-[var(--wy-radius-md)] border border-wy-border bg-wy-surface p-6">
           <h2 className="text-xl font-bold">사진에서 읽은 학생 풀이·메모</h2>
           {visionReady && analysis && analysis.solutionSteps.length > 0 ? (
             <ol className="mt-5 list-decimal space-y-4 pl-5">
               {analysis.solutionSteps.map((step, index) => (
                 <li
                   key={`${index}-${step.slice(0, 24)}`}
-                  className="rounded-2xl bg-slate-900 p-4 pl-4 leading-8 text-slate-300 marker:font-semibold"
+                  className="rounded-wy-md bg-wy-surface-elevated p-4 pl-4 leading-8 text-wy-text-sub marker:font-semibold"
                 >
                   <MathMixedRich text={step} readableSolutionStep />
                 </li>
               ))}
             </ol>
           ) : visionReady ? (
-            <p className="mt-4 text-sm text-slate-400">
+            <p className="mt-4 text-sm text-wy-text-muted">
               읽을 수 있는 손글씨 단계가 없습니다.
             </p>
           ) : (
@@ -213,11 +213,11 @@ export function ProgressiveSubmissionView({
             />
           )}
           {visionReady && (
-            <div className="mt-6 border-t border-white/10 pt-5">
-              <p className="text-sm font-medium text-slate-400">
+            <div className="mt-6 border-t border-wy-border pt-5">
+              <p className="text-sm font-medium text-wy-text-muted">
                 {tutorReady ? "오답 진단" : "오답 진단 중…"}
               </p>
-              <div className="mt-3 rounded-2xl bg-red-500/10 p-4 leading-8 text-red-100">
+              <div className="mt-3 rounded-wy-md bg-[var(--wy-accent-tint)] p-4 leading-8 text-foreground">
                 {tutorReady && analysis ? (
                   <MathMixedRich
                     text={analysis.errorSummary}
@@ -236,14 +236,14 @@ export function ProgressiveSubmissionView({
         </div>
 
         {showTrainingSection && analysis ? (
-          <div className="rounded-3xl border border-white/10 bg-white/10 p-6">
+          <div className="rounded-[var(--wy-radius-md)] border border-wy-border bg-wy-surface p-6">
             <h2 className="text-xl font-bold">부족 개념과 추천 훈련</h2>
             {weakShown.length > 0 ? (
               <div className="mt-5 flex flex-wrap gap-2">
                 {weakShown.map((concept) => (
                   <div
                     key={concept}
-                    className="inline-flex max-w-full items-center rounded-full bg-blue-500/20 px-3 py-1 text-sm text-blue-100"
+                    className="inline-flex max-w-full items-center rounded-full bg-[var(--wy-primary-tint)] px-3 py-1 text-sm text-wy-primary"
                   >
                     <MathMixedRich text={concept} />
                   </div>
@@ -251,9 +251,9 @@ export function ProgressiveSubmissionView({
               </div>
             ) : null}
             {focusShown.length > 0 ? (
-              <ul className="mt-5 space-y-3 text-sm leading-7 text-slate-300">
+              <ul className="mt-5 space-y-3 text-sm leading-7 text-wy-text-sub">
                 {focusShown.map((focus) => (
-                  <li key={focus} className="rounded-2xl bg-slate-900 p-4">
+                  <li key={focus} className="rounded-wy-md bg-wy-surface-elevated p-4">
                     <MathMixedRich text={focus} />
                   </li>
                 ))}
@@ -261,7 +261,7 @@ export function ProgressiveSubmissionView({
             ) : null}
           </div>
         ) : !tutorReady ? (
-          <div className="rounded-3xl border border-white/10 bg-white/10 p-6">
+          <div className="rounded-[var(--wy-radius-md)] border border-wy-border bg-wy-surface p-6">
             <h2 className="text-xl font-bold">부족 개념과 추천 훈련</h2>
             <SkeletonLines
               className="mt-5"
@@ -274,13 +274,13 @@ export function ProgressiveSubmissionView({
           <div className="space-y-3 lg:hidden">
             <Link
               href={`/practice/${problemSet.id}`}
-              className="block rounded-2xl bg-emerald-500 px-6 py-4 text-center font-bold text-white hover:bg-emerald-400"
+              className="block rounded-wy-md bg-wy-success px-6 py-4 text-center font-bold text-white hover:opacity-90"
             >
               유사 문제 5개 풀기
             </Link>
             <ProblemSetPrintPdfButton
               problemSet={problemSet}
-              className="block w-full rounded-2xl border border-white/15 px-6 py-3 text-center text-sm font-semibold text-slate-100 hover:bg-white/10"
+              className="block w-full rounded-wy-md border border-wy-border-strong px-6 py-3 text-center text-sm font-semibold text-foreground hover:bg-wy-surface-muted"
             />
           </div>
         ) : null}

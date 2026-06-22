@@ -6,6 +6,7 @@ import '../screens/student_hub_screen.dart';
 import '../screens/practice_screen.dart';
 import '../screens/upload_screen.dart';
 import '../services/api_client.dart';
+import '../services/oauth_service.dart';
 import 'store_screenshot_data.dart';
 
 /// `--dart-define=STORE_SCREENSHOT=home|upload|analysis|practice|dashboard`
@@ -14,16 +15,21 @@ class StoreScreenshotShell extends StatelessWidget {
     super.key,
     required this.screen,
     required this.apiClient,
+    required this.oauthService,
   });
 
   final String screen;
   final ApiClient apiClient;
+  final OAuthService oauthService;
 
   @override
   Widget build(BuildContext context) {
     switch (screen) {
       case 'home':
-        return StudentHubScreen(apiClient: apiClient);
+        return StudentHubScreen(
+          apiClient: apiClient,
+          oauthService: oauthService,
+        );
       case 'upload':
         return UploadScreen(apiClient: apiClient);
       case 'analysis':
@@ -42,7 +48,10 @@ class StoreScreenshotShell extends StatelessWidget {
           demoInsight: storeScreenshotLearningInsight(),
         );
       default:
-        return StudentHubScreen(apiClient: apiClient);
+        return StudentHubScreen(
+          apiClient: apiClient,
+          oauthService: oauthService,
+        );
     }
   }
 }

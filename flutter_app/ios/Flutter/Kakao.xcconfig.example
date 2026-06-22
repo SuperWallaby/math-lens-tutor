@@ -1,0 +1,2 @@
+// Copy to Kakao.xcconfig or run: npm run kakao:sync
+KAKAO_APP_SCHEME=kakaoYOUR_NATIVE_APP_KEY

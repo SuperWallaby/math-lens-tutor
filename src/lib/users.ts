@@ -1,7 +1,8 @@
 import { randomBytes, randomUUID } from "crypto";
 
 import { getMongoDb } from "./mongodb";
-import { reassignUserData } from "./store";
+import { reassignUserData, uploadProfileImage, deleteAllUserData } from "./store";
+import { ageFromGrade, isValidGrade } from "./grade-options";
 import type {
   LinkedStudentSummary,
   OAuthProvider,
@@ -10,6 +11,10 @@ import type {
   UserRole,
 } from "./types";
 import type { VerifiedOAuthIdentity } from "./oauth-verify";
+import {
+  devAccountToUser,
+  type DevAccountSpec,
+} from "./dev-accounts";
 
 type MemoryUsersDb = {
   users: User[];
@@ -120,9 +125,19 @@ async function createUniqueStudentCode(): Promise<string> {
   throw new Error("Failed to generate unique student code.");
 }
 
+export class OAuthAccountExistsError extends Error {
+  constructor() {
+    super(
+      "이미 가입된 계정입니다. 앱을 처음부터 다시 열어 해당 계정으로 로그인해 주세요.",
+    );
+    this.name = "OAuthAccountExistsError";
+  }
+}
+
 export async function upsertOAuthUser(
   identity: VerifiedOAuthIdentity,
   deviceUserId?: string | null,
+  options?: { intent?: "signup" | "login" },
 ): Promise<User> {
   const existing = await findUserByOAuth(
     identity.provider,
@@ -130,6 +145,9 @@ export async function upsertOAuthUser(
   );
 
   if (existing) {
+    if (options?.intent === "signup") {
+      throw new OAuthAccountExistsError();
+    }
     if (deviceUserId && !existing.linkedDeviceIds.includes(deviceUserId)) {
       existing.linkedDeviceIds.push(deviceUserId);
       await saveUser(existing);
@@ -158,6 +176,25 @@ export async function upsertOAuthUser(
   return user;
 }
 
+export async function upsertMagicLinkUser(
+  email: string,
+  deviceUserId?: string | null,
+  options?: { intent?: "signup" | "login" },
+): Promise<User> {
+  const normalized = email.trim().toLowerCase();
+  const identity = {
+    provider: "email" as const,
+    subject: normalized,
+    displayName: normalized.split("@")[0] || "우열 사용자",
+  };
+  const user = await upsertOAuthUser(identity, deviceUserId, options);
+  if (!user.email) {
+    user.email = normalized;
+    await saveUser(user);
+  }
+  return user;
+}
+
 async function saveUser(user: User): Promise<User> {
   const store = await requireUsersStore();
   if ("users" in store) {
@@ -181,7 +218,7 @@ async function saveUser(user: User): Promise<User> {
 export async function completeUserProfile(
   userId: string,
   role: UserRole,
-  options?: { grade?: string; organizationName?: string },
+  options?: { age?: number; grade?: string; organizationName?: string },
 ): Promise<User> {
   const user = await findUserById(userId);
   if (!user) {
@@ -190,6 +227,10 @@ export async function completeUserProfile(
 
   user.role = role;
   user.profileComplete = true;
+
+  if (typeof options?.age === "number" && options.age >= 8 && options.age <= 99) {
+    user.age = Math.round(options.age);
+  }
 
   if (role === "student") {
     if (!user.studentCode) {
@@ -205,6 +246,101 @@ export async function completeUserProfile(
   }
 
   return saveUser(user);
+}
+
+export async function updateUserProfile(
+  userId: string,
+  updates: {
+    displayName?: string;
+    grade?: string;
+    organizationName?: string;
+  },
+): Promise<User> {
+  const user = await findUserById(userId);
+  if (!user) {
+    throw new Error("사용자를 찾을 수 없습니다.");
+  }
+
+  if (updates.displayName !== undefined) {
+    const name = updates.displayName.trim();
+    if (name.length < 1 || name.length > 40) {
+      throw new Error("이름은 1~40자로 입력해 주세요.");
+    }
+    user.displayName = name;
+  }
+
+  if (updates.grade !== undefined) {
+    if (user.role !== "student") {
+      throw new Error("학년은 학생 계정만 수정할 수 있습니다.");
+    }
+    const grade = updates.grade.trim();
+    if (!isValidGrade(grade)) {
+      throw new Error("올바른 학년을 선택해 주세요.");
+    }
+    user.grade = grade;
+    user.age = ageFromGrade(grade);
+  }
+
+  if (updates.organizationName !== undefined) {
+    if (user.role !== "teacher") {
+      throw new Error("소속명은 교사 계정만 수정할 수 있습니다.");
+    }
+    const org = updates.organizationName.trim();
+    user.organizationName = org.length > 0 ? org : undefined;
+  }
+
+  return saveUser(user);
+}
+
+export async function setUserProfileImage(
+  userId: string,
+  file: File,
+): Promise<User> {
+  const user = await findUserById(userId);
+  if (!user) {
+    throw new Error("사용자를 찾을 수 없습니다.");
+  }
+
+  const imageUrl = await uploadProfileImage(file, userId);
+  if (!imageUrl) {
+    throw new Error("프로필 이미지를 저장하지 못했습니다.");
+  }
+
+  user.profileImageUrl = imageUrl;
+  return saveUser(user);
+}
+
+export async function clearAllLinksForUser(userId: string): Promise<void> {
+  const store = await requireUsersStore();
+  if ("links" in store) {
+    store.links = store.links.filter(
+      (link) =>
+        link.guardianUserId !== userId && link.studentUserId !== userId,
+    );
+    return;
+  }
+
+  await store.collection<StudentLink>("student_links").deleteMany({
+    $or: [{ guardianUserId: userId }, { studentUserId: userId }],
+  });
+}
+
+export async function deleteUserAccount(userId: string): Promise<void> {
+  const user = await findUserById(userId);
+  if (!user) {
+    throw new Error("사용자를 찾을 수 없습니다.");
+  }
+
+  await clearAllLinksForUser(userId);
+  await deleteAllUserData(userId);
+
+  const store = await requireUsersStore();
+  if ("users" in store) {
+    store.users = store.users.filter((item) => item.id !== userId);
+    return;
+  }
+
+  await store.collection<User>("users").deleteOne({ id: userId });
 }
 
 export async function findUserByStudentCode(
@@ -236,11 +372,11 @@ export async function linkStudentToGuardian(
 
   const student = await findUserByStudentCode(studentCode);
   if (!student || student.role !== "student" || !student.studentCode) {
-    throw new Error("Student code not found.");
+    throw new Error("학생 고유번호를 찾을 수 없습니다. 번호를 다시 확인해 주세요.");
   }
 
   if (student.id === guardianUserId) {
-    throw new Error("You cannot link your own account.");
+    throw new Error("본인 계정은 연결할 수 없습니다.");
   }
 
   const store = await requireUsersStore();
@@ -338,16 +474,56 @@ export async function mergeDeviceData(
   await reassignUserData(deviceUserId, userId);
 }
 
+export async function clearStudentLinksForGuardian(
+  guardianUserId: string,
+): Promise<void> {
+  const store = await requireUsersStore();
+  if ("links" in store) {
+    store.links = store.links.filter(
+      (link) => link.guardianUserId !== guardianUserId,
+    );
+    return;
+  }
+
+  await store
+    .collection<StudentLink>("student_links")
+    .deleteMany({ guardianUserId });
+}
+
+export async function resetDevLoginAccount(
+  spec: DevAccountSpec,
+  deviceUserId?: string | null,
+): Promise<User> {
+  await clearStudentLinksForGuardian(spec.userId);
+  const existing = await findUserById(spec.userId);
+  const user = devAccountToUser(spec, existing);
+
+  if (deviceUserId) {
+    user.linkedDeviceIds = [...new Set([...user.linkedDeviceIds, deviceUserId])];
+  }
+
+  await saveUser(user);
+
+  if (deviceUserId) {
+    await mergeDeviceData(deviceUserId, user.id);
+  }
+
+  return user;
+}
+
 export function publicUser(user: User) {
   return {
     id: user.id,
     role: user.role,
     displayName: user.displayName,
+    age: user.age,
     grade: user.grade,
     organizationName: user.organizationName,
     studentCode: user.studentCode,
+    profileImageUrl: user.profileImageUrl,
     profileComplete: user.profileComplete,
     oauthProvider: user.oauthProvider,
+    email: user.email,
     createdAt: user.createdAt,
   };
 }

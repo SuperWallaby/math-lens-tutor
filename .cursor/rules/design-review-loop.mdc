@@ -1,0 +1,41 @@
+---
+description: Flutter design review loop — capture, score vs DESIGN.md, iterate until 9+
+globs: flutter_app/lib/**/*.dart, design-review/**/*
+alwaysApply: false
+---
+
+# Design review loop (Flutter)
+
+When improving UI or completing a screen redesign:
+
+1. Read [DESIGN.md](../../DESIGN.md) and [design-review/RUBRIC.md](../../design-review/RUBRIC.md).
+2. Capture the target state:
+   - `npm run capture:design-review -- --only {screenId}`
+   - Or open `http://localhost:8080/?design_review={screenId}__{state}`
+3. Score /10 using RUBRIC. **Pass only if ≥ 9 and no critical violations.**
+4. Feedback format:
+   - Score table (each RUBRIC category)
+   - Critical / High / Medium issues with file paths
+   - Concrete fix tied to DESIGN.md tokens
+5. Apply fixes in Flutter (`app_design_system.dart`, screen/widgets).
+6. Re-capture the same state; repeat until pass.
+7. Update [design-review/PROGRESS.md](../../design-review/PROGRESS.md) when a state reaches `done`.
+
+## Capture keys
+
+See [design-review/SCREEN_MATRIX.md](../../design-review/SCREEN_MATRIX.md).
+
+Mock data: [flutter_app/lib/dev/design_review_data.dart](../../flutter_app/lib/dev/design_review_data.dart)  
+Shell: [flutter_app/lib/dev/design_review_shell.dart](../../flutter_app/lib/dev/design_review_shell.dart)
+
+## Auto-fail patterns
+
+- Emoji as list/status icons
+- Material `ChoiceChip` black outlines (use custom pills)
+- Play icon on every tappable row + row tap (duplicate CTA)
+- Progress hidden at 0%
+- Dark scaffold, violet `#7C6FF7`, heavy shadows
+
+## P0 order
+
+student_hub → upload → analysis → practice → student_progress

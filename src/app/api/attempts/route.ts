@@ -1,47 +1,51 @@
 import { randomUUID } from "crypto";
 import { NextResponse } from "next/server";
 import { GENERIC_SUBMIT_ERROR, logApiError } from "@/lib/api-errors";
+import {
+  generatePracticeWrongAnswerFeedback,
+  resolveAzureDeploymentName,
+} from "@/lib/azure";
 import { authErrorResponse, resolveActorUserId } from "@/lib/request";
 import { recordPracticeAttempt } from "@/lib/problem-bank";
+import { recordTrainingFeedActivity } from "@/lib/training-feed";
 import { studyLog } from "@/lib/server-log";
 import { getProblemSet, saveAttempt } from "@/lib/store";
 import type { GeneratedProblem, ProblemAttempt } from "@/lib/types";
+import {
+  formatAnswerForDisplay,
+  normalizeAnswerForGrade,
+  stripMathDelimiters,
+} from "@/lib/answer-normalize";
+
+export const runtime = "nodejs";
+export const maxDuration = 60;
 
 type GeneratedChoice = NonNullable<GeneratedProblem["choices"]>[number];
 
-function normalizeAnswer(answer: string) {
-  return answer
-    .replace(/\s+/g, "")
-    .replace(/\u2212/g, "-")
-    .replace(/，/g, ",")
-    .toLowerCase();
-}
-
 /** LLM 이 객관식에 번호(1~5)만 넣는 경우가 있어 라벨과 비교되며 전부 오답 처리되는 것을 막음 */
 function expectedAnswerForProblem(problem: GeneratedProblem): string {
-  const raw = problem.correctAnswer.trim();
+  const raw = stripMathDelimiters(problem.correctAnswer.trim());
   const choices = problem.choices ?? [];
-  const byId = choices.find((c) => c.id === raw);
+  const byId = choices.find((c) => c.id === raw || c.id === problem.correctAnswer.trim());
   if (byId) {
-    return byId.label;
+    return formatAnswerForDisplay(byId.label);
   }
   const byLabel = choices.find(
-    (c) => normalizeAnswer(c.label) === normalizeAnswer(raw),
+    (c) => normalizeAnswerForGrade(c.label) === normalizeAnswerForGrade(raw),
   );
   if (byLabel) {
-    return byLabel.label;
+    return formatAnswerForDisplay(byLabel.label);
   }
-  return raw;
+  return formatAnswerForDisplay(raw);
 }
 
 export async function POST(request: Request) {
   let authUserId = "anonymous";
-  let userId = "anonymous";
+  let actor;
 
   try {
-    const actor = await resolveActorUserId(request, { write: true });
+    actor = await resolveActorUserId(request, { write: true });
     authUserId = actor.authUserId;
-    userId = actor.actorUserId;
   } catch (error) {
     const authResponse = authErrorResponse(error);
     if (authResponse) {
@@ -85,8 +89,8 @@ export async function POST(request: Request) {
     );
     const submittedAnswer = chosenChoice?.label ?? body.answer;
     const expected = expectedAnswerForProblem(problem);
-    const normalizedSubmitted = normalizeAnswer(submittedAnswer);
-    const normalizedExpected = normalizeAnswer(expected);
+    const normalizedSubmitted = normalizeAnswerForGrade(submittedAnswer);
+    const normalizedExpected = normalizeAnswerForGrade(expected);
     const isCorrect = normalizedSubmitted === normalizedExpected;
 
     studyLog("attempts", "grade", {
@@ -102,27 +106,54 @@ export async function POST(request: Request) {
       isCorrect,
     });
 
+    let feedbackText = "정답입니다.";
+    if (!isCorrect) {
+      const deploymentName = resolveAzureDeploymentName("fast") ?? "";
+      feedbackText = await generatePracticeWrongAnswerFeedback({
+        problem,
+        submittedAnswer,
+        expectedAnswer: expected,
+        grade: actor.user.grade,
+        deploymentName,
+      });
+    }
+
     const attempt: ProblemAttempt = {
       id: randomUUID(),
-      userId,
+      userId: actor.actorUserId,
       setId: body.setId,
       problemId: body.problemId,
       answer: submittedAnswer,
       isCorrect,
-      feedback: isCorrect
-        ? "정답입니다. 같은 풀이 전략을 다음 문제에도 적용해 보세요."
-        : `오답입니다. 정답은 ${expected}입니다. ${problem.explanation}`,
+      feedback: feedbackText,
       createdAt: new Date().toISOString(),
     };
 
-    await saveAttempt(attempt);
-    await recordPracticeAttempt({
+    const relearnedConcepts = await recordPracticeAttempt({
       attempt,
       problem,
       expectedAnswer: expected,
     });
 
-    return NextResponse.json(attempt);
+    if (isCorrect && relearnedConcepts.length > 0) {
+      attempt.feedback = `${attempt.feedback} [재학습 성공됨: ${relearnedConcepts.join(", ")}]`;
+    }
+
+    await saveAttempt(attempt);
+
+    void recordTrainingFeedActivity({
+      userId: actor.actorUserId,
+      conceptTags: problem.conceptTags?.length
+        ? problem.conceptTags
+        : [problem.title],
+      difficulty: problem.difficulty ?? "medium",
+      isCorrect,
+    }).catch(() => {});
+
+    return NextResponse.json({
+      ...attempt,
+      relearnedConcepts,
+    });
   } catch (error) {
     const errorId = await logApiError({
       request,

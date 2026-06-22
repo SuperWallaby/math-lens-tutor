@@ -4,8 +4,15 @@ import { env } from "./env";
 import { sampleAnalysis, sampleProblemSet } from "./sample";
 import type { AnalyzeProgressStep } from "./analyze-steps";
 import { partialAnalysisFromVision } from "./analyze-partial";
+import { sanitizeGeneratedProblem } from "./problem-answer-sanitize";
+import {
+  calibrateProblemDifficulties,
+  difficultyRubricForPrompt,
+} from "./problem-difficulty";
+import { GRADE_BAND_REPRESENTATIVE, matchUnitForConcept, tutorGradeContext, type GradeBand } from "./curriculum";
 import {
   generatedProblemSetSchema,
+  generatedProblemSetFlexibleSchema,
   normalizeVisionSolutionSteps,
   problemSolveResultSchema,
   solutionAnalysisSchema,
@@ -13,6 +20,7 @@ import {
   tutorSolveAndExpandFromVisionSchema,
   visionSolutionExtractionSchema,
   type GeneratedProblemSet,
+  type GeneratedProblem,
   type ProblemSolveResult,
   type SolutionAnalysis,
   type TutorExpansionFromVision,
@@ -422,6 +430,21 @@ async function completeTextOnlyJsonPrompt(params: {
   });
 }
 
+/** CLI·배치 스크립트용 텍스트 JSON 완료 */
+export async function completeAzureJsonPrompt(params: {
+  deploymentName: string;
+  userPrompt: string;
+  temperatureForChat?: number;
+  maxTokens?: number;
+}): Promise<string> {
+  return completeTextOnlyJsonPrompt({
+    deploymentName: params.deploymentName,
+    userPrompt: params.userPrompt,
+    temperatureForChat: params.temperatureForChat ?? 0.7,
+    maxTokens: params.maxTokens ?? 4096,
+  });
+}
+
 function mergeVisionMetricsIntoAnalysis(
   expansion: TutorExpansionFromVision,
   vision: VisionSolutionExtraction,
@@ -569,6 +592,7 @@ export async function expandAnalysisFromVisionDraft(
     deploymentName: string;
     mode: AnalyzeQualityMode;
     solved: ProblemSolveResult;
+    grade?: string | null;
   },
 ): Promise<SolutionAnalysis> {
   if (!hasAzureOpenAiConfig()) {
@@ -584,7 +608,10 @@ export async function expandAnalysisFromVisionDraft(
     return mergeVisionMetricsIntoAnalysis(expansion, vision, options.solved);
   }
 
+  const gradeCtx = tutorGradeContext(options.grade);
   const prompt = `You are an expert Korean mathematics tutor — **text-only**. You do not see the photo.
+
+${gradeCtx.promptBlock}
 
 A separate solver already computed the **authoritative correct answer** from the printed problem only:
 - inferredCorrectAnswer (authoritative): ${JSON.stringify(options.solved.inferredCorrectAnswer)}
@@ -634,6 +661,7 @@ export async function solveAndExpandFromVision(
   options: {
     deploymentName: string;
     mode: AnalyzeQualityMode;
+    grade?: string | null;
   },
 ): Promise<SolutionAnalysis> {
   if (!hasAzureOpenAiConfig()) {
@@ -647,10 +675,14 @@ export async function solveAndExpandFromVision(
       deploymentName: options.deploymentName,
       mode: options.mode,
       solved,
+      grade: options.grade,
     });
   }
 
-  const prompt = `You are an expert Korean middle/high school mathematics tutor — **text-only**. You do not see the photo.
+  const gradeCtx = tutorGradeContext(options.grade);
+  const prompt = `You are an expert Korean mathematics tutor — **text-only**. You do not see the photo.
+
+${gradeCtx.promptBlock}
 
 Vision OCR JSON (student photo — may include scratch notes):
 ${JSON.stringify(vision, null, 2)}
@@ -660,7 +692,11 @@ Work in two strict phases in one response:
 **Phase A — Solve (printed problem only)**
 - Use ONLY vision.problemText. Ignore vision.solutionSteps and any student scratch lists (e.g. prime lists) for solving.
 - Solve completely with rigorous case analysis. For counting questions ("가능한 a의 개수", "몇 개"), inferredCorrectAnswer must be ONE non-negative integer (or simplified fraction if asked).
-- referenceSolutionSteps: 4–12 short Korean steps with KaTeX $...$ for YOUR model solution (not student handwriting).
+- referenceSolutionSteps: 4–8 short Korean steps with KaTeX $...$ for YOUR model solution (not student handwriting).
+- Each referenceSolutionSteps item must be one visual step, ideally 35–70 Korean characters.
+- Prefer this shape per item: "짧은 설명. $짧은 식$" or "따라서 $결론$입니다."
+- Do NOT put several sentences, long derivations, or multiple "따라서/그러므로/이때" transitions in one item.
+- If a formula is too long for one mobile line, put it in display math with $$...$$ inside that same item.
 - Check absolute value inequalities (e.g. $|a| \\le a$ forces $a \\ge 0$) and divisor-count cases.
 
 **Phase B — Diagnose (student vs your answer)**
@@ -707,6 +743,7 @@ export async function analyzeSolutionImage(
     deploymentName: string;
     textDeploymentName: string;
     mode: AnalyzeQualityMode;
+    grade?: string | null;
     onProgress?: (step: Extract<AnalyzeProgressStep, "vision" | "tutor">) => void;
     onPartial?: (payload: {
       step: "vision" | "tutor";
@@ -726,6 +763,7 @@ export async function analyzeSolutionImage(
   const analysis = await solveAndExpandFromVision(vision, {
     deploymentName: options.textDeploymentName,
     mode: options.mode,
+    grade: options.grade,
   });
   options.onPartial?.({ step: "tutor", analysis });
   if (typeof console !== "undefined") {
@@ -755,6 +793,7 @@ export async function refineSolutionAnalysisForAccurateMode(
   options: {
     deploymentName: string;
     mode: AnalyzeQualityMode;
+    grade?: string | null;
   },
 ): Promise<SolutionAnalysis> {
   if (options.mode !== "accurate") {
@@ -764,7 +803,10 @@ export async function refineSolutionAnalysisForAccurateMode(
     return draft;
   }
 
+  const gradeCtx = tutorGradeContext(options.grade);
   const prompt = `You are an expert Korean mathematics tutor conducting a careful second-pass review.
+
+${gradeCtx.promptBlock}
 
 The JSON below blends (A) **vision-only OCR** (problem, handwriting solution steps, final answer) plus image-quality scores, and (B) a **subsequent text-only** tutor pass. Treat the OCR fields as photo evidence, not as text you can freely rewrite. **풀이 단계(solutionSteps)는 비전 전용**이라 이 단계에서는 바꾸지 않는다(서버가 유지).
 
@@ -818,6 +860,10 @@ export async function generateSimilarProblems(
     fromVisionOcrOnly?: boolean;
     /** 기본 5. 문제 은행 보충 시 1~5 */
     problemCount?: number;
+    /** 학생 학년대 — 난이도는 이 학년·단원 기준 상대값 */
+    gradeBand?: GradeBand;
+    /** 더 어려운 문제 세트/교체 */
+    preferHarder?: boolean;
   },
 ): Promise<GeneratedProblemSet> {
   const count = Math.min(5, Math.max(1, options.problemCount ?? 5));
@@ -834,6 +880,11 @@ export async function generateSimilarProblems(
 
   const setId = options.problemSetId ?? randomUUID();
   const visionOnly = options.fromVisionOcrOnly === true;
+  const gradeBand = options.gradeBand ?? "m1";
+  const matchedUnit = matchUnitForConcept(
+    analysis.weakConcepts[0] ?? analysis.recommendedFocus[0] ?? "",
+    GRADE_BAND_REPRESENTATIVE[gradeBand],
+  );
   const promptIntro = visionOnly
     ? `Create ${count} similar Korean math practice problems from this worksheet photo OCR (tutor diagnosis may still be running in parallel).
 
@@ -868,6 +919,7 @@ Return JSON only matching this exact shape:
       "explanation": "string",
       "difficulty": "easy",
       "conceptTags": ["string"],
+      "answerFormat": "short_numeric",
       "chart": null,
       "jsxGraph": null
     }
@@ -875,11 +927,21 @@ Return JSON only matching this exact shape:
 }
 
 Rules:
+${difficultyRubricForPrompt({ gradeBand, unitName: matchedUnit?.name, unitSubtitle: matchedUnit?.subtitle, problemCount: count })}
+${options.preferHarder ? "- IMPORTANT: All problems must be medium or hard for this grade/unit (no easy). Prefer hard when the concept allows." : ""}
 - id must be exactly "${setId}" and submissionId exactly "${submissionId}".
 - Exactly ${count} problems.
 - Mix multiple_choice and free_response when useful.
 - Multiple choice problems must have choices numbered 1 through 5.
 - For multiple_choice, correctAnswer must be the **exact label text** of the correct option (same string as one choice's "label"), never only the choice id "1".."5".
+- For free_response, set answerFormat:
+  - short_numeric: single number/digit only (sequence fill, counting, arithmetic result, one numeric value)
+  - short_answer: one short word or label only (under ~12 chars, e.g. "나반", "가능", "12")
+- NEVER use long_solution. NEVER ask students to write expressions, factorizations, proofs, or multi-step work as the answer.
+- For factorization, prime factorization, simplifying expressions, or "풀어 쓰시오" tasks: use **multiple_choice** OR rephrase to a single numeric fact (e.g. "가장 큰 소인수", "x의 값", "계수").
+- free_response correctAnswer must be a single number or very short text (max ~12 chars). No LaTeX expressions, no ×, no parentheses products, no commas joining sentences.
+- Omit answerFormat for multiple_choice.
+- conceptTags: 1–2 tags only; first tag is the primary concept name.
 - chart: 필요할 때만. 통계형 **막대/선**(Chart.js, type/data/options). 과제 내 데이터 시각화.
 - jsxGraph: **좌표평면 기하 도형**이 필요할 때만. 없어도 풀 수 있으면 **전부 jsxGraph:null**.
 
@@ -909,7 +971,7 @@ Make the problems similar enough to train the missing concept, but not identical
       : {}),
   });
 
-  const parsed = generatedProblemSetSchema.parse({
+  const parsed = generatedProblemSetFlexibleSchema.parse({
     ...parseJsonFromText(text),
     id: setId,
     submissionId,
@@ -918,9 +980,218 @@ Make the problems similar enough to train the missing concept, but not identical
     ...parsed,
     id: setId,
     submissionId,
-    problems: parsed.problems.slice(0, count).map((problem) => ({
-      ...problem,
-      source: "generated" as const,
-    })),
+    problems: calibrateProblemDifficulties(
+      parsed.problems.slice(0, count).map((problem) => ({
+        ...sanitizeGeneratedProblem(problem),
+        source: "generated" as const,
+      })),
+      { gradeBand, unitId: matchedUnit?.id },
+    ),
   };
+}
+
+export async function generateCurriculumUnitProblems(
+  unit: import("./curriculum").CurriculumUnit,
+  gradeBand: import("./curriculum").GradeBand,
+  options: {
+    deploymentName: string;
+    mode: AnalyzeQualityMode;
+    problemSetId?: string;
+    problemCount?: number;
+    preferHarder?: boolean;
+  },
+): Promise<GeneratedProblemSet> {
+  const count = Math.min(5, Math.max(1, options.problemCount ?? 5));
+  const submissionId = `curriculum:${unit.id}`;
+
+  if (!hasAzureOpenAiConfig()) {
+    const id = options.problemSetId ?? randomUUID();
+    return {
+      ...sampleProblemSet,
+      id,
+      submissionId,
+      title: `${unit.name} 연습`,
+      learningGoal: unit.subtitle,
+      problems: sampleProblemSet.problems.slice(0, count).map((problem, index) => ({
+        ...problem,
+        id: `${id}-p${index + 1}`,
+        conceptTags: unit.keywords.length > 0 ? unit.keywords.slice(0, 2) : problem.conceptTags,
+      })),
+    };
+  }
+
+  const setId = options.problemSetId ?? randomUUID();
+  const bandLabel =
+    {
+      e12: "초1~2",
+      e34: "초3~4",
+      e56: "초5~6",
+      m1: "중1",
+      m2: "중2",
+      m3: "중3",
+      h1: "고1",
+      h2: "고2",
+      h3: "고3",
+    }[gradeBand] ?? gradeBand;
+
+  const prompt = `Create ${count} Korean math practice problems for this curriculum unit.
+
+Grade band: ${bandLabel}
+Section: ${unit.section}
+Unit: ${unit.name}
+Focus: ${unit.subtitle}
+Keywords: ${unit.keywords.join(", ")}
+
+Return JSON only matching this exact shape:
+{
+  "id": "${setId}",
+  "submissionId": "${submissionId}",
+  "title": "string",
+  "learningGoal": "string",
+  "problems": [
+    {
+      "id": "string",
+      "type": "multiple_choice",
+      "title": "string",
+      "prompt": "string",
+      "choices": [{"id":"1","label":"string"},{"id":"2","label":"string"},{"id":"3","label":"string"},{"id":"4","label":"string"},{"id":"5","label":"string"}],
+      "correctAnswer": "string",
+      "explanation": "string",
+      "difficulty": "easy",
+      "conceptTags": ["string"],
+      "answerFormat": "short_numeric",
+      "chart": null,
+      "jsxGraph": null
+    }
+  ]
+}
+
+Rules:
+${difficultyRubricForPrompt({
+  gradeBand,
+  unitName: unit.name,
+  unitSubtitle: unit.subtitle,
+  problemCount: count,
+})}
+${options.preferHarder ? "- IMPORTANT: All problems must be medium or hard for this grade/unit (no easy)." : ""}
+- id must be exactly "${setId}" and submissionId exactly "${submissionId}".
+- Exactly ${count} problems aligned with the unit focus (not generic filler).
+- Mix multiple_choice and free_response when useful.
+- Multiple choice problems must have choices numbered 1 through 5.
+- For multiple_choice, correctAnswer must be the **exact label text** of the correct option.
+- For free_response, set answerFormat: short_numeric OR short_answer only (see similar-problems rules). NEVER long_solution or expression answers.
+- For factorization / 소인수분해 / 인수분해 / 식 작성 tasks: prefer **multiple_choice**, or ask one numeric result (e.g. largest prime factor).
+- conceptTags: 1–2 tags only; first tag is primary concept.
+- chart: only when a bar/line chart helps. jsxGraph: only for coordinate geometry; otherwise null.
+- Problems, choices, explanations in Korean. Difficulty appropriate for ${bandLabel}.
+- All math in LaTeX: inline $ ... $, block $$ ... $$.
+- conceptTags should include relevant keywords from the unit.
+- Do not copy textbook wording verbatim; create original training items.`;
+
+  const balancedRegionalCredential =
+    options.mode === "balanced"
+      ? resolveBalancedTextRegionalCredentials()
+      : null;
+
+  const text = await completeTextOnlyJsonPrompt({
+    deploymentName: options.deploymentName,
+    userPrompt: prompt,
+    temperatureForChat: GENERATE_TEMPERATURE,
+    maxTokens: 8192,
+    ...(balancedRegionalCredential
+      ? { credentialOverride: balancedRegionalCredential }
+      : {}),
+  });
+
+  const parsed = generatedProblemSetFlexibleSchema.parse({
+    ...parseJsonFromText(text),
+    id: setId,
+    submissionId,
+  });
+
+  return {
+    ...parsed,
+    id: setId,
+    submissionId,
+    title: parsed.title || `${unit.name} 연습`,
+    learningGoal: parsed.learningGoal || unit.subtitle,
+    problems: calibrateProblemDifficulties(
+      parsed.problems.slice(0, count).map((problem) => ({
+        ...sanitizeGeneratedProblem(problem),
+        source: "generated" as const,
+      })),
+      { gradeBand, unitId: unit.id },
+    ),
+  };
+}
+
+function fallbackPracticeWrongFeedback(
+  expectedAnswer: string,
+  explanation: string,
+): string {
+  const tail = explanation.trim();
+  return tail.length > 0
+    ? `정답은 ${expectedAnswer}입니다. ${tail}`
+    : `정답은 ${expectedAnswer}입니다.`;
+}
+
+/** 연습 문제 오답 — 학년·학생 답안에 맞춘 짧은 해설 */
+export async function generatePracticeWrongAnswerFeedback(params: {
+  problem: GeneratedProblem;
+  submittedAnswer: string;
+  expectedAnswer: string;
+  grade?: string | null;
+  deploymentName: string;
+}): Promise<string> {
+  const fallback = fallbackPracticeWrongFeedback(
+    params.expectedAnswer,
+    params.problem.explanation,
+  );
+
+  if (!hasAzureOpenAiConfig()) {
+    return fallback;
+  }
+
+  const gradeCtx = tutorGradeContext(params.grade);
+  const concepts = (params.problem.conceptTags ?? []).filter(Boolean).join(", ");
+
+  const prompt = `You are a Korean math tutor giving brief wrong-answer feedback after a practice quiz.
+
+${gradeCtx.promptBlock}
+
+Problem prompt:
+${params.problem.prompt}
+
+Student's submitted answer: ${params.submittedAnswer}
+Correct answer: ${params.expectedAnswer}
+${concepts ? `Concept tags: ${concepts}` : ""}
+Reference explanation (may be generic — adapt, do not copy blindly):
+${params.problem.explanation}
+
+Write 2–4 short Korean sentences:
+- Explain why the student's answer is wrong or what they likely misunderstood
+- Give a hint toward the correct approach (do not just repeat the correct value)
+- Match vocabulary and depth to the student's grade level
+- Use KaTeX inline $...$ only when needed for math
+
+Return JSON only: {"feedback":"string"}`;
+
+  try {
+    const raw = await completeTextOnlyJsonPrompt({
+      deploymentName: params.deploymentName,
+      userPrompt: prompt,
+      temperatureForChat: GENERATE_TEMPERATURE,
+      maxTokens: 1024,
+    });
+    const parsed = parseJsonFromText(raw) as { feedback?: unknown };
+    if (typeof parsed.feedback === "string" && parsed.feedback.trim().length > 0) {
+      return parsed.feedback.trim();
+    }
+  } catch (error) {
+    if (typeof console !== "undefined") {
+      console.warn("[study:practice-feedback]", error);
+    }
+  }
+
+  return fallback;
 }

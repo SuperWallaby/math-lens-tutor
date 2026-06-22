@@ -1,9 +1,18 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
+import '../models/app_models.dart';
 import '../services/api_client.dart';
+import '../services/app_prefs.dart';
 import '../services/auth_session.dart';
 import '../services/oauth_service.dart';
+import '../utils/pending_student_link.dart';
 import 'app_shell.dart';
+import 'guardian_link_required_screen.dart';
+import 'teacher_closed_screen.dart';
+import 'profile_onboarding_screen.dart';
 import 'signup_screen.dart';
 
 class AuthGate extends StatefulWidget {
@@ -24,10 +33,13 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> {
   bool _ready = false;
+  /// API로 profileComplete가 true가 되어도, 온보딩 UI는 onComplete까지 유지
+  bool _profileOnboardingDismissed = false;
 
   @override
   void initState() {
     super.initState();
+    _profileOnboardingDismissed = widget.authSession.isProfileComplete;
     widget.apiClient.onUnauthorized = _handleUnauthorized;
     widget.authSession.addListener(_onSessionChanged);
     _bootstrap();
@@ -40,11 +52,41 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   void _onSessionChanged() {
-    if (mounted) setState(() {});
+    if (!mounted) return;
+    if (!widget.authSession.canUseApp) {
+      setState(() => _profileOnboardingDismissed = false);
+      return;
+    }
+    if (!widget.authSession.isProfileComplete) {
+      setState(() => _profileOnboardingDismissed = false);
+      return;
+    }
+    setState(() {});
   }
 
   Future<void> _bootstrap() async {
+    try {
+      await _bootstrapInner().timeout(const Duration(seconds: 8));
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('[AuthGate] bootstrap timeout (web hot restart?): $e');
+      }
+      _recoverGuestSession();
+    } catch (e) {
+      if (kDebugMode) {
+        debugPrint('[AuthGate] bootstrap failed: $e');
+      }
+      _recoverGuestSession();
+    } finally {
+      if (mounted) {
+        setState(() => _ready = true);
+      }
+    }
+  }
+
+  Future<void> _bootstrapInner() async {
     await widget.authSession.load();
+    await captureInitialStudentLinkCode();
     if (widget.authSession.isSignedIn) {
       try {
         final me = await widget.apiClient.fetchMe();
@@ -55,14 +97,21 @@ class _AuthGateState extends State<AuthGate> {
         await widget.authSession.clear();
       }
     }
-    if (mounted) {
-      setState(() => _ready = true);
+  }
+
+  void _recoverGuestSession() {
+    resetAppPrefsCache();
+    if (!widget.authSession.canUseApp) {
+      widget.authSession.enterGuestRecovery(
+        'device:web-recovery-${DateTime.now().millisecondsSinceEpoch}',
+      );
     }
   }
 
-  void _handleUnauthorized() {
-    if (!mounted) return;
-    setState(() {});
+  Future<void> _handleUnauthorized() async {
+    if (!mounted || !widget.authSession.isSignedIn) return;
+    await widget.authSession.clear();
+    if (mounted) setState(() {});
   }
 
   @override
@@ -74,14 +123,46 @@ class _AuthGateState extends State<AuthGate> {
     }
 
     final session = widget.authSession;
-    if (!session.isSignedIn || !session.isProfileComplete) {
+    if (!session.isSignedIn && !session.isGuest) {
       return SignupScreen(
         apiClient: widget.apiClient,
         oauthService: widget.oauthService,
         onSignedIn: () => setState(() {}),
+        onContinueAsGuest: () async {
+          await session.enterGuestMode(
+            await widget.apiClient.deviceScopedUserId,
+          );
+          if (mounted) setState(() {});
+        },
       );
     }
 
-    return AppBootstrap(apiClient: widget.apiClient);
+    if (!_profileOnboardingDismissed) {
+      return ProfileOnboardingScreen(
+        apiClient: widget.apiClient,
+        oauthService: widget.oauthService,
+        onComplete: () => setState(() => _profileOnboardingDismissed = true),
+      );
+    }
+
+    if ((session.user?.isGuardian ?? false) &&
+        session.linkedStudents.isEmpty &&
+        !session.isGuest) {
+      return GuardianLinkRequiredScreen(
+        apiClient: widget.apiClient,
+        onLinked: () => setState(() {}),
+      );
+    }
+
+    if (session.user?.role == AppUserRole.teacher && !session.isGuest) {
+      return TeacherClosedScreen(
+        apiClient: widget.apiClient,
+      );
+    }
+
+    return AppBootstrap(
+      apiClient: widget.apiClient,
+      oauthService: widget.oauthService,
+    );
   }
 }

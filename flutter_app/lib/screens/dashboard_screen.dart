@@ -4,10 +4,11 @@ import '../layout/tablet_layout.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
 import '../widgets/app_card.dart';
-import '../widgets/mixed_math_text.dart';
 import '../widgets/learning_profile_widgets.dart';
+import '../widgets/mixed_math_text.dart';
 import '../widgets/student_picker.dart';
 import 'link_student_screen.dart';
+import '../theme/app_design_system.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
@@ -62,6 +63,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           strongConcepts: const [],
           weeklyTrend: const [],
           curriculumUnits: const [],
+          curriculumByBand: const {},
           parentActions: const [],
           weeklyReport: const WeeklyReport(
             weekLabel: '데모',
@@ -69,6 +71,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
             cycle: [],
             unitMastery: [],
           ),
+          training: TrainingSnapshot.empty,
         ),
       );
       return;
@@ -122,6 +125,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   builder: (context, _) {
                     return StudentPicker(
                       authSession: widget.apiClient.authSession,
+                      apiClient: widget.apiClient,
                       onChanged: _reload,
                     );
                   },
@@ -157,22 +161,25 @@ class _DashboardScreenState extends State<DashboardScreen> {
                         ),
                       ),
                       const SizedBox(height: 16),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: _MetricCard(
-                              title: '현재 수준',
-                              value: insight.levelLabel,
+                      IntrinsicHeight(
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Expanded(
+                              child: _MetricCard(
+                                title: '현재 수준',
+                                value: insight.levelLabel,
+                              ),
                             ),
-                          ),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: _MetricCard(
-                              title: '정답률',
-                              value: '${insight.accuracy}%',
+                            const SizedBox(width: 10),
+                            Expanded(
+                              child: _MetricCard(
+                                title: '정답률',
+                                value: '${insight.accuracy}%',
+                              ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       ),
                       const SizedBox(height: 12),
                       _MetricCard(
@@ -214,7 +221,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     const Text(
                                       '• ',
                                       style: TextStyle(
-                                        color: Color(0xFFCBD5E1),
+                                        color: AppColors.textSub,
                                         height: 1.5,
                                       ),
                                     ),
@@ -222,7 +229,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                       child: MixedMathText(
                                         feedback,
                                         style: const TextStyle(
-                                          color: Color(0xFFCBD5E1),
+                                          color: AppColors.textSub,
                                           height: 1.5,
                                         ),
                                       ),
@@ -260,36 +267,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     if (items.isEmpty) {
                       return const Text(
                         '아직 등록된 분석 활동이 없습니다.',
-                        style: TextStyle(color: Color(0xFF94A3B8)),
+                        style: TextStyle(color: AppColors.textSub),
                       );
                     }
                     return Column(
                       children: [
                         for (final item in items)
                           AppCard(
-                            child: Column(
+                            child: Row(
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Text(
-                                  item.imageName,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
+                                _DashboardSubmissionThumbnail(
+                                  imageUrl: ApiClient.resolveImageUrl(
+                                    widget.apiClient.baseUrl,
+                                    item.imageUrl,
                                   ),
                                 ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  item.errorSummary,
-                                  style: const TextStyle(
-                                    color: Color(0xFFCBD5E1),
-                                    height: 1.45,
-                                  ),
-                                ),
-                                const SizedBox(height: 6),
-                                Text(
-                                  item.createdAt,
-                                  style: const TextStyle(
-                                    color: Color(0xFF64748B),
-                                    fontSize: 12,
+                                const SizedBox(width: 12),
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        item.title,
+                                        style: const TextStyle(
+                                          fontWeight: FontWeight.w800,
+                                          fontSize: 15,
+                                          height: 1.35,
+                                        ),
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                      if (item.createdAt.isNotEmpty) ...[
+                                        const SizedBox(height: 6),
+                                        Text(
+                                          item.createdAt,
+                                          style: const TextStyle(
+                                            color: AppColors.textMuted,
+                                            fontSize: 12,
+                                          ),
+                                        ),
+                                      ],
+                                    ],
                                   ),
                                 ),
                               ],
@@ -308,6 +327,48 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }
 }
 
+class _DashboardSubmissionThumbnail extends StatelessWidget {
+  const _DashboardSubmissionThumbnail({required this.imageUrl});
+
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    const size = 48.0;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadii.sm),
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: imageUrl == null
+            ? Container(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                alignment: Alignment.center,
+                child: Icon(
+                  Icons.image_outlined,
+                  color: AppColors.primary.withValues(alpha: 0.55),
+                  size: 22,
+                ),
+              )
+            : Image.network(
+                imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => Container(
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.broken_image_outlined,
+                    color: AppColors.primary.withValues(alpha: 0.55),
+                    size: 22,
+                  ),
+                ),
+              ),
+      ),
+    );
+  }
+}
+
 class _MetricCard extends StatelessWidget {
   const _MetricCard({
     required this.title,
@@ -321,20 +382,44 @@ class _MetricCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final valueStyle = TextStyle(
+      fontSize: fullWidth ? 30 : 22,
+      fontWeight: FontWeight.w900,
+      height: 1.2,
+    );
+
+    if (fullWidth) {
+      return AppCard(
+        padding: const EdgeInsets.all(AppSpacing.lg + 2),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(title, style: const TextStyle(color: AppColors.textSub)),
+            const SizedBox(height: 8),
+            Text(value, style: valueStyle),
+          ],
+        ),
+      );
+    }
+
     return AppCard(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(title, style: const TextStyle(color: Color(0xFF94A3B8))),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: TextStyle(
-              fontSize: fullWidth ? 30 : 22,
-              fontWeight: FontWeight.w900,
+      padding: const EdgeInsets.all(AppSpacing.lg + 2),
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          mainAxisSize: MainAxisSize.max,
+          children: [
+            Text(title, style: const TextStyle(color: AppColors.textSub)),
+            const Spacer(),
+            Text(
+              value,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: valueStyle,
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

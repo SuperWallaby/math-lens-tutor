@@ -68,11 +68,28 @@ echo "════════════════════════�
 
 release_ensure_java
 
+bash "$(dirname "${BASH_SOURCE[0]}")/../../scripts/sync-kakao-native.sh" || true
+
 if [[ "${SKIP_PUB_GET:-}" != "1" ]]; then
   flutter pub get
 fi
 
 DEFINE=(--dart-define="API_BASE_URL=${API}")
+
+load_env_var() {
+  local key="$1"
+  local file="${SCRIPT_DIR}/../../.env.local"
+  [[ -f "$file" ]] || return 0
+  local line
+  line="$(grep -E "^${key}=" "$file" | tail -1 || true)"
+  [[ -n "$line" ]] || return 0
+  printf '%s' "${line#*=}"
+}
+
+kakao_key="$(load_env_var KAKAO_NATIVE_APP_KEY)"
+if [[ -n "$kakao_key" ]]; then
+  DEFINE+=(--dart-define="KAKAO_NATIVE_APP_KEY=${kakao_key}")
+fi
 
 build_ios() {
   echo ""

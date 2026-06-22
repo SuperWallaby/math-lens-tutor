@@ -86,12 +86,14 @@ export default function AnalyzeResultPage() {
   return (
     <AppShell>
       {error ? (
-        <p className="rounded-2xl bg-red-500/15 p-4 text-red-100">{error}</p>
+        <p className="rounded-wy-md bg-[var(--wy-accent-tint)] p-4 text-foreground">
+          {error}
+        </p>
       ) : null}
       {state ? (
         <ProgressiveSubmissionView state={state} localPreviewUrl={previewUrl} />
       ) : (
-        <p className="text-slate-300">분석을 준비하는 중…</p>
+        <p className="text-wy-text-sub">분석을 준비하는 중…</p>
       )}
     </AppShell>
   );

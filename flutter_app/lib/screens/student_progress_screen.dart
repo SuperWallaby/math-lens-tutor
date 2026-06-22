@@ -3,20 +3,26 @@ import 'package:flutter/material.dart';
 import '../layout/tablet_layout.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
-import '../widgets/app_card.dart';
 import '../widgets/guardian_learning_gate.dart';
 import '../widgets/learning_profile_widgets.dart';
+import '../widgets/parent_tab_scaffold.dart';
+import 'open_practice_flow.dart';
 import 'practice_screen.dart';
+import '../theme/app_design_system.dart';
 
 class StudentProgressScreen extends StatefulWidget {
   const StudentProgressScreen({
     super.key,
     required this.apiClient,
     this.viewAsGuardian = false,
+    this.demoProfile,
+    this.demoInitialGradeTab,
   });
 
   final ApiClient apiClient;
   final bool viewAsGuardian;
+  final LearningProfile? demoProfile;
+  final int? demoInitialGradeTab;
 
   @override
   State<StudentProgressScreen> createState() => _StudentProgressScreenState();
@@ -30,18 +36,27 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
   @override
   void initState() {
     super.initState();
-    _gradeTab = gradeBandTabIndex(widget.apiClient.authSession.user?.grade);
+    _gradeTab = widget.demoInitialGradeTab ??
+        gradeBandTabIndex(widget.apiClient.authSession.user?.grade);
     _reload();
   }
 
-  void _reload() {
+  void _reload({bool forceRefresh = false}) {
+    if (widget.demoProfile != null) {
+      setState(() {
+        _profileFuture = Future.value(widget.demoProfile);
+      });
+      return;
+    }
     if (widget.viewAsGuardian &&
         widget.apiClient.authSession.linkedStudents.isEmpty) {
       setState(() => _profileFuture = null);
       return;
     }
     setState(() {
-      _profileFuture = widget.apiClient.getLearningProfile();
+      _profileFuture = widget.apiClient.getLearningProfile(
+        forceRefresh: forceRefresh,
+      );
     });
   }
 
@@ -58,10 +73,13 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
       future: _profileFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
-          return const Center(child: CircularProgressIndicator());
+          return const ProfileLoadingView();
         }
         if (snapshot.hasError) {
-          return ProfileLoadingError(error: snapshot.error, onRetry: _reload);
+          return ProfileLoadingError(
+            error: snapshot.error,
+            onRetry: () => _reload(forceRefresh: true),
+          );
         }
 
         final profile = snapshot.data!;
@@ -79,9 +97,14 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
           viewAsGuardian: widget.viewAsGuardian,
           profile: profile,
           gradeTab: _gradeTab,
-          userGradeTab: userGradeTab,
           onGradeTabChanged: _onGradeTabChanged,
           onReload: _reload,
+          onStudentChanged: widget.viewAsGuardian
+              ? () {
+                  _gradeTabTouched = false;
+                  _reload();
+                }
+              : null,
         );
       },
     );
@@ -108,126 +131,113 @@ class _ProgressContent extends StatelessWidget {
     required this.viewAsGuardian,
     required this.profile,
     required this.gradeTab,
-    required this.userGradeTab,
     required this.onGradeTabChanged,
     required this.onReload,
+    this.onStudentChanged,
   });
 
   final ApiClient apiClient;
   final bool viewAsGuardian;
   final LearningProfile profile;
   final int gradeTab;
-  final int userGradeTab;
   final ValueChanged<int> onGradeTabChanged;
-  final VoidCallback onReload;
+  final void Function({bool forceRefresh}) onReload;
+  final VoidCallback? onStudentChanged;
 
   @override
   Widget build(BuildContext context) {
-    final showUnits = gradeTab == userGradeTab;
+    final units = profile.unitsForGradeTab(gradeTab);
+
+    final scrollChildren = [
+      Text(
+        viewAsGuardian ? '교육과정 진도' : '내 진도 현황',
+        style: TextStyle(
+          fontSize: TabletLayout.titleSection(context),
+          fontWeight: FontWeight.w900,
+        ),
+      ),
+      const SizedBox(height: 4),
+      Text(
+        viewAsGuardian
+            ? '단원을 눌러 자녀에게 어떻게 도와줄지 확인하세요'
+            : '2022 개정 교육과정 · ${gradeBandLabels[gradeTab]}',
+        style: const TextStyle(color: AppColors.textSub, fontSize: 12),
+      ),
+      const SizedBox(height: 12),
+      GradeBandTabBar(
+        selectedIndex: gradeTab,
+        onSelected: onGradeTabChanged,
+      ),
+      const SizedBox(height: 12),
+      CurriculumProgressList(
+        units: units,
+        gradeLabel: gradeBandLabels[gradeTab],
+        unitActionLabel: viewAsGuardian ? '부모 가이드 보기' : null,
+        onUnitTap: viewAsGuardian
+            ? (unit) {
+                showParentUnitGuideSheet(
+                  context,
+                  unit: unit,
+                  profile: profile,
+                );
+              }
+            : (unit) async {
+                if (unit.id.isEmpty) return;
+                await openPracticeWithSingleRequest(
+                  context,
+                  apiClient: apiClient,
+                  start: () => apiClient.startUnitPractice(unit.id),
+                  subtitle: unit.name,
+                );
+                if (!context.mounted) return;
+                onReload(forceRefresh: true);
+              },
+      ),
+      if (!viewAsGuardian && profile.mission?.setId != null) ...[
+        SectionLabel('이어서 훈련'),
+        OutlinedButton.icon(
+          onPressed: () async {
+            final setId = profile.mission!.setId!;
+            try {
+              final set = await apiClient.getProblemSet(setId);
+              if (!context.mounted) return;
+              await Navigator.of(context).push(
+                MaterialPageRoute(
+                  builder: (_) => PracticeScreen(
+                    apiClient: apiClient,
+                    problemSet: set,
+                  ),
+                ),
+              );
+              onReload(forceRefresh: true);
+            } catch (error) {
+              if (!context.mounted) return;
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(content: Text(error.toString())),
+              );
+            }
+          },
+          icon: const Icon(Icons.play_arrow_rounded),
+          label: const Text('미션 이어하기'),
+        ),
+      ],
+      const SizedBox(height: 24),
+    ];
+
+    if (viewAsGuardian && onStudentChanged != null) {
+      return ParentLinkedScrollView(
+        apiClient: apiClient,
+        onStudentChanged: onStudentChanged!,
+        onRefresh: () async => onReload(forceRefresh: true),
+        children: scrollChildren,
+      );
+    }
 
     return RefreshIndicator(
-      onRefresh: () async => onReload(),
+      onRefresh: () async => onReload(forceRefresh: true),
       child: ListView(
         padding: TabletLayout.pagePadding(context),
-        children: [
-          Text(
-            viewAsGuardian ? '교육과정 진도' : '내 진도 현황',
-            style: TextStyle(
-              fontSize: TabletLayout.titleSection(context),
-              fontWeight: FontWeight.w900,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '2022 개정 교육과정 · ${profile.grade}',
-            style: const TextStyle(color: Color(0xFF94A3B8), fontSize: 12),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(
-            height: 36,
-            child: ListView.separated(
-              scrollDirection: Axis.horizontal,
-              itemCount: gradeBandLabels.length,
-              separatorBuilder: (_, __) => const SizedBox(width: 6),
-              itemBuilder: (context, index) {
-                final selected = gradeTab == index;
-                return ChoiceChip(
-                  label: Text(gradeBandLabels[index]),
-                  selected: selected,
-                  onSelected: (_) => onGradeTabChanged(index),
-                  selectedColor: const Color(0xFF2563EB),
-                  labelStyle: TextStyle(
-                    color: selected ? Colors.white : const Color(0xFF94A3B8),
-                    fontWeight: FontWeight.w700,
-                    fontSize: 12,
-                  ),
-                );
-              },
-            ),
-          ),
-          const SizedBox(height: 12),
-          if (showUnits)
-            CurriculumProgressList(
-              units: profile.curriculumUnits,
-              chainWarning: profile.chainWarning,
-              gradeLabel: gradeBandLabels[gradeTab],
-            )
-          else
-            AppCard(
-              child: Column(
-                children: [
-                  const Text('📖', style: TextStyle(fontSize: 32)),
-                  const SizedBox(height: 8),
-                  Text(
-                    gradeBandPlaceholderTitle(gradeTab),
-                    style: const TextStyle(
-                      fontWeight: FontWeight.w800,
-                      fontSize: 15,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    gradeBandPlaceholderSubtitle(gradeTab),
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(
-                      color: Color(0xFF94A3B8),
-                      fontSize: 12,
-                      height: 1.45,
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          if (!viewAsGuardian && profile.mission?.setId != null) ...[
-            SectionLabel('이어서 훈련'),
-            OutlinedButton.icon(
-              onPressed: () async {
-                final setId = profile.mission!.setId!;
-                try {
-                  final set = await apiClient.getProblemSet(setId);
-                  if (!context.mounted) return;
-                  await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) => PracticeScreen(
-                        apiClient: apiClient,
-                        problemSet: set,
-                      ),
-                    ),
-                  );
-                  onReload();
-                } catch (error) {
-                  if (!context.mounted) return;
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    SnackBar(content: Text(error.toString())),
-                  );
-                }
-              },
-              icon: const Icon(Icons.play_arrow_rounded),
-              label: const Text('미션 이어하기'),
-            ),
-          ],
-          const SizedBox(height: 24),
-        ],
+        children: scrollChildren,
       ),
     );
   }

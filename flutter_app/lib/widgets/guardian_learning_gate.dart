@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 
 import '../layout/tablet_layout.dart';
+import '../theme/app_design_system.dart';
 import '../services/api_client.dart';
-import '../widgets/app_card.dart';
-import '../widgets/student_picker.dart';
-import '../screens/link_student_screen.dart';
+import '../widgets/hero_icon_3d.dart';
+import '../widgets/linked_children_panel.dart';
+import '../widgets/student_link_guide.dart';
 
 class GuardianLearningGate extends StatelessWidget {
   const GuardianLearningGate({
@@ -38,54 +39,39 @@ class GuardianLearningGate extends StatelessWidget {
                   fontWeight: FontWeight.w900,
                 ),
               ),
-              const SizedBox(height: 16),
-              AppCard(
-                child: Column(
-                  children: [
-                    const Text(
-                      '연결된 학생이 없습니다',
-                      style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16),
-                    ),
-                    const SizedBox(height: 8),
-                    const Text(
-                      '학생 고유번호로 연결하면 학습 현황을 확인할 수 있어요.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: Color(0xFF94A3B8), height: 1.5),
-                    ),
-                    const SizedBox(height: 16),
-                    FilledButton.icon(
-                      onPressed: () async {
-                        await Navigator.of(context).push(
-                          MaterialPageRoute(
-                            builder: (_) =>
-                                LinkStudentScreen(apiClient: apiClient),
-                          ),
-                        );
-                        onStudentChanged();
-                      },
-                      icon: const Icon(Icons.link_rounded),
-                      label: const Text('학생 연결하기'),
-                    ),
-                  ],
+              const SizedBox(height: AppSpacing.xxl),
+              Center(
+                child: HeroIcon3d(
+                  asset: 'assets/icons/3d/link_empty.png',
+                  tint: AppColors.success,
+                  size: 96,
+                  iconSize: 60,
                 ),
+              ),
+              const SizedBox(height: AppSpacing.xl),
+              const Text(
+                '고유번호 6자리를 모두 입력하면 자동으로 연결됩니다.',
+                textAlign: TextAlign.center,
+                style: TextStyle(color: AppColors.textSub, height: 1.5),
+              ),
+              const SizedBox(height: AppSpacing.xxl),
+              LinkedChildrenPanel(
+                apiClient: apiClient,
+                linkedStudents: linked,
+                compact: true,
+                onChanged: onStudentChanged,
+                onAutoLinked: onStudentChanged,
+              ),
+              const SizedBox(height: AppSpacing.sm),
+              StudentLinkGuide(role: apiClient.authSession.user?.role),
+              SizedBox(
+                height: MediaQuery.paddingOf(context).bottom + AppSpacing.lg,
               ),
             ],
           );
         }
 
-        return Column(
-          children: [
-            Padding(
-              padding: TabletLayout.pagePadding(context).copyWith(bottom: 0),
-              child: StudentPicker(
-                authSession: apiClient.authSession,
-                onChanged: onStudentChanged,
-              ),
-            ),
-            const SizedBox(height: 8),
-            Expanded(child: child),
-          ],
-        );
+        return child;
       },
     );
   }

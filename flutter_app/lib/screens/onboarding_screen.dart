@@ -1,13 +1,25 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import '../layout/tablet_layout.dart';
+import '../models/app_models.dart';
+import '../services/api_client.dart';
+import '../services/app_prefs.dart';
+import '../theme/app_design_system.dart';
+import 'onboarding_feature_slides.dart';
 
 const kOnboardingCompleteKey = 'onboarding_complete';
 
 class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({super.key, required this.onComplete});
+  const OnboardingScreen({
+    super.key,
+    required this.apiClient,
+    required this.onComplete,
+  });
 
+  final ApiClient apiClient;
   final VoidCallback onComplete;
 
   @override
@@ -15,128 +27,218 @@ class OnboardingScreen extends StatefulWidget {
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
-  final _controller = PageController();
+  late final PageController _pageController;
+  late final List<OnboardingFeatureSlide> _slides;
   int _page = 0;
+  bool _finishing = false;
 
-  static const _slides = [
-    (
-      icon: '📸',
-      title: '틀린 문제만 찍으세요',
-      body: '풀이 사진을 업로드하면 AI가 왜 틀렸는지 분석해 드려요.',
-    ),
-    (
-      icon: '✏️',
-      title: '유사문제로 바로 훈련',
-      body: '약점 개념을 중심으로 유사 문제 5개를 생성해 즉시 연습할 수 있어요.',
-    ),
-    (
-      icon: '📈',
-      title: '성장을 한눈에',
-      body: '정답률·진도·주간 보고서로 학생·학부모·교사가 함께 확인해요.',
-    ),
-  ];
-
-  Future<void> _finish() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(kOnboardingCompleteKey, true);
-    widget.onComplete();
+  @override
+  void initState() {
+    super.initState();
+    final role = widget.apiClient.authSession.user?.role;
+    _slides = onboardingSlidesForRole(role);
+    _pageController = PageController(viewportFraction: 0.88);
   }
 
   @override
   void dispose() {
-    _controller.dispose();
+    _pageController.dispose();
     super.dispose();
+  }
+
+  Future<void> _finish() async {
+    if (_finishing) return;
+    _finishing = true;
+    final prefs = await getAppPrefs();
+    if (!mounted) return;
+    await prefs.setBool(kOnboardingCompleteKey, true);
+    if (!mounted) return;
+    widget.onComplete();
+  }
+
+  void _onPageChanged(int index) {
+    setState(() => _page = index);
+  }
+
+  String get _roleLabel {
+    final role = widget.apiClient.authSession.user?.role;
+    switch (role) {
+      case AppUserRole.student:
+        return '학생';
+      case AppUserRole.parent:
+        return '학부모';
+      case AppUserRole.teacher:
+        return '교사';
+      case null:
+        return '우열';
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final isLast = _page >= _slides.length - 1;
+
     return Scaffold(
+      backgroundColor: AppColors.background,
       body: SafeArea(
         child: TabletBody(
-          child: Column(
-            children: [
-              Align(
-                alignment: Alignment.centerRight,
-                child: TextButton(
-                  onPressed: _finish,
-                  child: const Text('건너뛰기'),
+          child: Padding(
+            padding: TabletLayout.pagePadding(context),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const SizedBox(height: AppSpacing.md),
+                Text(
+                  '$_roleLabel을 위한 우열',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: TabletLayout.titleSection(context),
+                    fontWeight: FontWeight.w800,
+                    color: AppColors.text,
+                  ),
                 ),
-              ),
-              Expanded(
-                child: PageView.builder(
-                  controller: _controller,
-                  itemCount: _slides.length,
-                  onPageChanged: (index) => setState(() => _page = index),
-                  itemBuilder: (context, index) {
-                    final slide = _slides[index];
-                    return Padding(
-                      padding: TabletLayout.pagePadding(context),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          Text(slide.icon, style: const TextStyle(fontSize: 64)),
-                          const SizedBox(height: 24),
-                          Text(
-                            slide.title,
-                            textAlign: TextAlign.center,
-                            style: TextStyle(
-                              fontSize: TabletLayout.titleSection(context),
-                              fontWeight: FontWeight.w900,
-                            ),
-                          ),
-                          const SizedBox(height: 14),
-                          Text(
-                            slide.body,
-                            textAlign: TextAlign.center,
-                            style: const TextStyle(
-                              color: Color(0xFFCBD5E1),
-                              height: 1.55,
-                              fontSize: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    );
-                  },
+                const SizedBox(height: AppSpacing.sm),
+                const Text(
+                  '이렇게 사용할 수 있어요',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.textSub,
+                    fontSize: 15,
+                    height: 1.4,
+                  ),
                 ),
-              ),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  for (var i = 0; i < _slides.length; i++)
-                    Container(
-                      width: i == _page ? 20 : 8,
-                      height: 8,
-                      margin: const EdgeInsets.symmetric(horizontal: 4),
-                      decoration: BoxDecoration(
-                        color: i == _page
-                            ? const Color(0xFF2563EB)
-                            : const Color(0xFF334155),
-                        borderRadius: BorderRadius.circular(99),
+                const SizedBox(height: AppSpacing.lg),
+                Expanded(
+                  child: PageView.builder(
+                    controller: _pageController,
+                    itemCount: _slides.length,
+                    onPageChanged: _onPageChanged,
+                    itemBuilder: (context, index) {
+                      return AnimatedBuilder(
+                        animation: _pageController,
+                        builder: (context, child) {
+                          double scale = 1.0;
+                          if (_pageController.position.haveDimensions) {
+                            final page =
+                                _pageController.page ?? index.toDouble();
+                            scale =
+                                (1 - (page - index).abs() * 0.06).clamp(0.94, 1.0);
+                          }
+                          return Transform.scale(
+                            scale: scale,
+                            child: child,
+                          );
+                        },
+                        child: _FeatureScreenshotCard(slide: _slides[index]),
+                      );
+                    },
+                  ),
+                ),
+                const SizedBox(height: AppSpacing.md),
+                _PageDots(count: _slides.length, index: _page),
+                const SizedBox(height: AppSpacing.xl),
+                SizedBox(
+                  width: double.infinity,
+                  child: FilledButton(
+                    onPressed: isLast
+                        ? _finish
+                        : () {
+                            _pageController.nextPage(
+                              duration: const Duration(milliseconds: 320),
+                              curve: Curves.easeOutCubic,
+                            );
+                          },
+                    style: AppButtonStyles.filledKeyAction(),
+                    child: Text(isLast ? '시작하기' : '다음'),
+                  ),
+                ),
+                if (!isLast) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  TextButton(
+                    onPressed: _finish,
+                    child: const Text(
+                      '건너뛰기',
+                      style: TextStyle(
+                        color: AppColors.textMuted,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
-                ],
-              ),
-              const SizedBox(height: 20),
-              Padding(
-                padding: TabletLayout.pagePadding(context),
-                child: FilledButton(
-                  onPressed: () {
-                    if (_page < _slides.length - 1) {
-                      _controller.nextPage(
-                        duration: const Duration(milliseconds: 250),
-                        curve: Curves.easeOut,
-                      );
-                    } else {
-                      _finish();
-                    }
-                  },
-                  child: Text(
-                    _page < _slides.length - 1 ? '다음' : '시작하기',
+                  ),
+                ] else
+                  const SizedBox(height: AppSpacing.lg),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 실제 앱 UI 스크린샷을 세로형 카드로 보여줍니다 (3D 아이콘 아님).
+class _FeatureScreenshotCard extends StatelessWidget {
+  const _FeatureScreenshotCard({required this.slide});
+
+  final OnboardingFeatureSlide slide;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xs),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          border: Border.all(color: AppColors.border),
+        ),
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Expanded(
+                child: DecoratedBox(
+                  decoration: const BoxDecoration(
+                    color: AppColors.surfaceElevated,
+                  ),
+                  child: Image.asset(
+                    slide.imageAsset,
+                    fit: BoxFit.contain,
+                    alignment: Alignment.topCenter,
                   ),
                 ),
               ),
-              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(
+                  AppSpacing.lg,
+                  AppSpacing.md,
+                  AppSpacing.lg,
+                  AppSpacing.lg,
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      slide.title,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w900,
+                        height: 1.25,
+                        color: AppColors.text,
+                      ),
+                    ),
+                    const SizedBox(height: AppSpacing.xs),
+                    Text(
+                      slide.body,
+                      style: const TextStyle(
+                        color: AppColors.textSub,
+                        height: 1.45,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ],
           ),
         ),
@@ -145,7 +247,41 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   }
 }
 
+class _PageDots extends StatelessWidget {
+  const _PageDots({required this.count, required this.index});
+
+  final int count;
+  final int index;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(count, (i) {
+        final active = i == index;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 220),
+          margin: const EdgeInsets.symmetric(horizontal: 4),
+          width: active ? 20 : 8,
+          height: 8,
+          decoration: BoxDecoration(
+            color: active ? AppColors.primary : AppColors.borderStrong,
+            borderRadius: BorderRadius.circular(AppRadii.pill),
+          ),
+        );
+      }),
+    );
+  }
+}
+
 Future<bool> isOnboardingComplete() async {
-  final prefs = await SharedPreferences.getInstance();
-  return prefs.getBool(kOnboardingCompleteKey) ?? false;
+  try {
+    final prefs = await getAppPrefs().timeout(const Duration(seconds: 4));
+    return prefs.getBool(kOnboardingCompleteKey) ?? false;
+  } on TimeoutException {
+    if (kDebugMode) {
+      debugPrint('[onboarding] prefs timeout — skip onboarding gate');
+    }
+    return true;
+  }
 }

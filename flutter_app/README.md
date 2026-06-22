@@ -42,9 +42,28 @@ flutter run \
   --dart-define=KAKAO_NATIVE_APP_KEY=your_kakao_native_key
 ```
 
-- **Kakao**: [Kakao Developers](https://developers.kakao.com) 앱 등록, iOS URL scheme / Android key hash 설정
+`npm run dev` / `npm run flutter:run:local` 는 `.env.local` 에서 키를 읽어 dart-define 과 네이티브 URL scheme 을 자동 동기화합니다.
+
+### Kakao Developers 콘솔 설정
+
+1. [Kakao Developers](https://developers.kakao.com/console/app) → 앱 추가
+2. **앱 키** → Native App Key, REST API Key 를 `.env.local` 에 저장
+3. **플랫폼**
+   - **Android**: 패키지 `com.neoproject.study`, 키 해시 등록 → `npm run kakao:key-hash`
+   - **iOS**: Bundle ID `com.neoproject.study`
+4. **카카오 로그인** → ON, Redirect URI `kakao{NATIVE_APP_KEY}://oauth` (SDK 기본값)
+5. 동기화: `npm run kakao:sync` (Android `local.properties` + iOS `Kakao.xcconfig`)
+6. Vercel 에 `KAKAO_NATIVE_APP_KEY`, `KAKAO_REST_API_KEY` 등록 (서버 OAuth 검증용)
+
+### Apple Sign In
+
+1. [Apple Developer](https://developer.apple.com/account/resources/identifiers/list) → **Identifiers** → `com.neoproject.study`
+2. **Sign in with Apple** capability 활성화 → Save
+3. Xcode **Runner** → Signing & Capabilities (entitlements 파일 `Runner.entitlements` 반영됨)
+4. `.env.local` / Vercel: `APPLE_CLIENT_ID=com.neoproject.study` (identityToken `aud` 검증)
+5. **iOS 실기기**에서 테스트 (시뮬레이터는 Apple ID 로그인 제한 있음)
+
 - **Google**: iOS `GoogleService-Info.plist`, Android OAuth client ID
-- **Apple**: Xcode → Sign in with Apple capability
 
 ## Device ID + 세션
 

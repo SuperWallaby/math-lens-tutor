@@ -67,7 +67,7 @@ export function MathMixedRich({
           );
         } catch {
           return (
-            <code key={`err-${i}`} className="rounded bg-black/40 px-1 text-xs">
+            <code key={`err-${i}`} className="rounded bg-wy-surface-muted px-1 text-xs">
               {seg.kind === "block" ? `$$${seg.latex}$$` : `$${seg.latex}$`}
             </code>
           );

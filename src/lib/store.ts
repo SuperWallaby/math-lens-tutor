@@ -1,5 +1,13 @@
 import { randomUUID } from "crypto";
 import { getMongoDb } from "./mongodb";
+import {
+  buildR2ObjectKey,
+  deleteR2ObjectsWithPrefix,
+  isR2Configured,
+  publicUrlForR2Key,
+  uploadToR2,
+  type StoredImageKind,
+} from "./object-storage";
 import { reassignProblemBankUserData } from "./problem-bank-store";
 import { buildSampleInsight, sampleProblemSet, sampleSubmission } from "./sample";
 import type {
@@ -29,29 +37,136 @@ const memoryDb =
 
 export const DEMO_USER_ID = "demo-user";
 
-export async function uploadSolutionImage(
-  file: File,
-  userId: string,
-): Promise<string | null> {
+async function persistUploadedImage(options: {
+  file: File;
+  userId: string;
+  kind: StoredImageKind;
+  buffer: Buffer;
+}): Promise<string | null> {
   const db = await getMongoDb();
   if (!db) {
     return null;
   }
 
-  const buffer = Buffer.from(await file.arrayBuffer());
   const imageId = randomUUID();
-  const mimeType = file.type || "image/jpeg";
+  const mimeType = options.file.type || "image/jpeg";
+  const createdAt = new Date().toISOString();
+  const imageName =
+    options.file.name ||
+    (options.kind === "profile" ? "profile.jpg" : "upload.jpg");
+
+  if (isR2Configured()) {
+    const r2Key = buildR2ObjectKey(
+      options.userId,
+      options.kind,
+      imageId,
+      mimeType,
+    );
+    await uploadToR2({
+      key: r2Key,
+      body: options.buffer,
+      contentType: mimeType,
+    });
+    await db.collection("solution_images").insertOne({
+      id: imageId,
+      userId: options.userId,
+      imageName,
+      mimeType,
+      kind: options.kind,
+      storage: "r2",
+      r2Key,
+      createdAt,
+    });
+    return publicUrlForR2Key(r2Key) ?? `/api/images/${imageId}`;
+  }
 
   await db.collection("solution_images").insertOne({
     id: imageId,
-    userId,
-    imageName: file.name,
+    userId: options.userId,
+    imageName,
     mimeType,
-    data: buffer.toString("base64"),
-    createdAt: new Date().toISOString(),
+    kind: options.kind,
+    storage: "mongo",
+    data: options.buffer.toString("base64"),
+    createdAt,
   });
 
   return `/api/images/${imageId}`;
+}
+
+export async function uploadSolutionImage(
+  file: File,
+  userId: string,
+): Promise<string | null> {
+  const buffer = Buffer.from(await file.arrayBuffer());
+  return persistUploadedImage({
+    file,
+    userId,
+    kind: "solution",
+    buffer,
+  });
+}
+
+export async function uploadProfileImage(
+  file: File,
+  userId: string,
+): Promise<string | null> {
+  const buffer = Buffer.from(await file.arrayBuffer());
+  if (buffer.byteLength > 2 * 1024 * 1024) {
+    throw new Error("프로필 이미지는 2MB 이하만 업로드할 수 있습니다.");
+  }
+
+  return persistUploadedImage({
+    file,
+    userId,
+    kind: "profile",
+    buffer,
+  });
+}
+
+export async function deleteAllUserData(userId: string): Promise<void> {
+  const db = await getMongoDb();
+  if (!db) {
+    const submissionIds = new Set(
+      memoryDb.submissions
+        .filter((item) => item.userId === userId)
+        .map((item) => item.id),
+    );
+    memoryDb.submissions = memoryDb.submissions.filter(
+      (item) => item.userId !== userId,
+    );
+    memoryDb.attempts = memoryDb.attempts.filter(
+      (item) => item.userId !== userId,
+    );
+    memoryDb.problemSets = memoryDb.problemSets.filter(
+      (set) => !submissionIds.has(set.submissionId),
+    );
+    return;
+  }
+
+  const submissions = await db
+    .collection<SolutionSubmission>("solution_submissions")
+    .find({ userId }, { projection: { id: 1, _id: 0 } })
+    .toArray();
+  const submissionIds = submissions.map((item) => item.id);
+
+  if (isR2Configured()) {
+    await deleteR2ObjectsWithPrefix(`${userId}/`);
+  }
+
+  await Promise.all([
+    db.collection("solution_images").deleteMany({ userId }),
+    db.collection("solution_submissions").deleteMany({ userId }),
+    db.collection("problem_attempts").deleteMany({ userId }),
+    submissionIds.length > 0
+      ? db.collection("generated_problem_sets").deleteMany({
+          submissionId: { $in: submissionIds },
+        })
+      : Promise.resolve(),
+    db.collection("user_problem_deliveries").deleteMany({ userId }),
+    db.collection("scanned_problem_records").deleteMany({ userId }),
+    db.collection("practice_mistake_records").deleteMany({ userId }),
+  ]);
 }
 
 export async function saveSubmission(
@@ -121,6 +236,49 @@ export async function getProblemSet(
   return db
     .collection<GeneratedProblemSet>("generated_problem_sets")
     .findOne({ id }, { projection: { _id: 0 } });
+}
+
+export async function getLatestProblemSetWithSubmissionPrefix(
+  submissionIdPrefix: string,
+): Promise<GeneratedProblemSet | null> {
+  const db = await getMongoDb();
+  if (!db) {
+    return (
+      memoryDb.problemSets.find((set) =>
+        set.submissionId.startsWith(submissionIdPrefix),
+      ) ?? null
+    );
+  }
+
+  return db
+    .collection<GeneratedProblemSet>("generated_problem_sets")
+    .findOne(
+      { submissionId: { $regex: `^${submissionIdPrefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")}` } },
+      { projection: { _id: 0 }, sort: { _id: -1 } },
+    );
+}
+
+export async function updateProblemSet(
+  problemSet: GeneratedProblemSet,
+): Promise<GeneratedProblemSet> {
+  const db = await getMongoDb();
+  if (!db) {
+    const index = memoryDb.problemSets.findIndex((set) => set.id === problemSet.id);
+    if (index >= 0) {
+      memoryDb.problemSets[index] = problemSet;
+    } else {
+      memoryDb.problemSets.unshift(problemSet);
+    }
+    return problemSet;
+  }
+
+  await db.collection<GeneratedProblemSet>("generated_problem_sets").updateOne(
+    { id: problemSet.id },
+    { $set: problemSet },
+    { upsert: true },
+  );
+
+  return problemSet;
 }
 
 export async function saveAttempt(attempt: ProblemAttempt): Promise<ProblemAttempt> {

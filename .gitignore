@@ -43,3 +43,8 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local dev (random API port from scripts/next-dev.sh)
+.dev-local-port
+flutter_app/dev/local-defines.json
+.flutter-run.pid

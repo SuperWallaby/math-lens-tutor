@@ -2,21 +2,59 @@
 @import "../../node_modules/jsxgraph/distrib/jsxgraph.css";
 
 :root {
-  --background: #020617;
-  --foreground: #f8fafc;
+  --background: #f5f5f5;
+  --foreground: #1a1a2e;
+  --wy-bg: #f5f5f5;
+  --wy-surface: #ffffff;
+  --wy-surface-elevated: #fafafa;
+  --wy-surface-muted: #eeeeee;
+  --wy-primary: #007bff;
+  --wy-primary-dark: #0062cc;
+  --wy-primary-tint: rgba(0, 123, 255, 0.12);
+  --wy-accent: #ff8c00;
+  --wy-accent-tint: rgba(255, 140, 0, 0.12);
+  --wy-success: #2ecc40;
+  --wy-success-tint: rgba(46, 204, 64, 0.12);
+  --wy-warning: #b8860b;
+  --wy-warning-tint: rgba(184, 134, 11, 0.14);
+  --wy-teacher: #9370db;
+  --wy-teacher-tint: rgba(147, 112, 219, 0.12);
+  --wy-text-sub: #5a6278;
+  --wy-text-muted: #949bb0;
+  --wy-border: rgba(0, 0, 0, 0.08);
+  --wy-border-strong: rgba(0, 0, 0, 0.12);
+  --wy-radius-sm: 10px;
+  --wy-radius-md: 14px;
+  --wy-radius-lg: 16px;
+  --wy-button-height: 52px;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
+  --color-wy-bg: var(--wy-bg);
+  --color-wy-surface: var(--wy-surface);
+  --color-wy-surface-elevated: var(--wy-surface-elevated);
+  --color-wy-surface-muted: var(--wy-surface-muted);
+  --color-wy-primary: var(--wy-primary);
+  --color-wy-primary-dark: var(--wy-primary-dark);
+  --color-wy-accent: var(--wy-accent);
+  --color-wy-success: var(--wy-success);
+  --color-wy-warning: var(--wy-warning);
+  --color-wy-teacher: var(--wy-teacher);
+  --color-wy-text-sub: var(--wy-text-sub);
+  --color-wy-text-muted: var(--wy-text-muted);
+  --color-wy-border: var(--wy-border);
+  --color-wy-border-strong: var(--wy-border-strong);
+  --font-sans: var(--font-noto-sans);
   --font-mono: var(--font-geist-mono);
+  --radius-wy-md: var(--wy-radius-md);
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-noto-sans), "Noto Sans KR", sans-serif;
 }
 
 @media print {
@@ -53,11 +91,11 @@ body {
 .skeleton-shimmer {
   background: linear-gradient(
     90deg,
-    rgb(255 255 255 / 0.06) 0%,
-    rgb(255 255 255 / 0.1) 45%,
-    rgb(255 255 255 / 0.12) 50%,
-    rgb(255 255 255 / 0.1) 55%,
-    rgb(255 255 255 / 0.06) 100%
+    rgb(0 0 0 / 0.04) 0%,
+    rgb(0 0 0 / 0.08) 45%,
+    rgb(0 0 0 / 0.1) 50%,
+    rgb(0 0 0 / 0.08) 55%,
+    rgb(0 0 0 / 0.04) 100%
   );
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.4s ease-in-out infinite;
@@ -66,11 +104,11 @@ body {
 .skeleton-shimmer-error {
   background: linear-gradient(
     90deg,
-    rgb(248 113 113 / 0.06) 0%,
-    rgb(248 113 113 / 0.11) 45%,
-    rgb(248 113 113 / 0.14) 50%,
-    rgb(248 113 113 / 0.11) 55%,
-    rgb(248 113 113 / 0.06) 100%
+    rgb(255 140 0 / 0.06) 0%,
+    rgb(255 140 0 / 0.11) 45%,
+    rgb(255 140 0 / 0.14) 50%,
+    rgb(255 140 0 / 0.11) 55%,
+    rgb(255 140 0 / 0.06) 100%
   );
   background-size: 200% 100%;
   animation: skeleton-shimmer 1.4s ease-in-out infinite;

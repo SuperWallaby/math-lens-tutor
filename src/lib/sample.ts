@@ -89,6 +89,7 @@ export const sampleProblemSet: GeneratedProblemSet = {
       explanation: "x^2 + 8x = (x + 4)^2 - 16이므로 전체는 (x + 4)^2 - 6입니다.",
       difficulty: "medium",
       conceptTags: ["완전제곱식", "상수항 보정"],
+      answerFormat: "short_answer",
       chart: null,
       jsxGraph: null,
       source: "generated",
@@ -117,8 +118,8 @@ export const sampleProblemSet: GeneratedProblemSet = {
             {
               label: "y = x^2 - 2x - 3",
               data: [5, 0, -3, -4, -3, 0, 5],
-              borderColor: "#2563eb",
-              backgroundColor: "rgba(37, 99, 235, 0.15)",
+              borderColor: "#007bff",
+              backgroundColor: "rgba(0, 123, 255, 0.12)",
             },
           ],
         },
@@ -152,19 +153,19 @@ export const sampleProblemSet: GeneratedProblemSet = {
             id: "A",
             elType: "point",
             coord: [2, 6],
-            attrs: { name: "A", fixed: true, strokeColor: "#1d4ed8" },
+            attrs: { name: "A", fixed: true, strokeColor: "#007bff" },
           },
           {
             id: "B",
             elType: "point",
             coord: [8, 6],
-            attrs: { name: "B", fixed: true, strokeColor: "#1d4ed8" },
+            attrs: { name: "B", fixed: true, strokeColor: "#007bff" },
           },
           {
             id: "C",
             elType: "point",
             coord: [5, 2],
-            attrs: { name: "C", fixed: true, strokeColor: "#1d4ed8" },
+            attrs: { name: "C", fixed: true, strokeColor: "#007bff" },
           },
           {
             elType: "polygon",
@@ -172,7 +173,7 @@ export const sampleProblemSet: GeneratedProblemSet = {
             attrs: {
               borders: {
                 strokeWidth: 2,
-                strokeColor: "#2563eb",
+                strokeColor: "#007bff",
               },
             },
           },
@@ -220,7 +221,7 @@ export function buildSampleInsight(attempts: ProblemAttempt[]): LearningInsight 
           {
             label: "최근 풀이 결과",
             data: [correct, totalAttempts - correct],
-            backgroundColor: ["#16a34a", "#dc2626"],
+            backgroundColor: ["#2ecc40", "#ff8c00"],
           },
         ],
       },

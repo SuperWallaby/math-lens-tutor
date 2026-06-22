@@ -6,6 +6,7 @@ import { JsxGraphRenderer } from "./JsxGraphRenderer";
 import { MathMixedRich } from "./MathMixedRich";
 import { ProblemSetPrintPdfButton } from "./ProblemSetPrintPdfButton";
 import type { GeneratedProblemSet, ProblemAttempt } from "@/lib/types";
+import { formatDifficultyLabel } from "@/lib/problem-labels";
 
 type Answers = Record<string, string>;
 type Feedback = Record<string, ProblemAttempt>;
@@ -47,19 +48,19 @@ export function PracticeRunner({ problemSet }: { problemSet: GeneratedProblemSet
       {problemSet.problems.map((problem, index) => (
         <section
           key={problem.id}
-          className="rounded-3xl border border-white/10 bg-white/10 p-6"
+          className="rounded-[var(--wy-radius-md)] border border-wy-border bg-wy-surface p-6"
         >
           <div className="flex flex-wrap items-center gap-3">
-            <span className="rounded-full bg-blue-500/20 px-3 py-1 text-sm text-blue-200">
+            <span className="rounded-full bg-[var(--wy-primary-tint)] px-3 py-1 text-sm text-wy-primary">
               문제 {index + 1}
             </span>
-            <span className="rounded-full bg-slate-800 px-3 py-1 text-xs text-slate-300">
-              {problem.difficulty}
+            <span className="rounded-full bg-wy-surface-muted px-3 py-1 text-xs text-wy-text-sub">
+              {formatDifficultyLabel(problem.difficulty)}
             </span>
             {problem.conceptTags.map((tag) => (
               <span
                 key={tag}
-                className="rounded-full bg-white/10 px-3 py-1 text-xs text-slate-300"
+                className="rounded-full bg-wy-surface-muted px-3 py-1 text-xs text-wy-text-sub"
               >
                 {tag}
               </span>
@@ -68,10 +69,10 @@ export function PracticeRunner({ problemSet }: { problemSet: GeneratedProblemSet
           <h2 className="mt-4 text-xl font-bold">{problem.title}</h2>
           <MathMixedRich
             text={problem.prompt}
-            className="mt-3 leading-8 text-slate-200"
+            className="mt-3 leading-8 text-foreground"
           />
           {problem.chart ? (
-            <div className="mt-5 rounded-2xl bg-white p-4">
+            <div className="mt-5 rounded-wy-md bg-wy-surface p-4">
               <ChartRenderer chart={problem.chart} />
             </div>
           ) : null}
@@ -85,7 +86,7 @@ export function PracticeRunner({ problemSet }: { problemSet: GeneratedProblemSet
               {problem.choices.map((choice) => (
                 <label
                   key={choice.id}
-                  className="flex cursor-pointer items-center gap-3 rounded-2xl border border-white/10 bg-slate-900 p-4 text-sm hover:border-blue-400"
+                  className="flex cursor-pointer items-center gap-3 rounded-wy-md border border-wy-border bg-wy-surface-elevated p-4 text-sm hover:border-wy-primary"
                 >
                   <input
                     type="radio"
@@ -116,24 +117,24 @@ export function PracticeRunner({ problemSet }: { problemSet: GeneratedProblemSet
                 }))
               }
               placeholder="풀이 또는 답안을 직접 작성하세요."
-              className="mt-5 min-h-32 w-full rounded-2xl border border-white/10 bg-slate-900 p-4 text-sm text-white outline-none focus:border-blue-400"
+              className="mt-5 min-h-32 w-full rounded-wy-md border border-wy-border bg-wy-surface-elevated p-4 text-sm text-foreground outline-none focus:border-wy-primary"
             />
           )}
 
           <button
             onClick={() => submitAnswer(problem.id)}
             disabled={!answers[problem.id] || submittingId === problem.id}
-            className="mt-5 rounded-2xl bg-emerald-500 px-5 py-3 font-semibold text-white transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-60"
+            className="mt-5 rounded-wy-md bg-wy-success px-5 py-3 font-semibold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
           >
             {submittingId === problem.id ? "채점 중..." : "답안 제출"}
           </button>
 
           {feedback[problem.id] ? (
             <div
-              className={`mt-5 rounded-2xl p-4 text-sm leading-6 ${
+              className={`mt-5 rounded-wy-md p-4 text-sm leading-6 ${
                 feedback[problem.id].isCorrect
-                  ? "bg-emerald-500/15 text-emerald-100"
-                  : "bg-red-500/15 text-red-100"
+                  ? "bg-[var(--wy-success-tint)] text-foreground"
+                  : "bg-[var(--wy-accent-tint)] text-foreground"
               }`}
             >
               <MathMixedRich text={feedback[problem.id].feedback} />

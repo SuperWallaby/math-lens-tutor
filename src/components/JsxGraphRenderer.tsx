@@ -97,14 +97,14 @@ export function JsxGraphRenderer({
   return (
     <div className="mt-4 space-y-2">
       {diagram.captionKo ? (
-        <p className="text-sm text-slate-300">{diagram.captionKo}</p>
+        <p className="text-sm text-wy-text-sub">{diagram.captionKo}</p>
       ) : null}
       {diagram.rationaleKo ? (
-        <p className="text-xs text-slate-500">{diagram.rationaleKo}</p>
+        <p className="text-xs text-wy-text-muted">{diagram.rationaleKo}</p>
       ) : null}
       <div
         ref={hostRef}
-        className="mx-auto w-full max-w-2xl overflow-hidden rounded-2xl border border-white/10 bg-white"
+        className="mx-auto w-full max-w-2xl overflow-hidden rounded-wy-md border border-wy-border bg-wy-surface"
         style={{ height: 380, maxHeight: "60vh" }}
       />
     </div>

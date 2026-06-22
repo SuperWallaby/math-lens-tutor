@@ -8,34 +8,34 @@ export default function Home() {
       <HomeReturnRedirect />
       <section className="grid gap-10 lg:grid-cols-[1.2fr_0.8fr] lg:items-center">
         <div>
-          <p className="mb-4 inline-flex rounded-full bg-blue-500/15 px-4 py-2 text-sm text-blue-200">
+          <p className="mb-4 inline-flex rounded-full bg-[var(--wy-primary-tint)] px-4 py-2 text-sm text-wy-primary">
             사진 기반 수학 오답 코치
           </p>
           <h1 className="text-5xl font-black leading-tight tracking-tight">
             풀이 사진을 읽고, 약점을 잡고, 비슷한 문제 5개로 다시 훈련합니다.
           </h1>
-          <p className="mt-6 max-w-2xl text-lg leading-8 text-slate-300">
+          <p className="mt-6 max-w-2xl text-lg leading-8 text-wy-text-sub">
             풀이 과정과 선택 답안을 분석하고, 부족한 개념을 짚어 유사 문제로
             다시 훈련할 수 있습니다.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
               href="/upload"
-              className="rounded-2xl bg-blue-500 px-6 py-3 font-semibold text-white hover:bg-blue-400"
+              className="rounded-wy-md bg-wy-primary px-6 py-3 font-semibold text-white hover:bg-wy-primary-dark"
             >
               풀이 사진 분석하기
             </Link>
             <Link
               href="/dashboard"
-              className="rounded-2xl border border-white/15 px-6 py-3 font-semibold text-slate-100 hover:bg-white/10"
+              className="rounded-wy-md border border-wy-border-strong px-6 py-3 font-semibold text-foreground hover:bg-wy-surface-muted"
             >
               학습 대시보드 보기
             </Link>
           </div>
         </div>
-        <div className="rounded-3xl border border-white/10 bg-white/10 p-6">
+        <div className="rounded-[var(--wy-radius-md)] border border-wy-border bg-wy-surface p-6">
           <h2 className="text-xl font-bold">MVP 기능</h2>
-          <div className="mt-5 space-y-4 text-sm leading-6 text-slate-300">
+          <div className="mt-5 space-y-4 text-sm leading-6 text-wy-text-sub">
             <p>1. 풀이 사진 업로드 및 AI 분석</p>
             <p>2. 오답 원인과 부족 개념 진단</p>
             <p>3. 유사 문제 5개 자동 생성</p>

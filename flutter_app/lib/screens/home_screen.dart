@@ -1,13 +1,17 @@
+import 'dart:async';
+
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:shared_preferences/shared_preferences.dart';
-
 import '../layout/tablet_layout.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
+import '../services/app_prefs.dart';
 import 'dashboard_screen.dart';
-import 'link_student_screen.dart';
 import 'upload_screen.dart';
+import '../widgets/linked_children_panel.dart';
+import '../widgets/student_link_guide.dart';
+import '../theme/app_design_system.dart';
 
 const _kStudyReturnUser = 'study_return_user';
 
@@ -38,7 +42,7 @@ class _HomeScreenState extends State<HomeScreen> {
       return;
     }
 
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await getAppPrefs();
     if (!mounted) return;
     if (prefs.getBool(_kStudyReturnUser) ?? false) {
       await Navigator.of(context).pushReplacement(
@@ -95,7 +99,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     ? '연결된 학생의 활동과 수준을 대시보드에서 확인할 수 있습니다. 풀이 등록은 학생 계정에서 진행해 주세요.'
                     : '풀이 사진을 찍으면 AI가 오답 원인과 부족 개념을 분석하고, 유사 문제 5개로 바로 훈련합니다.',
                 style: TextStyle(
-                  color: const Color(0xFFCBD5E1),
+                  color: AppColors.textSub,
                   fontSize: TabletLayout.body(context),
                   height: 1.55,
                 ),
@@ -105,7 +109,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0F172A),
+                    color: AppColors.surface,
                     borderRadius: BorderRadius.circular(18),
                   ),
                   child: Row(
@@ -116,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           children: [
                             const Text(
                               '내 학생 고유번호',
-                              style: TextStyle(color: Color(0xFF94A3B8)),
+                              style: TextStyle(color: AppColors.textSub),
                             ),
                             const SizedBox(height: 6),
                             Text(
@@ -152,21 +156,19 @@ class _HomeScreenState extends State<HomeScreen> {
                   label: const Text('풀이 사진 분석하기'),
                 ),
                 const SizedBox(height: 12),
-              ] else if (isGuardian) ...[
-                FilledButton.icon(
-                  onPressed: () async {
-                    await Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => LinkStudentScreen(
-                          apiClient: widget.apiClient,
-                        ),
-                      ),
-                    );
-                    if (mounted) setState(() {});
-                  },
-                  icon: const Icon(Icons.link_rounded),
-                  label: const Text('학생 연결하기'),
+              ] else if (isGuardian &&
+                  widget.apiClient.authSession.linkedStudents.isEmpty) ...[
+                const SizedBox(height: 20),
+                LinkedChildrenPanel(
+                  apiClient: widget.apiClient,
+                  linkedStudents: widget.apiClient.authSession.linkedStudents,
+                  compact: true,
+                  onChanged: () => setState(() {}),
                 ),
+                const SizedBox(height: AppSpacing.lg),
+                StudentLinkGuide(role: user?.role),
+                const SizedBox(height: 12),
+              ] else if (isGuardian) ...[
                 const SizedBox(height: 12),
               ],
               OutlinedButton.icon(
@@ -189,7 +191,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 const SizedBox(height: 12),
                 const Text(
                   '대시보드를 보려면 먼저 학생 고유번호로 연결해 주세요.',
-                  style: TextStyle(color: Color(0xFF94A3B8)),
+                  style: TextStyle(color: AppColors.textSub),
                 ),
               ],
               const SizedBox(height: 32),
@@ -233,13 +235,13 @@ class _FeatureTile extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 14),
       padding: const EdgeInsets.all(18),
       decoration: BoxDecoration(
-        color: const Color(0xFF0F172A),
+        color: AppColors.surface,
         borderRadius: BorderRadius.circular(22),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: const Color(0xFF60A5FA)),
+          Icon(icon, color: AppColors.primary),
           const SizedBox(width: 14),
           Expanded(
             child: Column(
@@ -256,7 +258,7 @@ class _FeatureTile extends StatelessWidget {
                 Text(
                   body,
                   style: TextStyle(
-                    color: const Color(0xFF94A3B8),
+                    color: AppColors.textSub,
                     height: 1.45,
                     fontSize: TabletLayout.bodySmall(context),
                   ),

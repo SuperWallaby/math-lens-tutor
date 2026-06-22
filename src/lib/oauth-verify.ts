@@ -134,7 +134,9 @@ export async function verifyAppleIdentityToken(
 
   const appleClientId = env.appleClientId?.trim();
   if (appleClientId && claims.aud !== appleClientId) {
-    throw new Error("Apple token audience is not allowed.");
+    throw new Error(
+      "Apple 로그인 설정이 올바르지 않습니다. APPLE_CLIENT_ID를 Bundle ID와 맞춰 주세요.",
+    );
   }
 
   if (

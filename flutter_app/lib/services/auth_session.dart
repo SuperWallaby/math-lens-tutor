@@ -1,8 +1,9 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:flutter/foundation.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
+import 'app_prefs.dart';
 import '../models/app_models.dart';
 
 class AuthSession extends ChangeNotifier {
@@ -12,11 +13,13 @@ class AuthSession extends ChangeNotifier {
   static const _userKey = 'auth_user';
   static const _linkedStudentsKey = 'linked_students';
   static const _viewAsStudentKey = 'view_as_student_id';
+  static const _guestKey = 'auth_guest_mode';
 
   String? _token;
   AppUser? _user;
   List<LinkedStudent> _linkedStudents = const [];
   String? _viewAsStudentId;
+  bool _guestMode = false;
 
   String? get token => _token;
   AppUser? get user => _user;
@@ -24,7 +27,9 @@ class AuthSession extends ChangeNotifier {
   String? get viewAsStudentId => _viewAsStudentId;
 
   bool get isSignedIn => _token != null && _token!.isNotEmpty;
+  bool get isGuest => _guestMode && !isSignedIn;
   bool get isProfileComplete => _user?.profileComplete ?? false;
+  bool get canUseApp => isSignedIn || isGuest;
 
   LinkedStudent? get selectedStudent {
     if (_viewAsStudentId == null) return null;
@@ -37,7 +42,7 @@ class AuthSession extends ChangeNotifier {
   }
 
   Future<void> load() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await getAppPrefs();
     _token = prefs.getString(_tokenKey);
     final userJson = prefs.getString(_userKey);
     if (userJson != null && userJson.isNotEmpty) {
@@ -53,6 +58,52 @@ class AuthSession extends ChangeNotifier {
           .toList();
     }
     _viewAsStudentId = prefs.getString(_viewAsStudentKey);
+    _guestMode = prefs.getBool(_guestKey) ?? false;
+    notifyListeners();
+  }
+
+  Future<void> enterGuestMode(String deviceScopedUserId) async {
+    _guestMode = true;
+    _token = null;
+    _linkedStudents = const [];
+    _viewAsStudentId = null;
+    _user = AppUser(
+      id: deviceScopedUserId,
+      displayName: '게스트',
+      profileComplete: false,
+    );
+    final prefs = await getAppPrefs();
+    await prefs.setBool(_guestKey, true);
+    await prefs.remove(_tokenKey);
+    await prefs.remove(_userKey);
+    await prefs.remove(_linkedStudentsKey);
+    await prefs.remove(_viewAsStudentKey);
+    notifyListeners();
+  }
+
+  Future<void> completeGuestProfile({
+    required AppUserRole role,
+    int? age,
+    String? grade,
+    String? organizationName,
+  }) async {
+    if (!isGuest) return;
+
+    final org = organizationName?.trim();
+    _user = AppUser(
+      id: _user?.id ?? 'guest',
+      displayName: '게스트',
+      profileComplete: role == AppUserRole.student,
+      role: role,
+      age: age,
+      grade: role == AppUserRole.student ? grade : null,
+      organizationName:
+          org != null && org.isNotEmpty ? org : null,
+    );
+
+    final prefs = await getAppPrefs();
+    await prefs.setBool(_guestKey, true);
+    await prefs.setString(_userKey, jsonEncode(_user!.toJson()));
     notifyListeners();
   }
 
@@ -61,6 +112,7 @@ class AuthSession extends ChangeNotifier {
     required AppUser user,
     List<LinkedStudent>? linkedStudents,
   }) async {
+    _guestMode = false;
     _token = token;
     _user = user;
     if (linkedStudents != null) {
@@ -101,7 +153,7 @@ class AuthSession extends ChangeNotifier {
 
   Future<void> setViewAsStudentId(String? studentId) async {
     _viewAsStudentId = studentId;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await getAppPrefs();
     if (studentId == null) {
       await prefs.remove(_viewAsStudentKey);
     } else {
@@ -111,20 +163,23 @@ class AuthSession extends ChangeNotifier {
   }
 
   Future<void> clear() async {
+    _guestMode = false;
     _token = null;
     _user = null;
     _linkedStudents = const [];
     _viewAsStudentId = null;
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await getAppPrefs();
     await prefs.remove(_tokenKey);
     await prefs.remove(_userKey);
     await prefs.remove(_linkedStudentsKey);
     await prefs.remove(_viewAsStudentKey);
+    await prefs.remove(_guestKey);
     notifyListeners();
   }
 
   Future<void> _persist() async {
-    final prefs = await SharedPreferences.getInstance();
+    final prefs = await getAppPrefs();
+    await prefs.setBool(_guestKey, _guestMode);
     if (_token != null) {
       await prefs.setString(_tokenKey, _token!);
     }
@@ -138,5 +193,19 @@ class AuthSession extends ChangeNotifier {
     if (_viewAsStudentId != null) {
       await prefs.setString(_viewAsStudentKey, _viewAsStudentId!);
     }
+  }
+
+  /// SharedPreferences deadlock 등으로 bootstrap 이 막힐 때 메모리만 복구.
+  void enterGuestRecovery(String deviceScopedUserId) {
+    _guestMode = true;
+    _token = null;
+    _linkedStudents = const [];
+    _viewAsStudentId = null;
+    _user = AppUser(
+      id: deviceScopedUserId,
+      displayName: '게스트',
+      profileComplete: false,
+    );
+    notifyListeners();
   }
 }

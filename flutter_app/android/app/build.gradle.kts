@@ -5,6 +5,41 @@ plugins {
     id("dev.flutter.flutter-gradle-plugin")
 }
 
+fun loadKakaoNativeAppKey(): String {
+    val localProps = rootProject.file("local.properties")
+    if (localProps.exists()) {
+        val fromLocal = localProps.readLines()
+            .map { it.trim() }
+            .firstOrNull { it.startsWith("kakao.nativeAppKey=") }
+            ?.substringAfter("=")
+            ?.trim()
+            .orEmpty()
+        if (fromLocal.isNotEmpty()) {
+            return fromLocal
+        }
+    }
+
+    val envFile = rootProject.file("../../.env.local")
+    if (envFile.exists()) {
+        val fromEnv = envFile.readLines()
+            .map { it.trim() }
+            .firstOrNull { it.startsWith("KAKAO_NATIVE_APP_KEY=") }
+            ?.substringAfter("=")
+            ?.trim()
+            ?.trim('"')
+            .orEmpty()
+        if (fromEnv.isNotEmpty()) {
+            return fromEnv
+        }
+    }
+
+    return ""
+}
+
+val kakaoNativeAppKey = loadKakaoNativeAppKey()
+val kakaoRedirectScheme =
+    if (kakaoNativeAppKey.isNotEmpty()) "kakao$kakaoNativeAppKey" else "kakao_not_configured"
+
 android {
     namespace = "com.neoproject.study"
     compileSdk = flutter.compileSdkVersion
@@ -28,6 +63,7 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+        manifestPlaceholders["KAKAO_APP_SCHEME"] = kakaoRedirectScheme
     }
 
     buildTypes {
