@@ -1,6 +1,6 @@
 import 'package:flutter/foundation.dart';
 
-const _productionUrl = 'https://study-alpha-rosy.vercel.app';
+const _productionUrl = 'https://study-hazel-six.vercel.app';
 /// `yarn app` / `npm run dev:next` 가 `.dev-local-port` 에 기록한 포트와 맞추기 위한 fallback.
 /// 실제 dev 는 `--dart-define=API_BASE_URL=...` 또는 `dev/local-defines.json` 사용 권장.
 const _localPort = 3100;

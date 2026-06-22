@@ -11,7 +11,7 @@
 # npm (레포 루트): yarn flutter:release
 #
 # 환경 변수:
-#   API_BASE_URL  (기본 https://study-alpha-rosy.vercel.app)
+#   API_BASE_URL  (기본 https://study-hazel-six.vercel.app)
 #   SKIP_PUB_GET=1  flutter pub get 생략
 #   OPEN_FINDER=0   빌드 후 Finder 자동 열기 끄기 (기본: 열기, macOS만)
 #
@@ -28,7 +28,7 @@ source "${SCRIPT_DIR}/_release-common.sh"
 
 cd "$(release_root)"
 
-API="${API_BASE_URL:-https://study-alpha-rosy.vercel.app}"
+API="${API_BASE_URL:-https://study-hazel-six.vercel.app}"
 TARGET="all"
 BUMP=""
 

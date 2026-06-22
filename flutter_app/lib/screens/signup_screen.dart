@@ -13,8 +13,8 @@ import '../widgets/hero_icon_3d.dart';
 import '../widgets/oauth_sign_in_button.dart';
 import 'profile_onboarding_screen.dart';
 
-/// 서버 dev bypass (`devstudy*@gmail.com`) 와 동일한 기본값
-const _devBypassEmail = 'devstudy@gmail.com';
+/// 서버 bypass (`devstudy*@wooyeol.com`) 와 동일한 기본값
+const _devBypassEmail = 'devstudy@wooyeol.com';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({

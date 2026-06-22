@@ -6,7 +6,8 @@ import { sendMagicLinkEmail } from "@/lib/email";
 import { hasAuthConfig, hasMongoConfig } from "@/lib/env";
 import {
   createMagicLinkToken,
-  isDevMagicLinkBypassEmail,
+  isMagicLinkInstantLoginEmail,
+  isPlayReviewBypassEmail,
   isValidEmail,
   normalizeEmail,
 } from "@/lib/magic-link";
@@ -40,7 +41,7 @@ export async function POST(request: Request) {
       );
     }
 
-    if (isDevMagicLinkBypassEmail(email)) {
+    if (isMagicLinkInstantLoginEmail(email)) {
       const deviceUserId = getDeviceUserId(request);
       const user = await upsertMagicLinkUser(email, deviceUserId, {
         intent: body.intent,
@@ -50,7 +51,9 @@ export async function POST(request: Request) {
       return NextResponse.json({
         ok: true,
         bypass: true,
-        message: "개발용 계정으로 로그인했습니다.",
+        message: isPlayReviewBypassEmail(email)
+          ? "Review account signed in."
+          : "Bypass account signed in.",
         token,
         user: publicUser(user),
       });

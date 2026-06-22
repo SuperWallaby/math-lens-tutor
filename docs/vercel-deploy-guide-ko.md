@@ -10,7 +10,7 @@
 ## 이 레포에서 이미 맞춰 둔 것
 
 - **GitHub**: [SuperWallaby/math-lens-tutor](https://github.com/SuperWallaby/math-lens-tutor) (`main` 푸시)
-- **Vercel 프로덕션(별칭 예시)**: `https://study-alpha-rosy.vercel.app` — 팀·프로젝트 이름에 따라 URL은 대시보드 기준으로 확인
+- **Vercel 프로덕션(별칭 예시)**: `https://study-hazel-six.vercel.app` — 팀·프로젝트 이름에 따라 URL은 대시보드 기준으로 확인
 - **웹만 배포**: 루트에 `.vercelignore`로 `flutter_app/`, `mobile/` 업로드 제외 → 빌드 시간·용량 절감
 - **타입 검사**: `tsconfig.json`에서 `flutter_app`, `mobile` 제외 → Expo 코드가 Next 빌드를 깨지 않음
 

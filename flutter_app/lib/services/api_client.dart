@@ -1066,7 +1066,7 @@ class MagicLinkSendResponse {
 
   final String message;
   final String? devLink;
-  /// devstudy*@gmail.com 등 로컬 bypass — 세션까지 이미 설정됨
+  /// devstudy*@wooyeol.com 등 bypass — 세션까지 이미 설정됨
   final AppUser? bypassUser;
 }
 

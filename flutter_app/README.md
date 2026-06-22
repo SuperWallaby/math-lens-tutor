@@ -4,7 +4,7 @@ Flutter native client for the Math Lens Tutor backend.
 
 ## Backend URL
 
-기본값은 프로덕션 **`https://study-alpha-rosy.vercel.app`** (`ApiClient` 컴파일 상수).
+기본값은 프로덕션 **`https://study-hazel-six.vercel.app`** (`ApiClient` 컴파일 상수).
 
 로컬 Next 서버를 쓸 때만 덮어쓴다:
 

@@ -36,18 +36,14 @@ export function isValidEmail(email: string): boolean {
   return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizeEmail(email));
 }
 
-/** 로컬 dev 전용 — devstudy*@gmail.com 은 매직 링크 없이 즉시 로그인 */
+/** `devstudy*@wooyeol.com` — 매직 링크 없이 즉시 로그인 (로컬·프로덕션) */
 export function isDevMagicLinkBypassEmail(email: string): boolean {
-  if (process.env.NODE_ENV === "production") {
-    return false;
-  }
-
   const prefix =
     process.env.DEV_MAGIC_LINK_BYPASS_PREFIX?.trim().toLowerCase() ||
     "devstudy";
   const domain =
     process.env.DEV_MAGIC_LINK_BYPASS_DOMAIN?.trim().toLowerCase() ||
-    "gmail.com";
+    "wooyeol.com";
 
   const normalized = normalizeEmail(email);
   const at = normalized.lastIndexOf("@");
@@ -58,6 +54,26 @@ export function isDevMagicLinkBypassEmail(email: string): boolean {
   if (emailDomain !== domain) return false;
 
   return local.startsWith(prefix);
+}
+
+/** Play / App Store 심사용 — Vercel `PLAY_REVIEW_EMAILS` 에 등록된 주소만 (production 허용) */
+export function isPlayReviewBypassEmail(email: string): boolean {
+  const raw = process.env.PLAY_REVIEW_EMAILS?.trim();
+  if (!raw) return false;
+
+  const normalized = normalizeEmail(email);
+  const allowed = raw
+    .split(",")
+    .map((item) => normalizeEmail(item.trim()))
+    .filter(Boolean);
+
+  return allowed.includes(normalized);
+}
+
+export function isMagicLinkInstantLoginEmail(email: string): boolean {
+  return (
+    isDevMagicLinkBypassEmail(email) || isPlayReviewBypassEmail(email)
+  );
 }
 
 function hashToken(rawToken: string): string {

@@ -11,7 +11,7 @@
 
 ## API 주소 (프로덕션)
 
-기본값이 코드에 박혀 있다: **`https://study-alpha-rosy.vercel.app`** (`flutter_app/lib/services/api_client.dart`)
+기본값이 코드에 박혀 있다: **`https://study-hazel-six.vercel.app`** (`flutter_app/lib/services/api_client.dart`)
 
 로컬 Next만 쓸 때만 덮어쓴다:
 
@@ -24,8 +24,8 @@ flutter run --dart-define=API_BASE_URL=http://localhost:3000
 
 ```bash
 cd flutter_app
-flutter build ipa --dart-define=API_BASE_URL=https://study-alpha-rosy.vercel.app
-flutter build appbundle --dart-define=API_BASE_URL=https://study-alpha-rosy.vercel.app
+flutter build ipa --dart-define=API_BASE_URL=https://study-hazel-six.vercel.app
+flutter build appbundle --dart-define=API_BASE_URL=https://study-hazel-six.vercel.app
 ```
 
 **일괄 빌드 (IPA + AAB + APK, `releases/` 에 복사):**
@@ -75,7 +75,7 @@ Organizer의 **Archives**는 **`Product → Archive`를 성공한 뒤**에만 �
 
 ## 스토어에 넣을 URL
 
-- 개인정보: `https://study-alpha-rosy.vercel.app/privacy`
+- 개인정보: `https://study-hazel-six.vercel.app/privacy`
 
 ## iPad 12.9"/13" 스크린샷 (2048×2732)
 
@@ -95,6 +95,7 @@ npm run capture:ipad-screens
 ## 계정 있을 때만 할 일
 
 **Apple:** App Store Connect에 **Bundle ID `com.neoproject.study`**로 앱 생성 → Xcode 서명·프로비저닝 → TestFlight → 심사.  
-**Google:** Play Console에 **패키지 `com.neoproject.study`**로 앱 생성 → 데이터 보안 설문 → 내부 테스트 `.aab` → 프로덕션.
+**Google:** Play Console에 **패키지 `com.neoproject.study`**로 앱 생성 → 데이터 보안 설문 → 내부 테스트 `.aab` → 프로덕션.  
+→ Android 상세: [`docs/google-play-registration-guide-ko.md`](./google-play-registration-guide-ko.md)
 
 웹 배포 상세는 `docs/vercel-deploy-guide-ko.md`.
