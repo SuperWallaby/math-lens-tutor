@@ -8,6 +8,7 @@ import '../services/auth_session.dart';
 import '../theme/app_design_system.dart';
 import 'app_restart.dart';
 import 'dev_accounts.dart';
+import 'dev_oauth_accounts.dart';
 import 'dev_tools.dart';
 
 /// 디버그 빌드 전용 플로팅 개발자 메뉴.
@@ -163,6 +164,13 @@ class _DevMenuSheetState extends State<_DevMenuSheet> {
     });
   }
 
+  Future<void> _loginDevOAuth(String accountId, String label) async {
+    await _run('$label 로 로그인했습니다', () async {
+      await widget.apiClient.devOAuthLogin(accountId);
+      widget.onRestart();
+    });
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
@@ -227,6 +235,37 @@ class _DevMenuSheetState extends State<_DevMenuSheet> {
             subtitle: '첫 실행 튜토리얼 다시 보기',
             enabled: !_busy,
             onTap: () => _run('소개 온보딩을 리셋했습니다', resetIntroOnboarding),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          const _SectionLabel('OAuth 계정 로그인'),
+          const SizedBox(height: AppSpacing.sm),
+          const Text(
+            '카카오·Apple OAuth DB 계정으로 바로 로그인합니다.',
+            style: TextStyle(
+              color: AppColors.textSub,
+              fontSize: 12,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              for (final account in devOAuthLoginOptionsList)
+                ActionChip(
+                  avatar: Icon(
+                    account.provider == 'kakao'
+                        ? Icons.chat_bubble_rounded
+                        : Icons.apple_rounded,
+                    size: 18,
+                  ),
+                  label: Text(account.label),
+                  onPressed: _busy
+                      ? null
+                      : () => _loginDevOAuth(account.id, account.label),
+                ),
+            ],
           ),
           const SizedBox(height: AppSpacing.lg),
           const _SectionLabel('빈 계정 로그인'),

@@ -62,6 +62,17 @@ release_bump_pubspec() {
   release_read_version
 }
 
+release_ensure_android_keystore() {
+  local props
+  props="$(release_root)/android/key.properties"
+  if [[ ! -f "$props" ]]; then
+    echo "❌ Play Store용 release keystore 없음." >&2
+    echo "   bash scripts/setup-android-release-keystore.sh" >&2
+    echo "   또는: npm run android:keystore" >&2
+    exit 1
+  fi
+}
+
 release_copy_artifacts() {
   local root
   root="$(release_root)"

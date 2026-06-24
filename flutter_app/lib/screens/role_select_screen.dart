@@ -6,9 +6,18 @@ import '../services/api_client.dart';
 import '../theme/app_design_system.dart';
 
 class RoleSelectScreen extends StatefulWidget {
-  const RoleSelectScreen({super.key, required this.apiClient});
+  const RoleSelectScreen({
+    super.key,
+    required this.apiClient,
+    this.changingAccount = false,
+    this.initialRole,
+    this.initialGrade,
+  });
 
   final ApiClient apiClient;
+  final bool changingAccount;
+  final AppUserRole? initialRole;
+  final String? initialGrade;
 
   @override
   State<RoleSelectScreen> createState() => _RoleSelectScreenState();
@@ -20,6 +29,13 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
   AppUserRole? _pendingRole;
   String? _grade = '중1';
   final _orgController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _pendingRole = widget.initialRole;
+    _grade = widget.initialGrade ?? '중1';
+  }
 
   static const _grades = [
     '초1',
@@ -64,8 +80,19 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
             ? _orgController.text
             : null,
       );
+      widget.apiClient.invalidateLearningProfileCache();
       if (!mounted) return;
-      Navigator.of(context).pop(role);
+      final changing = widget.changingAccount;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            changing
+                ? '계정 타입을 변경했습니다.'
+                : '프로필 설정을 완료했습니다.',
+          ),
+        ),
+      );
+      Navigator.of(context).pop(true);
     } on ApiException catch (error) {
       setState(() => _error = error.message);
     } finally {
@@ -77,24 +104,30 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final changing = widget.changingAccount;
+
     return Scaffold(
-      appBar: AppBar(title: const Text('역할 선택')),
+      appBar: AppBar(
+        title: Text(changing ? '계정 타입 변경' : '역할 선택'),
+      ),
       body: SafeArea(
         child: TabletBody(
           child: ListView(
             padding: TabletLayout.pagePadding(context),
             children: [
               Text(
-                '어떤 계정으로 이용하시나요?',
+                changing ? '이용 중인 계정 타입을 바꿉니다' : '어떤 계정으로 이용하시나요?',
                 style: TextStyle(
                   fontSize: TabletLayout.titleSection(context),
                   fontWeight: FontWeight.w900,
                 ),
               ),
               const SizedBox(height: 12),
-              const Text(
-                '학생은 풀이 분석·연습을, 학부모는 자녀 학습을 함께 돕습니다.',
-                style: TextStyle(color: AppColors.textSub, height: 1.5),
+              Text(
+                changing
+                    ? '학생 ↔ 학부모 전환 시 학생 연결 정보가 초기화될 수 있어요.'
+                    : '학생은 풀이 분석·연습을, 학부모는 자녀 학습을 함께 돕습니다.',
+                style: const TextStyle(color: AppColors.textSub, height: 1.5),
               ),
               if (_error != null) ...[
                 const SizedBox(height: 16),
@@ -136,7 +169,13 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
                 const SizedBox(height: 24),
                 FilledButton(
                   onPressed: _loading ? null : _confirm,
-                  child: Text(_loading ? '설정 중...' : '시작하기'),
+                  child: Text(
+                    _loading
+                        ? '설정 중...'
+                        : changing
+                            ? '변경하기'
+                            : '시작하기',
+                  ),
                 ),
               ],
             ],

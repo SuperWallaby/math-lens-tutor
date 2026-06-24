@@ -579,7 +579,8 @@ class _TeacherClassProgressScreenState extends State<TeacherClassProgressScreen>
                   children: [
                     Expanded(
                       child: Text(
-                        widget.apiClient.authSession.selectedStudent!.displayName,
+                        widget.apiClient.authSession.selectedStudent!
+                            .labelForGuardian,
                         style: const TextStyle(fontWeight: FontWeight.w800),
                       ),
                     ),

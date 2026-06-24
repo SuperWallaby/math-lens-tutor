@@ -98,11 +98,12 @@ build_ios() {
 }
 
 build_android() {
+  release_ensure_android_keystore
   echo ""
-  echo "▶ Android AAB + APK"
+  echo "▶ Android AAB + APK (release keystore)"
   # AAB는 strip 경고가 나와도 산출물이 생기는 경우가 많음
   set +e
-  flutter build appbundle --release "${DEFINE[@]}"
+  flutter build appbundle --release --flavor full "${DEFINE[@]}"
   local aab_status=$?
   set -e
   if [[ $aab_status -ne 0 ]]; then
@@ -112,7 +113,7 @@ build_android() {
       exit $aab_status
     fi
   fi
-  flutter build apk --release "${DEFINE[@]}"
+  flutter build apk --release --flavor full "${DEFINE[@]}"
 }
 
 case "$TARGET" in

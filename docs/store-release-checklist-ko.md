@@ -57,7 +57,51 @@ yarn flutter:release:android # Android만
 - **7인치 태블릿 / 10인치**: iPad 캡처 리사이즈 재사용 가능
 - 6.7" iPhone 캡처를 1080×1920으로 리사이즈해도 무방
 
-### 캡처 방법 (Flutter 시뮬레이터)
+### 캡처 방법 (Flutter Web + Playwright) — 권장
+
+Dispatch 방식: **release web 빌드 → 정적 서버 → Playwright 다기기 촬영**. 로그인/API 불필요(데모 데이터).
+
+```bash
+# 레포 루트 — 빌드 + 6기기 × 6화면 자동
+npm run screenshots:appstore
+
+# 이미 build/web + 서버가 떠 있으면
+FLUTTER_APP_URL=http://127.0.0.1:5050 npm run screenshots:appstore:capture
+
+# 일부 화면만
+npm run screenshots:appstore -- --only parent
+```
+
+산출물: `artifacts/store-screenshots/`
+
+| 폴더 | 해상도 | 용도 |
+|------|--------|------|
+| `iphone-6.5` | 1242×2688 | App Store |
+| `iphone-6.7` | 1284×2778 | App Store |
+| `ipad-12.9` | 2048×2732 | App Store (패딩) |
+| `ipad-13` | 2064×2752 | App Store (패딩) |
+| `android-phone` | 1080×1920 | Play Store |
+| `android-phone-hd` | 1440×2560 | Play Store |
+
+캡처 화면 (`?store_screenshot=`):
+
+| 파일 | mode | 내용 |
+|------|------|------|
+| 01-hub-first | hub-first | 첫 방문 홈 + 하단 탭 |
+| 02-hub-returning | hub-returning | 재방문 홈 + 최근 분석 |
+| 03-tab-upload | tab-upload | 업로드 탭 |
+| 04-analysis-analyzing | analysis-analyzing | 분석 중 |
+| 05-analysis-weak | analysis-weak | 분석 결과 (오답) |
+| 06-practice-question | practice-question | 연습 문제 |
+| 07-practice-correct | practice-correct | 정답 피드백 |
+| 08-practice-wrong | practice-wrong | 오답 피드백 |
+| 09-tab-training | tab-training | 훈련 탭 |
+| 10-tab-progress | tab-progress | 진도 탭 (중1) |
+| 11-tab-progress-warning | tab-progress-warning | 진도 + 선수학습 경고 |
+
+로드 대기: `networkidle` 2회 + 화면별 6~10초 (`SETTLE_MS`로 조절).
+
+### 캡처 방법 (Flutter 시뮬레이터) — 대안
 
 ```bash
 # 레포 루트 — iPhone + iPad 6화면 자동 (학생 4 + 학부모 2)

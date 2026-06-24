@@ -33,6 +33,8 @@ function toGeneratedProblem(item: ProblemBankItem): GeneratedProblem {
     conceptTags: item.conceptTags,
     chart: item.chart,
     jsxGraph: item.jsxGraph,
+    visualizationData: item.visualizationData ?? null,
+    solutionVisualizationData: item.solutionVisualizationData ?? null,
     source: "bank",
     bankItemId: item.id,
   };
@@ -54,6 +56,8 @@ function bankItemFromProblem(
     conceptTags: repaired.conceptTags,
     chart: repaired.chart,
     jsxGraph: repaired.jsxGraph,
+    visualizationData: repaired.visualizationData ?? null,
+    solutionVisualizationData: repaired.solutionVisualizationData ?? null,
   };
 }
 

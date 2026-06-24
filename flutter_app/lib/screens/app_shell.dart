@@ -29,6 +29,9 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _index = 0;
+  final _studentTrainingKey = GlobalKey<StudentTrainingScreenState>();
+
+  static const _studentTrainingTabIndex = 2;
 
   @override
   void initState() {
@@ -68,7 +71,13 @@ class _AppShellState extends State<AppShell> {
           ),
           bottomNavigationBar: NavigationBar(
             selectedIndex: safeIndex,
-            onDestinationSelected: (value) => setState(() => _index = value),
+            onDestinationSelected: (value) {
+              setState(() => _index = value);
+              if (user.role == AppUserRole.student &&
+                  value == _studentTrainingTabIndex) {
+                _studentTrainingKey.currentState?.refreshFromTab();
+              }
+            },
             destinations: [
               for (final tab in tabs)
                 NavigationDestination(
@@ -179,7 +188,10 @@ class _AppShellState extends State<AppShell> {
             label: '훈련',
             icon: Icons.edit_note_outlined,
             selectedIcon: Icons.edit_note_rounded,
-            screen: StudentTrainingScreen(apiClient: widget.apiClient),
+            screen: StudentTrainingScreen(
+              key: _studentTrainingKey,
+              apiClient: widget.apiClient,
+            ),
           ),
           _ShellTab(
             label: '진도',

@@ -132,7 +132,7 @@ class _LinkStudentScreenState extends State<LinkStudentScreen> {
       if (!mounted) return;
       widget.onLinked?.call();
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('${student.displayName} 학생과 연결되었습니다.')),
+        SnackBar(content: Text('${student.labelForGuardian} 학생과 연결되었습니다.')),
       );
       Navigator.of(context).pop(true);
     } on ApiException catch (error) {

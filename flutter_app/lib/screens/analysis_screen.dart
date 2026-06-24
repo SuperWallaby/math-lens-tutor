@@ -41,6 +41,7 @@ class AnalysisScreen extends StatefulWidget {
     this.imageBytes,
     this.uploadFilename,
     this.demoLoading = false,
+    this.liteMode = false,
   }) : assert(demoLoading || result != null || imageBytes != null);
 
   final ApiClient apiClient;
@@ -48,6 +49,7 @@ class AnalysisScreen extends StatefulWidget {
   final Uint8List? imageBytes;
   final String? uploadFilename;
   final bool demoLoading;
+  final bool liteMode;
 
   @override
   State<AnalysisScreen> createState() => _AnalysisScreenState();
@@ -237,13 +239,16 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     final focusShown = analysis != null
         ? _meaningfulRecommendedFocus(analysis.recommendedFocus)
         : <String>[];
-    final showTrainingSection =
-        tutorReady && (weakShown.isNotEmpty || focusShown.isNotEmpty);
+    final showTrainingSection = !widget.liteMode &&
+        tutorReady &&
+        (weakShown.isNotEmpty || focusShown.isNotEmpty);
 
     final networkImageUrl = _resolveSubmissionImageUrl();
 
     return Scaffold(
-      appBar: AppBar(title: const Text('AI 풀이 분석')),
+      appBar: AppBar(
+        title: Text(widget.liteMode ? '풀이 분석' : 'AI 풀이 분석'),
+      ),
       body: SafeArea(
         child: TabletBody(
           child: ListView(
@@ -261,37 +266,21 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                         fontSize: TabletLayout.body(context) - 1,
                       ),
                     ),
-                    if (widget.uploadFilename != null &&
-                        widget.uploadFilename!.trim().isNotEmpty)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 4),
-                        child: Text(
-                          widget.uploadFilename!,
-                          style: titleStyle.copyWith(fontSize: 16),
-                        ),
-                      ),
                     const SizedBox(height: 10),
                     if (widget.imageBytes != null)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 240),
-                          child: Image.memory(
-                            widget.imageBytes!,
-                            fit: BoxFit.contain,
-                            width: double.infinity,
-                          ),
+                      _SubmittedSolutionImage(
+                        child: Image.memory(
+                          widget.imageBytes!,
+                          fit: BoxFit.contain,
+                          width: double.infinity,
                         ),
                       )
                     else if (networkImageUrl != null)
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(16),
-                        child: ConstrainedBox(
-                          constraints: const BoxConstraints(maxHeight: 240),
-                          child: Image.network(
-                            networkImageUrl,
-                            fit: BoxFit.contain,
-                            width: double.infinity,
+                      _SubmittedSolutionImage(
+                        child: Image.network(
+                          networkImageUrl,
+                          fit: BoxFit.contain,
+                          width: double.infinity,
                           loadingBuilder: (context, child, progress) {
                             if (progress == null) return child;
                             return const AspectRatio(
@@ -309,7 +298,6 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                                 style: TextStyle(color: AppColors.textSub),
                               ),
                             ),
-                          ),
                           ),
                         ),
                       )
@@ -591,6 +579,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                         builder: (_) => PracticeScreen(
                           apiClient: widget.apiClient,
                           problemSet: _finalResult!.problemSet,
+                          liteMode: widget.liteMode,
                         ),
                       ),
                     );
@@ -664,6 +653,26 @@ class _AnswerBox extends StatelessWidget {
             ),
         ],
       ),
+    );
+  }
+}
+
+class _SubmittedSolutionImage extends StatelessWidget {
+  const _SubmittedSolutionImage({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: double.infinity,
+      constraints: const BoxConstraints(maxHeight: 240),
+      decoration: BoxDecoration(
+        color: AppColors.surfaceMuted,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+      ),
+      clipBehavior: Clip.antiAlias,
+      child: child,
     );
   }
 }

@@ -296,6 +296,105 @@ LearningProfile designReviewProfileChainWarning() {
   );
 }
 
+LearningProfile designReviewProfileParent() {
+  final m1 = _m1Units(withProgress: true);
+  return LearningProfile(
+    grade: '중1',
+    insight: LearningInsight(
+      levelLabel: '중급',
+      masteryScore: 68,
+      totalAttempts: 42,
+      accuracy: 71,
+      weakConcepts: const [
+        WeakConcept(concept: '최소공배수', misses: 2),
+      ],
+      recentFeedback: const [
+        'GCD를 더하는 이유를 설명해 보세요.',
+      ],
+    ),
+    stats: const LearningStats(
+      accuracy: 71,
+      accuracyDelta: 4,
+      totalProblems: 24,
+      problemsDelta: 6,
+      streakWeeks: 2,
+    ),
+    parentCoachingCard: const ParentCoachingCard(
+      label: '오늘의 부모 코칭',
+      question: '오늘 자녀에게: "21번에서 GCD를 왜 더해야 한다고 생각해?"',
+      gradingPoint: '최소공배수 = (두 수의 곱) ÷ 최대공약수',
+      context: '24와 36의 최소공배수를 구하는 문제',
+      sourceType: 'submission',
+      sourceId: 'demo_sub',
+      problemLabel: '21번',
+    ),
+    parentWrongExplains: const [
+      ParentWrongExplainItem(
+        id: 'demo-wrong-1',
+        sourceType: 'submission',
+        sourceId: 'demo_sub',
+        title: '21번',
+        concept: '최소공배수',
+        easyExplain:
+            '24와 36의 최소공배수는 72입니다. GCD 12를 구한 뒤 (24×36)÷12 로 계산해요.',
+        parentScript:
+            '「최소공배수」에서 "GCD를 더해야 한다" — 아이에게 왜 그렇게 생각했는지 설명해 달라고 해보세요.',
+        problemSetId: 'demo_set',
+        createdAt: '2026-05-26T10:00:00Z',
+      ),
+    ],
+    parentActions: const [
+      ParentActionItem(
+        icon: '💬',
+        title: '오늘 코칭 질문 해보기',
+        subtitle: '오늘 자녀에게: "21번에서 GCD를 왜 더해야 한다고 생각해?"',
+      ),
+      ParentActionItem(
+        icon: '📖',
+        title: '틀린 문제, 이렇게 설명해 주세요',
+        subtitle: '24와 36의 최소공배수는 72입니다…',
+      ),
+    ],
+    conceptStatus: const [],
+    strongConcepts: const [
+      StrongConcept(concept: '소인수분해', score: 88),
+    ],
+    weeklyTrend: const [],
+    curriculumUnits: m1,
+    curriculumByBand: {'m1': m1},
+    chainWarning: null,
+    weeklyReport: const WeeklyReport(
+      weekLabel: '이번 주',
+      period: '2026.06.16 ~ 06.22',
+      cycle: [
+        WeeklyReportStep(
+          step: 5,
+          label: '부모 확인',
+          title: '부모님이 확인할 것',
+          text: '자녀가 유사문제를 끝까지 풀었는지 확인해 주세요.',
+        ),
+        WeeklyReportStep(
+          step: 6,
+          label: '대화하기',
+          title: '오늘의 코칭 질문',
+          text: '「GCD를 더해야 한다」— 왜 그렇게 생각했는지 물어보세요.',
+        ),
+        WeeklyReportStep(
+          step: 7,
+          label: '채점 포인트',
+          title: '핵심 채점 포인트',
+          text: '최소공배수 = (두 수의 곱) ÷ 최대공약수',
+        ),
+      ],
+      unitMastery: [
+        UnitMastery(name: '소인수분해', percent: 90),
+        UnitMastery(name: '최소공배수', percent: 55),
+      ],
+    ),
+    training: TrainingSnapshot.empty,
+  );
+}
+
 List<SubmissionSummary> designReviewSubmissionsEmpty() => const [];
 
 List<SubmissionSummary> designReviewSubmissionsRecent() => const [
@@ -435,6 +534,34 @@ ProblemAttempt designReviewAttemptWrong() {
     answer: '1',
     isCorrect: false,
     feedback: '−1이 정답이에요. (x−2)²−1 형태로 완전제곱식을 떠올려 보세요.',
+  );
+}
+
+TrainingFeedResponse designReviewTrainingFeed() {
+  return const TrainingFeedResponse(
+    source: 'precomputed',
+    updatedAt: '2026-05-26T12:00:00Z',
+    refreshPending: false,
+    items: [
+      TrainingFeedItem(
+        id: 'feed_1',
+        bankItemId: 'bank_linear',
+        concept: '일차방정식',
+        difficulty: 'medium',
+        reason: '오답 2회 복습',
+        title: '일차방정식 이항',
+        promptPreview: r'2x + 5 = 13 일 때, x의 값은?',
+      ),
+      TrainingFeedItem(
+        id: 'feed_2',
+        bankItemId: 'bank_factor',
+        concept: '소인수분해',
+        difficulty: 'easy',
+        reason: '맞춤 추천',
+        title: '최소공배수',
+        promptPreview: '24와 36의 최소공배수를 구하시오.',
+      ),
+    ],
   );
 }
 

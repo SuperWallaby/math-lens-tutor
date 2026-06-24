@@ -6,7 +6,7 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from PIL import Image, ImageDraw
+from PIL import Image
 
 # (filename, width_px, height_px)
 APP_ICONS: list[tuple[str, int, int]] = [
@@ -38,15 +38,8 @@ def square_master(im: Image.Image) -> Image.Image:
 
 
 def make_launch_screen(master: Image.Image, w: int, h: int) -> Image.Image:
-    """Indigo gradient + centered icon."""
-    out = Image.new("RGB", (w, h), (30, 58, 138))
-    draw = ImageDraw.Draw(out)
-    for y in range(h):
-        t = y / max(h - 1, 1)
-        r = int(30 + (37 - 30) * t)
-        g = int(58 + (99 - 58) * t)
-        b = int(138 + (235 - 138) * t)
-        draw.line([(0, y), (w, y)], fill=(r, g, b))
+    """White background + centered icon (matches icon's white edge)."""
+    out = Image.new("RGB", (w, h), (255, 255, 255))
 
     icon_side = int(min(w, h) * 0.42)
     icon = master.resize((icon_side, icon_side), Image.Resampling.LANCZOS)

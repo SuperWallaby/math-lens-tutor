@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../layout/tablet_layout.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
+import '../utils/choice_label_format.dart';
 import '../utils/problem_answer_format.dart';
 import '../widgets/app_card.dart';
 import '../widgets/hero_icon_3d.dart';
@@ -586,7 +587,7 @@ String _resolveChoiceAnswerText(GeneratedProblem problem, String rawAnswer) {
   if (trimmed.isEmpty) return rawAnswer;
   for (final choice in problem.choices) {
     if (choice.id == trimmed) {
-      return '${choice.id}. ${choice.label}';
+      return formatChoiceDisplayLabel(choice.id, choice.label);
     }
   }
   return rawAnswer;
@@ -676,7 +677,7 @@ class _ReviewChoiceTile extends StatelessWidget {
           const SizedBox(width: 10),
           Expanded(
             child: MixedMathText(
-              '${choice.id}. ${choice.label}',
+              formatChoiceDisplayLabel(choice.id, choice.label),
               style: const TextStyle(
                 color: AppColors.text,
                 height: 1.4,

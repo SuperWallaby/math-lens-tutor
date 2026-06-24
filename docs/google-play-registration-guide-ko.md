@@ -97,8 +97,8 @@ flutter_app/releases/<버전>/wooyeol-*-build*.aab
 | 앱 이름        | 우열                                            |
 | 간단한 설명      | 80자 이내 (예: AI가 풀이 사진을 분석하고 유사 문제로 연습하는 수학 튜터) |
 | 자세한 설명      | 4000자 이내 — 업로드·분석·연습·학부모 코칭 요약                |
-| 앱 아이콘       | 512×512 PNG (투명 없음)                           |
-| 그래픽 이미지     | 1024×500 (선택이지만 권장)                           |
+| 앱 아이콘       | 512×512 PNG → `flutter_app/branding/play-store-icon-512.png` |
+| 그래픽 이미지     | 1024×500 → `flutter_app/branding/play-store-feature-graphic-1024x500.png` |
 | 스크린샷 (휴대전화) | **최소 2장**, 세로 권장 1080×1920 ~ 1440×2560        |
 | 태블릿         | 선택 — iPad 캡처 리사이즈 재사용 가능                      |
 

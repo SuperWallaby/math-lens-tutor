@@ -81,6 +81,17 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
   }
 
   @override
+  void initState() {
+    super.initState();
+    final user = widget.apiClient.authSession.user;
+    if (user?.profileComplete == true && user?.role != null) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) widget.onComplete();
+      });
+    }
+  }
+
+  @override
   void dispose() {
     _orgController.dispose();
     super.dispose();
@@ -111,7 +122,9 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
         case _OnboardingStep.details:
           _step = _OnboardingStep.role;
         case _OnboardingStep.linkChildren:
-          _step = _OnboardingStep.details;
+          _step = _role == AppUserRole.student
+              ? _OnboardingStep.grade
+              : _OnboardingStep.details;
         case _OnboardingStep.studentCode:
           _step = _OnboardingStep.grade;
       }
@@ -197,7 +210,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
 
       if (!mounted) return;
 
-      if (user.isStudent) {
+      if (role == AppUserRole.student) {
         _goToStep(
           _OnboardingStep.studentCode,
           forward: true,
@@ -235,6 +248,13 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
   void _finish() {
     if (_finishing) return;
     final role = _role ?? widget.apiClient.authSession.user?.role;
+
+    if (role == AppUserRole.student) {
+      _finishing = true;
+      widget.onComplete();
+      return;
+    }
+
     if (role == AppUserRole.parent || role == AppUserRole.teacher) {
       if (widget.apiClient.authSession.linkedStudents.isEmpty) return;
     }
@@ -305,6 +325,12 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
             key: ValueKey<String>(stepTitle),
           ),
         ),
+        actions: [
+          TextButton(
+            onPressed: _loading ? null : _restartFromBeginning,
+            child: const Text('처음으로'),
+          ),
+        ],
         bottom: PreferredSize(
           preferredSize: const Size.fromHeight(14),
           child: Padding(
@@ -576,7 +602,61 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
     );
   }
 
+  Future<void> _restartFromBeginning() async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('처음으로'),
+        content: const Text(
+          '로그아웃하고 시작 화면으로 돌아갑니다.\n진행 중인 설정은 저장되지 않을 수 있습니다.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('로그아웃'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+    await widget.apiClient.authSession.clear();
+  }
+
   Widget _buildDetailsStep(BuildContext context) {
+    if (_role == AppUserRole.student) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            '학생 계정으로 시작합니다',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: TabletLayout.titleSection(context),
+              fontWeight: FontWeight.w900,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          const Text(
+            '다음 단계에서 학년을 선택합니다.',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: AppColors.textSub, height: 1.55),
+          ),
+          const SizedBox(height: AppSpacing.section),
+          FilledButton(
+            onPressed: _loading
+                ? null
+                : () => _goToStep(_OnboardingStep.grade, forward: true),
+            style: AppButtonStyles.filledKeyAction(),
+            child: const Text('다음'),
+          ),
+        ],
+      );
+    }
+
     if (_role == AppUserRole.teacher) {
       return Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
