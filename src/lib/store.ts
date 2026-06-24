@@ -1,4 +1,5 @@
 import { randomUUID } from "crypto";
+import { getActiveDbVariant } from "./db-variant";
 import { getMongoDb } from "./mongodb";
 import {
   buildR2ObjectKey,
@@ -25,15 +26,28 @@ type MemoryDb = {
 
 const globalForStore = globalThis as typeof globalThis & {
   mathTutorMemoryDb?: MemoryDb;
+  mathTutorMemoryDbLite?: MemoryDb;
 };
 
-const memoryDb =
-  globalForStore.mathTutorMemoryDb ??
-  (globalForStore.mathTutorMemoryDb = {
+function createEmptyMemoryDb(): MemoryDb {
+  return {
     submissions: [sampleSubmission],
     problemSets: [sampleProblemSet],
     attempts: [],
-  });
+  };
+}
+
+const memoryDbFull =
+  globalForStore.mathTutorMemoryDb ??
+  (globalForStore.mathTutorMemoryDb = createEmptyMemoryDb());
+
+const memoryDbLite =
+  globalForStore.mathTutorMemoryDbLite ??
+  (globalForStore.mathTutorMemoryDbLite = createEmptyMemoryDb());
+
+function activeMemoryDb(): MemoryDb {
+  return getActiveDbVariant() === "lite" ? memoryDbLite : memoryDbFull;
+}
 
 export const DEMO_USER_ID = "demo-user";
 
@@ -128,17 +142,17 @@ export async function deleteAllUserData(userId: string): Promise<void> {
   const db = await getMongoDb();
   if (!db) {
     const submissionIds = new Set(
-      memoryDb.submissions
+      activeMemoryDb().submissions
         .filter((item) => item.userId === userId)
         .map((item) => item.id),
     );
-    memoryDb.submissions = memoryDb.submissions.filter(
+    activeMemoryDb().submissions = activeMemoryDb().submissions.filter(
       (item) => item.userId !== userId,
     );
-    memoryDb.attempts = memoryDb.attempts.filter(
+    activeMemoryDb().attempts = activeMemoryDb().attempts.filter(
       (item) => item.userId !== userId,
     );
-    memoryDb.problemSets = memoryDb.problemSets.filter(
+    activeMemoryDb().problemSets = activeMemoryDb().problemSets.filter(
       (set) => !submissionIds.has(set.submissionId),
     );
     return;
@@ -174,7 +188,7 @@ export async function saveSubmission(
 ): Promise<SolutionSubmission> {
   const db = await getMongoDb();
   if (!db) {
-    memoryDb.submissions.unshift(submission);
+    activeMemoryDb().submissions.unshift(submission);
     return submission;
   }
 
@@ -188,7 +202,7 @@ export async function saveProblemSet(
 ): Promise<GeneratedProblemSet> {
   const db = await getMongoDb();
   if (!db) {
-    memoryDb.problemSets.unshift(problemSet);
+    activeMemoryDb().problemSets.unshift(problemSet);
     return problemSet;
   }
 
@@ -202,7 +216,7 @@ export async function getSubmission(
 ): Promise<SolutionSubmission | null> {
   const db = await getMongoDb();
   if (!db) {
-    return memoryDb.submissions.find((submission) => submission.id === id) ?? null;
+    return activeMemoryDb().submissions.find((submission) => submission.id === id) ?? null;
   }
 
   return db
@@ -216,7 +230,7 @@ export async function getProblemSetBySubmission(
   const db = await getMongoDb();
   if (!db) {
     return (
-      memoryDb.problemSets.find((set) => set.submissionId === submissionId) ?? null
+      activeMemoryDb().problemSets.find((set) => set.submissionId === submissionId) ?? null
     );
   }
 
@@ -230,7 +244,7 @@ export async function getProblemSet(
 ): Promise<GeneratedProblemSet | null> {
   const db = await getMongoDb();
   if (!db) {
-    return memoryDb.problemSets.find((set) => set.id === id) ?? null;
+    return activeMemoryDb().problemSets.find((set) => set.id === id) ?? null;
   }
 
   return db
@@ -244,7 +258,7 @@ export async function getLatestProblemSetWithSubmissionPrefix(
   const db = await getMongoDb();
   if (!db) {
     return (
-      memoryDb.problemSets.find((set) =>
+      activeMemoryDb().problemSets.find((set) =>
         set.submissionId.startsWith(submissionIdPrefix),
       ) ?? null
     );
@@ -263,11 +277,11 @@ export async function updateProblemSet(
 ): Promise<GeneratedProblemSet> {
   const db = await getMongoDb();
   if (!db) {
-    const index = memoryDb.problemSets.findIndex((set) => set.id === problemSet.id);
+    const index = activeMemoryDb().problemSets.findIndex((set) => set.id === problemSet.id);
     if (index >= 0) {
-      memoryDb.problemSets[index] = problemSet;
+      activeMemoryDb().problemSets[index] = problemSet;
     } else {
-      memoryDb.problemSets.unshift(problemSet);
+      activeMemoryDb().problemSets.unshift(problemSet);
     }
     return problemSet;
   }
@@ -284,7 +298,7 @@ export async function updateProblemSet(
 export async function saveAttempt(attempt: ProblemAttempt): Promise<ProblemAttempt> {
   const db = await getMongoDb();
   if (!db) {
-    memoryDb.attempts.unshift(attempt);
+    activeMemoryDb().attempts.unshift(attempt);
     return attempt;
   }
 
@@ -296,7 +310,7 @@ export async function saveAttempt(attempt: ProblemAttempt): Promise<ProblemAttem
 export async function getAttempts(userId = DEMO_USER_ID): Promise<ProblemAttempt[]> {
   const db = await getMongoDb();
   if (!db) {
-    return memoryDb.attempts.filter((attempt) => attempt.userId === userId);
+    return activeMemoryDb().attempts.filter((attempt) => attempt.userId === userId);
   }
 
   return db
@@ -339,12 +353,12 @@ export async function reassignUserData(
 
   await reassignProblemBankUserData(fromUserId, toUserId);
 
-  for (const submission of memoryDb.submissions) {
+  for (const submission of activeMemoryDb().submissions) {
     if (submission.userId === fromUserId) {
       submission.userId = toUserId;
     }
   }
-  for (const attempt of memoryDb.attempts) {
+  for (const attempt of activeMemoryDb().attempts) {
     if (attempt.userId === fromUserId) {
       attempt.userId = toUserId;
     }
@@ -357,7 +371,7 @@ export async function getSubmissionsByUserId(
 ): Promise<SolutionSubmission[]> {
   const db = await getMongoDb();
   if (!db) {
-    return memoryDb.submissions
+    return activeMemoryDb().submissions
       .filter((submission) => submission.userId === userId)
       .slice(0, limit);
   }

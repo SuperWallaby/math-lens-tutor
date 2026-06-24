@@ -112,10 +112,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   }
 
   Future<void> _logout() async {
+    widget.apiClient.invalidateLearningProfileCache();
     await widget.apiClient.authSession.clear();
-    await widget.apiClient.authSession.enterGuestMode(
-      await widget.apiClient.deviceScopedUserId,
-    );
   }
 
   Future<void> _pickProfileImage() async {
@@ -191,9 +189,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
     try {
       await widget.apiClient.deleteAccount();
-      await widget.apiClient.authSession.enterGuestMode(
-        await widget.apiClient.deviceScopedUserId,
-      );
+      widget.apiClient.invalidateLearningProfileCache();
+      await widget.apiClient.authSession.clear();
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('계정을 탈퇴했습니다.')),

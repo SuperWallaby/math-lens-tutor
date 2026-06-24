@@ -40,6 +40,7 @@ export async function GET(request: Request) {
 
     const training = await buildTrainingSnapshot({
       userId,
+      displayName: user?.displayName,
       attempts,
       mistakes,
       scanned,

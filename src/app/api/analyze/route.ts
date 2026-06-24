@@ -12,6 +12,7 @@ import {
 } from "@/lib/model-deployment-options";
 import { GENERIC_ANALYZE_ERROR, logApiError } from "@/lib/api-errors";
 import { authErrorResponse, resolveActorUserId } from "@/lib/request";
+import { withRequestDb } from "@/lib/db-variant";
 import { encodeAnalyzePartialLine } from "@/lib/analyze-partial";
 import type { AnalyzePartialPayload } from "@/lib/analyze-partial";
 import {
@@ -63,6 +64,7 @@ function wantsProgressStream(formData: FormData): boolean {
 }
 
 export async function POST(request: Request) {
+  return withRequestDb(request, async () => {
   let authUserId = "anonymous";
   let userId = "anonymous";
 
@@ -240,4 +242,5 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+  });
 }

@@ -107,8 +107,15 @@ export function buildTrainingFocusItems(params: {
     .slice(0, 8);
 }
 
+function trainingLearnerName(raw?: string | null): string {
+  const trimmed = raw?.trim();
+  if (!trimmed || trimmed === "게스트") return "학습자";
+  return trimmed;
+}
+
 export async function buildTrainingSnapshot(params: {
   userId: string;
+  displayName?: string | null;
   attempts: ProblemAttempt[];
   mistakes: PracticeMistakeRecord[];
   scanned: ScannedProblemRecord[];
@@ -157,14 +164,14 @@ export async function buildTrainingSnapshot(params: {
     (needsTraining.length > 0 || activeSetId != null);
 
   const topConcepts = needsTraining.slice(0, 3).map((item) => item.concept);
+  const learnerName = trainingLearnerName(params.displayName);
+  const personalizedHeadline = `${learnerName}님을 위한 맞춤 문제가 준비되었습니다.`;
 
   return {
     available,
     hasLearningData,
-    headline: available ? "틀렸던 개념을 다시 연습해요" : "",
-    description: available
-      ? "분석·연습에서 틀린 부분을 모아 비슷한 문제로 반복 훈련합니다. 맞추면 [재학습 성공됨]으로 표시돼요."
-      : "",
+    headline: available ? personalizedHeadline : "",
+    description: "",
     focusConcepts: topConcepts,
     focusItems,
     activeSetId,

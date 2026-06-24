@@ -27,7 +27,7 @@ class ProfileAvatar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final name = user?.displayName ?? '';
-    final imageUrl = _resolveImageUrl(user?.profileImageUrl);
+    final imageUrl = resolveProfileImageUrl(null, user?.profileImageUrl);
     final initials = profileInitialsFromName(name);
 
     Widget avatar = Container(
@@ -98,10 +98,59 @@ class ProfileAvatar extends StatelessWidget {
       ],
     );
   }
+}
 
-  String? _resolveImageUrl(String? path) {
-    if (path == null || path.isEmpty) return null;
-    if (path.startsWith('http')) return path;
-    return '${resolveApiBaseUrl()}$path';
+String? resolveProfileImageUrl(String? baseUrl, String? path) {
+  if (path == null || path.isEmpty) return null;
+  if (path.startsWith('http')) return path;
+  final root = (baseUrl ?? resolveApiBaseUrl()).replaceAll(RegExp(r'/$'), '');
+  final normalized = path.startsWith('/') ? path : '/$path';
+  return '$root$normalized';
+}
+
+class LinkedStudentAvatar extends StatelessWidget {
+  const LinkedStudentAvatar({
+    super.key,
+    required this.student,
+    this.size = 36,
+    this.apiBaseUrl,
+  });
+
+  final LinkedStudent student;
+  final double size;
+  final String? apiBaseUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    final name = student.labelForGuardian;
+    final imageUrl = resolveProfileImageUrl(apiBaseUrl, student.profileImageUrl);
+    final initials = profileInitialsFromName(name);
+
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: AppColors.success.withValues(alpha: 0.15),
+        border: Border.all(color: AppColors.borderStrong),
+        image: imageUrl != null
+            ? DecorationImage(
+                image: NetworkImage(imageUrl),
+                fit: BoxFit.cover,
+              )
+            : null,
+      ),
+      alignment: Alignment.center,
+      child: imageUrl == null
+          ? Text(
+              initials,
+              style: TextStyle(
+                fontSize: size * 0.38,
+                fontWeight: FontWeight.w800,
+                color: AppColors.success,
+              ),
+            )
+          : null,
+    );
   }
 }

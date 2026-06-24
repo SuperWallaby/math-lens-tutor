@@ -1,5 +1,7 @@
 import { randomUUID } from "crypto";
 
+import { truncateMathSafe } from "./truncate-math-safe";
+
 import { getMongoDb } from "./mongodb";
 import type {
   AnalysisJob,
@@ -353,7 +355,7 @@ export function buildFeedItemFromBank(params: {
   };
   reason: string;
 }): TrainingFeedItem {
-  const preview = params.item.prompt.replace(/\s+/g, " ").trim().slice(0, 96);
+  const normalized = params.item.prompt.replace(/\s+/g, " ").trim();
   return {
     id: randomUUID(),
     bankItemId: params.item.id,
@@ -361,6 +363,6 @@ export function buildFeedItemFromBank(params: {
     difficulty: params.item.difficulty,
     reason: params.reason,
     title: params.item.title,
-    promptPreview: preview.length < params.item.prompt.length ? `${preview}…` : preview,
+    promptPreview: truncateMathSafe(normalized, 96),
   };
 }

@@ -1,11 +1,14 @@
 "use client";
 
 import { useState } from "react";
-import { ChartRenderer } from "./ChartRenderer";
-import { JsxGraphRenderer } from "./JsxGraphRenderer";
 import { MathMixedRich } from "./MathMixedRich";
+import {
+  SolutionVisualizationRenderer,
+  VisualizationRenderer,
+} from "./VisualizationRenderer";
 import { ProblemSetPrintPdfButton } from "./ProblemSetPrintPdfButton";
 import type { GeneratedProblemSet, ProblemAttempt } from "@/lib/types";
+import { formatChoiceDisplayLabel } from "@/lib/choice-label-format";
 import { formatDifficultyLabel } from "@/lib/problem-labels";
 
 type Answers = Record<string, string>;
@@ -71,15 +74,7 @@ export function PracticeRunner({ problemSet }: { problemSet: GeneratedProblemSet
             text={problem.prompt}
             className="mt-3 leading-8 text-foreground"
           />
-          {problem.chart ? (
-            <div className="mt-5 rounded-wy-md bg-wy-surface p-4">
-              <ChartRenderer chart={problem.chart} />
-            </div>
-          ) : null}
-
-          {problem.jsxGraph?.diagramNeeded ? (
-            <JsxGraphRenderer diagram={problem.jsxGraph} />
-          ) : null}
+          <VisualizationRenderer problem={problem} />
 
           {problem.type === "multiple_choice" && problem.choices ? (
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -101,7 +96,7 @@ export function PracticeRunner({ problemSet }: { problemSet: GeneratedProblemSet
                     }
                   />
                   <MathMixedRich
-                    text={`${choice.id}. ${choice.label}`}
+                    text={formatChoiceDisplayLabel(choice.id, choice.label)}
                     className="inline leading-7"
                   />
                 </label>
@@ -138,6 +133,15 @@ export function PracticeRunner({ problemSet }: { problemSet: GeneratedProblemSet
               }`}
             >
               <MathMixedRich text={feedback[problem.id].feedback} />
+              {problem.explanation ? (
+                <div className="mt-4 border-t border-wy-border pt-4">
+                  <p className="mb-2 text-xs font-semibold text-wy-text-sub">
+                    풀이 설명
+                  </p>
+                  <MathMixedRich text={problem.explanation} />
+                  <SolutionVisualizationRenderer problem={problem} />
+                </div>
+              ) : null}
             </div>
           ) : null}
         </section>

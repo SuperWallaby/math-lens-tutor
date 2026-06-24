@@ -24,6 +24,7 @@ import {
   buildParentCoachingCard,
   buildParentWrongExplains,
   pickGradingPoint,
+  truncatePreserveBreaks,
 } from "./parent-coaching";
 import type {
   ConceptStatusItem,
@@ -419,7 +420,7 @@ async function buildParentActions(
     actions.push({
       icon: "📖",
       title: "틀린 문제, 이렇게 설명해 주세요",
-      subtitle: truncatePlain(first.easyExplain, 72),
+      subtitle: truncatePreserveBreaks(first.easyExplain, 72),
     });
   }
 
@@ -445,7 +446,7 @@ export async function buildLearningProfile(
   userId: string,
   grade?: string | null,
 ): Promise<LearningProfile> {
-  const [attempts, submissions, mistakes, scanned, unitPractice, poolByUnit] =
+  const [attempts, submissions, mistakes, scanned, unitPractice, poolByUnit, user] =
     await Promise.all([
       getAttempts(userId),
       getSubmissionsByUserId(userId, 30),
@@ -453,6 +454,7 @@ export async function buildLearningProfile(
       getScannedProblemsForUser(userId),
       aggregateUnitPracticeForUser(userId),
       countActiveBankItemsGroupedByUnit(),
+      findUserById(userId),
     ]);
 
   const insight = buildSampleInsight(attempts);
@@ -490,6 +492,7 @@ export async function buildLearningProfile(
   const mission = await buildMission(userId, attempts);
   const training = await buildTrainingSnapshot({
     userId,
+    displayName: user?.displayName,
     attempts,
     mistakes,
     scanned,

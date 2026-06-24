@@ -14,9 +14,14 @@ import '../widgets/parent_tab_scaffold.dart';
 import '../theme/app_design_system.dart';
 
 class ParentHomeScreen extends StatefulWidget {
-  const ParentHomeScreen({super.key, required this.apiClient});
+  const ParentHomeScreen({
+    super.key,
+    required this.apiClient,
+    this.demoProfile,
+  });
 
   final ApiClient apiClient;
+  final LearningProfile? demoProfile;
 
   @override
   State<ParentHomeScreen> createState() => _ParentHomeScreenState();
@@ -32,6 +37,11 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
   }
 
   void _reload() {
+    if (widget.demoProfile != null) {
+      _profileFuture = Future.value(widget.demoProfile);
+      setState(() {});
+      return;
+    }
     if (widget.apiClient.authSession.linkedStudents.isEmpty) {
       _profileFuture = null;
       setState(() {});
@@ -47,7 +57,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
     final linked = widget.apiClient.authSession.linkedStudents;
     final user = widget.apiClient.authSession.user;
 
-    if (linked.isEmpty) {
+    if (widget.demoProfile == null && linked.isEmpty) {
       final isParent = user?.role == AppUserRole.parent;
       return ListView(
         padding: TabletLayout.pagePadding(context),
@@ -109,7 +119,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
 
             final profile = snapshot.data!;
             final studentName =
-                widget.apiClient.authSession.selectedStudent?.displayName ??
+                widget.apiClient.authSession.selectedStudent?.labelForGuardian ??
                     '자녀';
 
             Future<void> openExplainDetail(ParentWrongExplainItem item) async {
@@ -127,6 +137,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
               apiClient: widget.apiClient,
               onStudentChanged: _reload,
               onRefresh: () async => _reload(),
+              showStudentPicker: widget.demoProfile == null,
               children: [
                 Text(
                   '안녕하세요, ${user?.displayName ?? '학부모'}님',
@@ -175,6 +186,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
                   const SectionLabel('틀린 문제, 이렇게 도와주세요'),
                   ParentWrongExplainPreviewList(
                     items: profile.parentWrongExplains,
+                    apiBaseUrl: widget.apiClient.baseUrl,
                     onTapItem: openExplainDetail,
                   ),
                   const SectionLabel('오늘 할 일'),
@@ -269,70 +281,8 @@ class _ParentReportScreenState extends State<ParentReportScreen> {
                     '학습 기록이 쌓이면 확인·대화·칭찬할 항목이 자동으로 채워집니다. 홈의 코칭 카드도 함께 확인해 보세요.',
               ),
               const SectionLabel('학습 루프 · 부모 역할'),
-              AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    for (final step in parentSteps.isNotEmpty
-                        ? parentSteps
-                        : report.cycle) ...[
-                      Row(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Container(
-                            width: 28,
-                            height: 28,
-                            alignment: Alignment.center,
-                            decoration: BoxDecoration(
-                              color: _cycleColor(step.step),
-                              borderRadius: BorderRadius.circular(99),
-                            ),
-                            child: Text(
-                              '${step.step}',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontWeight: FontWeight.w800,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Text(
-                                  step.label,
-                                  style: TextStyle(
-                                    color: _cycleColor(step.step),
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 12,
-                                  ),
-                                ),
-                                Text(
-                                  step.title,
-                                  style: const TextStyle(
-                                    fontWeight: FontWeight.w800,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                                Text(
-                                  step.text,
-                                  style: const TextStyle(
-                                    color: AppColors.textSub,
-                                    fontSize: 12,
-                                    height: 1.45,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                    ],
-                  ],
-                ),
+              ParentWeeklyCycleList(
+                steps: parentSteps.isNotEmpty ? parentSteps : report.cycle,
               ),
               SectionLabel('참고 · 단원 이해도'),
               AppCard(
@@ -357,19 +307,6 @@ class _ParentReportScreenState extends State<ParentReportScreen> {
         },
       ),
     );
-  }
-
-  Color _cycleColor(int step) {
-    return switch (step) {
-      1 => AppColors.accent,
-      2 => AppColors.primary,
-      3 => AppColors.success,
-      4 => AppColors.warning,
-      5 => AppColors.success,
-      6 => AppColors.primary,
-      7 => AppColors.accent,
-      _ => AppColors.warning,
-    };
   }
 }
 

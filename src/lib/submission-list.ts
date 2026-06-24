@@ -1,27 +1,16 @@
 import type { SolutionSubmission } from "./types";
-
-function truncateForListTitle(text: string, maxLen = 72): string {
-  let normalized = text
-    .replace(/^\s*\d+[\.)]\s*/, "")
-    .replace(/\$([^$]+)\$/g, "$1")
-    .replace(/\s+/g, " ")
-    .trim();
-
-  if (normalized.length <= maxLen) {
-    return normalized;
-  }
-
-  return `${normalized.slice(0, maxLen - 1)}…`;
-}
+import { formatListTitleWithMath } from "./truncate-math-safe";
 
 /** Vision이 추출한 problemText 기반 목록 제목 (파일명·해설 대신 사용). */
 export function formatSubmissionListTitle(
   problemText: string,
   imageName: string,
+  weakConcepts?: string[],
 ): string {
   const fromProblem = problemText.trim();
   if (fromProblem) {
-    return truncateForListTitle(fromProblem);
+    const concept = weakConcepts?.find((c) => c.trim())?.trim();
+    return formatListTitleWithMath(fromProblem, 96, concept);
   }
 
   const fromName = imageName.trim();
@@ -37,10 +26,11 @@ export function toSubmissionListItem(submission: SolutionSubmission) {
     id: submission.id,
     imageUrl: submission.imageUrl,
     title: formatSubmissionListTitle(
-      submission.analysis.problemText,
-      submission.imageName,
+      submission.analysis?.problemText ?? "",
+      submission.imageName ?? "",
+      submission.analysis?.weakConcepts,
     ),
     createdAt: submission.createdAt,
-    weakConcepts: submission.analysis.weakConcepts.slice(0, 3),
+    weakConcepts: (submission.analysis?.weakConcepts ?? []).slice(0, 3),
   };
 }

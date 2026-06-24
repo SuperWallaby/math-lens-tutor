@@ -120,6 +120,8 @@ class GeneratedProblem {
     required this.conceptTags,
     required this.chart,
     this.jsxGraph,
+    this.visualizationData,
+    this.solutionVisualizationData,
     this.answerFormat,
     this.source = 'generated',
     this.bankItemId,
@@ -141,6 +143,10 @@ class GeneratedProblem {
       conceptTags: _stringList(json['conceptTags']),
       chart: (json['chart'] as Map?)?.cast<String, dynamic>(),
       jsxGraph: (json['jsxGraph'] as Map?)?.cast<String, dynamic>(),
+      visualizationData:
+          (json['visualizationData'] as Map?)?.cast<String, dynamic>(),
+      solutionVisualizationData: (json['solutionVisualizationData'] as Map?)
+          ?.cast<String, dynamic>(),
       answerFormat: json['answerFormat'] as String?,
       source: json['source'] as String? ?? 'generated',
       bankItemId: json['bankItemId'] as String?,
@@ -158,6 +164,8 @@ class GeneratedProblem {
   final List<String> conceptTags;
   final Map<String, dynamic>? chart;
   final Map<String, dynamic>? jsxGraph;
+  final Map<String, dynamic>? visualizationData;
+  final Map<String, dynamic>? solutionVisualizationData;
   /// `short_numeric` | `short_answer` | `long_solution` (free_response only)
   final String? answerFormat;
   final String source;
@@ -466,13 +474,19 @@ class LinkedStudent {
     required this.id,
     required this.displayName,
     required this.studentCode,
+    this.guardianLabel,
+    this.profileImageUrl,
   });
 
   factory LinkedStudent.fromJson(Map<String, dynamic> json) {
+    final guardianLabel = (json['guardianLabel'] as String?)?.trim();
     return LinkedStudent(
       id: json['id'] as String? ?? '',
       displayName: json['displayName'] as String? ?? '',
       studentCode: json['studentCode'] as String? ?? '',
+      guardianLabel:
+          guardianLabel != null && guardianLabel.isNotEmpty ? guardianLabel : null,
+      profileImageUrl: json['profileImageUrl'] as String?,
     );
   }
 
@@ -480,11 +494,42 @@ class LinkedStudent {
     'id': id,
     'displayName': displayName,
     'studentCode': studentCode,
+    if (guardianLabel != null) 'guardianLabel': guardianLabel,
+    if (profileImageUrl != null) 'profileImageUrl': profileImageUrl,
   };
 
   final String id;
   final String displayName;
   final String studentCode;
+  final String? guardianLabel;
+  final String? profileImageUrl;
+
+  /// 부모·교사 화면에 보여 줄 이름 (별칭 우선)
+  String get labelForGuardian {
+    final alias = guardianLabel?.trim();
+    if (alias != null && alias.isNotEmpty) return alias;
+    return displayName;
+  }
+
+  bool get hasCustomGuardianLabel {
+    final alias = guardianLabel?.trim();
+    return alias != null && alias.isNotEmpty && alias != displayName.trim();
+  }
+
+  LinkedStudent copyWith({
+    String? displayName,
+    String? studentCode,
+    String? guardianLabel,
+    String? profileImageUrl,
+  }) {
+    return LinkedStudent(
+      id: id,
+      displayName: displayName ?? this.displayName,
+      studentCode: studentCode ?? this.studentCode,
+      guardianLabel: guardianLabel ?? this.guardianLabel,
+      profileImageUrl: profileImageUrl ?? this.profileImageUrl,
+    );
+  }
 }
 
 class SubmissionSummary {
@@ -992,6 +1037,7 @@ class ParentWrongExplainItem {
     required this.easyExplain,
     required this.parentScript,
     required this.problemSetId,
+    this.imageUrl,
     required this.createdAt,
   });
 
@@ -1005,6 +1051,7 @@ class ParentWrongExplainItem {
       easyExplain: json['easyExplain'] as String? ?? '',
       parentScript: json['parentScript'] as String? ?? '',
       problemSetId: json['problemSetId'] as String?,
+      imageUrl: json['imageUrl'] as String?,
       createdAt: json['createdAt'] as String? ?? '',
     );
   }
@@ -1017,6 +1064,7 @@ class ParentWrongExplainItem {
   final String easyExplain;
   final String parentScript;
   final String? problemSetId;
+  final String? imageUrl;
   final String createdAt;
 }
 

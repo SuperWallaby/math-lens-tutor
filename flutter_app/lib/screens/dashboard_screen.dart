@@ -5,6 +5,7 @@ import '../models/app_models.dart';
 import '../services/api_client.dart';
 import '../widgets/app_card.dart';
 import '../widgets/learning_profile_widgets.dart';
+import '../widgets/mixed_math_list_title.dart';
 import '../widgets/mixed_math_text.dart';
 import '../widgets/student_picker.dart';
 import 'link_student_screen.dart';
@@ -288,15 +289,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                   child: Column(
                                     crossAxisAlignment: CrossAxisAlignment.start,
                                     children: [
-                                      Text(
+                                      MixedMathListTitle(
                                         item.title,
                                         style: const TextStyle(
                                           fontWeight: FontWeight.w800,
                                           fontSize: 15,
                                           height: 1.35,
                                         ),
-                                        maxLines: 2,
-                                        overflow: TextOverflow.ellipsis,
                                       ),
                                       if (item.createdAt.isNotEmpty) ...[
                                         const SizedBox(height: 6),

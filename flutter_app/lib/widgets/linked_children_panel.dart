@@ -8,6 +8,7 @@ import '../utils/pending_student_link.dart';
 import '../utils/student_code_format.dart';
 import 'app_card.dart';
 import 'hero_icon_3d.dart';
+import 'profile_avatar.dart';
 import 'student_code_input_field.dart';
 
 class LinkedChildrenPanel extends StatefulWidget {
@@ -157,7 +158,7 @@ class _LinkedChildrenPanelState extends State<LinkedChildrenPanel> {
         setState(() {});
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('${student.displayName} 학생과 연결되었습니다.'),
+            content: Text('${student.labelForGuardian} 학생과 연결되었습니다.'),
           ),
         );
       }
@@ -171,6 +172,111 @@ class _LinkedChildrenPanelState extends State<LinkedChildrenPanel> {
         _error = '연결에 실패했습니다. 잠시 후 다시 시도해 주세요.';
         _lastSubmittedCode = null;
       });
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  Future<void> _showEditLabelSheet(LinkedStudent student) async {
+    final guestMessage = _guestLinkBlockedMessage();
+    if (guestMessage != null) {
+      setState(() => _error = guestMessage);
+      return;
+    }
+
+    final controller = TextEditingController(text: student.guardianLabel ?? '');
+    final saved = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      showDragHandle: true,
+      builder: (context) {
+        return Padding(
+          padding: EdgeInsets.only(
+            left: AppSpacing.xl,
+            right: AppSpacing.xl,
+            bottom: MediaQuery.viewInsetsOf(context).bottom + AppSpacing.xxl,
+            top: AppSpacing.md,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              const Text(
+                '표시 이름 변경',
+                style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                '학생 계정 이름: ${student.displayName}',
+                style: const TextStyle(color: AppColors.textSub, fontSize: 12),
+              ),
+              const SizedBox(height: AppSpacing.lg),
+              TextField(
+                controller: controller,
+                autofocus: true,
+                maxLength: 40,
+                decoration: InputDecoration(
+                  labelText: '부모에게 보이는 이름',
+                  hintText: student.displayName,
+                  filled: true,
+                  fillColor: AppColors.surfaceElevated,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(AppRadii.lg),
+                  ),
+                ),
+              ),
+              const SizedBox(height: AppSpacing.md),
+              FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: FilledButton.styleFrom(
+                  minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
+                  backgroundColor: AppColors.success,
+                ),
+                child: const Text('저장'),
+              ),
+              TextButton(
+                onPressed: () {
+                  controller.clear();
+                  Navigator.of(context).pop(true);
+                },
+                child: const Text('학생 계정 이름으로 되돌리기'),
+              ),
+            ],
+          ),
+        );
+      },
+    );
+
+    if (saved != true || !mounted) {
+      controller.dispose();
+      return;
+    }
+
+    final trimmed = controller.text.trim();
+    controller.dispose();
+
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      await widget.apiClient.updateLinkedStudentLabel(
+        studentId: student.id,
+        guardianLabel: trimmed.isEmpty ? null : trimmed,
+      );
+      widget.onChanged?.call();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('표시 이름을 저장했습니다.')),
+        );
+      }
+    } on ApiException catch (error) {
+      if (mounted) setState(() => _error = error.message);
+    } catch (_) {
+      if (mounted) {
+        setState(() => _error = '표시 이름을 저장하지 못했습니다.');
+      }
     } finally {
       if (mounted) setState(() => _loading = false);
     }
@@ -209,18 +315,10 @@ class _LinkedChildrenPanelState extends State<LinkedChildrenPanel> {
                   if (i > 0) const Divider(height: 20, color: AppColors.border),
                   Row(
                     children: [
-                      CircleAvatar(
-                        radius: 18,
-                        backgroundColor: AppColors.success.withValues(alpha: 0.15),
-                        child: Text(
-                          students[i].displayName.isNotEmpty
-                              ? students[i].displayName[0]
-                              : '?',
-                          style: const TextStyle(
-                            color: AppColors.success,
-                            fontWeight: FontWeight.w800,
-                          ),
-                        ),
+                      LinkedStudentAvatar(
+                        student: students[i],
+                        apiBaseUrl: widget.apiClient.baseUrl,
+                        size: 36,
                       ),
                       const SizedBox(width: AppSpacing.md),
                       Expanded(
@@ -228,7 +326,7 @@ class _LinkedChildrenPanelState extends State<LinkedChildrenPanel> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              students[i].displayName,
+                              students[i].labelForGuardian,
                               style: const TextStyle(fontWeight: FontWeight.w800),
                             ),
                             Text(
@@ -238,8 +336,23 @@ class _LinkedChildrenPanelState extends State<LinkedChildrenPanel> {
                                 fontSize: 12,
                               ),
                             ),
+                            if (students[i].hasCustomGuardianLabel)
+                              Text(
+                                '계정 이름: ${students[i].displayName}',
+                                style: const TextStyle(
+                                  color: AppColors.textMuted,
+                                  fontSize: 11,
+                                ),
+                              ),
                           ],
                         ),
+                      ),
+                      IconButton(
+                        tooltip: '표시 이름 변경',
+                        onPressed: _loading
+                            ? null
+                            : () => _showEditLabelSheet(students[i]),
+                        icon: const Icon(Icons.edit_outlined, size: 20),
                       ),
                       const Icon(
                         Icons.check_circle_rounded,

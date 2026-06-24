@@ -4,13 +4,14 @@ import 'package:flutter/material.dart';
 import '../layout/tablet_layout.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
+import '../utils/choice_label_format.dart';
 import '../utils/problem_answer_format.dart';
 import '../utils/problem_set_pdf.dart';
 import '../widgets/app_card.dart';
 import '../widgets/bouncing_ellipsis_text.dart';
 import '../widgets/problem_answer_input.dart';
-import '../widgets/problem_chart.dart';
-import '../widgets/problem_jsx_graph.dart';
+import '../widgets/question_view.dart';
+import '../widgets/visualization_view.dart';
 import '../widgets/mixed_math_text.dart';
 import 'dashboard_screen.dart';
 
@@ -26,6 +27,7 @@ class PracticeScreen extends StatefulWidget {
     this.demoFeedback,
     this.demoAnswers,
     this.reviewMode = false,
+    this.liteMode = false,
   });
 
   final ApiClient apiClient;
@@ -34,6 +36,7 @@ class PracticeScreen extends StatefulWidget {
   final Map<String, ProblemAttempt>? demoFeedback;
   final Map<String, String>? demoAnswers;
   final bool reviewMode;
+  final bool liteMode;
 
   @override
   State<PracticeScreen> createState() => _PracticeScreenState();
@@ -314,7 +317,13 @@ class _PracticeScreenState extends State<PracticeScreen> {
                       ),
                     ),
                   )
-                else
+                else if (widget.liteMode)
+                  IconButton(
+                    onPressed: _exportPdf,
+                    icon: const Icon(Icons.picture_as_pdf_outlined),
+                    tooltip: 'PDF로 저장',
+                  )
+                else ...[
                   PopupMenuButton<String>(
                     tooltip: '문제 메뉴',
                     icon: const Icon(Icons.more_vert_rounded),
@@ -376,6 +385,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                   tooltip: '대시보드',
                   visualDensity: VisualDensity.standard,
                 ),
+                ],
               ],
       ),
       body: SafeArea(
@@ -566,7 +576,6 @@ class _ProblemCard extends StatelessWidget {
     final answerFormat = resolveAnswerFormat(problem);
     final concept = primaryConceptTag(problem.conceptTags);
     final submitted = feedback != null;
-    final hasJsx = jsxDiagramShows(problem.jsxGraph);
 
     return AppCard(
       padding: const EdgeInsets.all(18),
@@ -594,40 +603,14 @@ class _ProblemCard extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 10),
-          MixedMathText(
-            problem.prompt,
-            style: const TextStyle(
-              color: AppColors.textSub,
-              height: 1.45,
-              fontSize: 15,
-            ),
-          ),
-          if (problem.chart != null) ...[
+          QuestionView(problem: problem),
+          if (submitted) ...[
             const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: AppColors.surfaceElevated,
-                borderRadius: BorderRadius.circular(AppRadii.md),
-              ),
-              child: ProblemChart(chart: problem.chart!),
+            QuestionView(
+              problem: problem,
+              showPrompt: false,
+              showSolution: true,
             ),
-          ],
-          if (hasJsx) ...[
-            const SizedBox(height: 12),
-            if ((problem.jsxGraph!['captionKo'] as String?)?.trim().isNotEmpty ??
-                false)
-              Padding(
-                padding: const EdgeInsets.only(bottom: 6),
-                child: Text(
-                  problem.jsxGraph!['captionKo'] as String,
-                  style: const TextStyle(
-                    color: AppColors.textSub,
-                    fontSize: 13,
-                  ),
-                ),
-              ),
-            ProblemJsxGraph(spec: problem.jsxGraph!),
           ],
           if (submitted) ...[
             const SizedBox(height: 20),
@@ -700,7 +683,7 @@ class _ProblemCard extends StatelessWidget {
                           const SizedBox(width: 12),
                           Expanded(
                             child: MixedMathText(
-                              '${choice.id}. ${choice.label}',
+                              formatChoiceDisplayLabel(choice.id, choice.label),
                               style: const TextStyle(
                                 color: AppColors.text,
                                 height: 1.4,
@@ -739,7 +722,14 @@ class _ProblemCard extends StatelessWidget {
           if (kDebugMode) ...[
             const SizedBox(height: 10),
             Text(
-              describeProblemRender(problem, hasJsx: hasJsx),
+              describeProblemRender(
+              problem,
+              hasJsx: visualizationShows(
+                visualizationData: problem.visualizationData,
+                chart: problem.chart,
+                jsxGraph: problem.jsxGraph,
+              ),
+            ),
               style: const TextStyle(
                 fontSize: 10,
                 color: AppColors.textMuted,

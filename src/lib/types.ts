@@ -2,6 +2,12 @@ import { z } from "zod";
 
 import { jsxGraphDiagramSchema } from "./jsx-graph-spec";
 import {
+  visualizationDataSchema,
+  visualizationMigrationStatusSchema,
+  type VisualizationData,
+  type VisualizationMigrationStatus,
+} from "./visualization-schema";
+import {
   coerceLlmString,
   llmConfidenceField,
   llmStringField,
@@ -172,6 +178,12 @@ export const generatedProblemSchema = z.preprocess((raw) => {
   if (!("jsxGraph" in o)) {
     next.jsxGraph = null;
   }
+  if (!("visualizationData" in o)) {
+    next.visualizationData = null;
+  }
+  if (!("solutionVisualizationData" in o)) {
+    next.solutionVisualizationData = null;
+  }
   // MongoDB / migration may store null; Zod .optional() rejects null.
   if (next.choices === null || next.type === "free_response") {
     delete next.choices;
@@ -200,8 +212,14 @@ export const generatedProblemSchema = z.preprocess((raw) => {
   /** free_response 전용 — short_numeric | short_answer 만 허용 */
   answerFormat: z.enum(["short_numeric", "short_answer"]).optional(),
   chart: chartConfigSchema,
-  /** 필요할 때만: 좌표평면 도형 (JSXGraph). 불필요하면 null */
+  /** 필요할 때만: 좌표평면 도형 (JSXGraph). 불필요하면 null — legacy, visualizationData 우선 */
   jsxGraph: jsxGraphDiagramSchema,
+  /** 통합 시각화 (Desmos / JSXGraph / Chart.js) */
+  visualizationData: visualizationDataSchema,
+  /** 풀이 설명용 추가 시각화 */
+  solutionVisualizationData: visualizationDataSchema,
+  visualizationMigrationStatus: visualizationMigrationStatusSchema.optional(),
+  visualizationMigrationError: z.string().nullable().optional(),
   /** 문제 은행 출처 — bank면 bankItemId와 함께 사용 */
   source: z.enum(["bank", "generated"]).optional().default("generated"),
   bankItemId: z.string().optional(),
@@ -234,6 +252,10 @@ export type SolutionAnalysis = z.infer<typeof solutionAnalysisSchema>;
 export type GeneratedProblem = z.infer<typeof generatedProblemSchema>;
 export type GeneratedProblemSet = z.infer<typeof generatedProblemSetSchema>;
 export type { JsxGraphDiagram } from "./jsx-graph-spec";
+export type {
+  VisualizationData,
+  VisualizationMigrationStatus,
+} from "./visualization-schema";
 export type UnifiedAnalyzeProblemSet = z.infer<
   typeof unifiedAnalyzeProblemSetSchema
 >;
@@ -350,6 +372,7 @@ export type ParentWrongExplainItem = {
   easyExplain: string;
   parentScript: string;
   problemSetId: string | null;
+  imageUrl: string | null;
   createdAt: string;
 };
 
@@ -441,6 +464,7 @@ export type StudentLink = {
   id: string;
   guardianUserId: string;
   studentUserId: string;
+  guardianLabel?: string | null;
   createdAt: string;
 };
 
@@ -448,6 +472,8 @@ export type LinkedStudentSummary = {
   id: string;
   displayName: string;
   studentCode: string;
+  guardianLabel: string | null;
+  profileImageUrl: string | null;
 };
 
 export type AuthSessionPayload = {
@@ -477,6 +503,10 @@ export type ProblemBankItem = {
   deliveryCount: number;
   chart: GeneratedProblem["chart"];
   jsxGraph: GeneratedProblem["jsxGraph"];
+  visualizationData?: VisualizationData | null;
+  solutionVisualizationData?: VisualizationData | null;
+  visualizationMigrationStatus?: VisualizationMigrationStatus;
+  visualizationMigrationError?: string | null;
   createdAt: string;
 };
 

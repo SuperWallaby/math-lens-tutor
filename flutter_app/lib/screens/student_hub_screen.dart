@@ -9,6 +9,7 @@ import '../theme/app_design_system.dart';
 import '../utils/problem_image_picker.dart';
 import '../widgets/app_card.dart';
 import '../widgets/learning_profile_widgets.dart';
+import '../widgets/mixed_math_list_title.dart';
 import 'analysis_screen.dart';
 import 'practice_screen.dart';
 import 'signup_screen.dart';
@@ -410,40 +411,50 @@ class _TodayLearningCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
+          Stack(
+            clipBehavior: Clip.none,
             children: [
-              Expanded(
+              Padding(
+                padding: const EdgeInsets.only(right: 4),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     TagChip('$grade 맞춤', color: AppColors.primary),
                     const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        height: 1.22,
+                    Padding(
+                      padding: const EdgeInsets.only(right: 48),
+                      child: Text(
+                        title,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          height: 1.22,
+                        ),
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      body,
-                      style: const TextStyle(
-                        color: AppColors.textSub,
-                        height: 1.5,
+                    Padding(
+                      padding: const EdgeInsets.only(right: 52),
+                      child: Text(
+                        body,
+                        style: const TextStyle(
+                          color: AppColors.textSub,
+                          height: 1.5,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(width: AppSpacing.lg),
-              Image.asset(
-                'assets/icons/3d/training_active.png',
-                width: 66,
-                height: 66,
-                fit: BoxFit.contain,
+              Positioned(
+                top: -6,
+                right: -4,
+                child: Image.asset(
+                  'assets/icons/3d/training_active.png',
+                  width: 58,
+                  height: 58,
+                  fit: BoxFit.contain,
+                ),
               ),
             ],
           ),
@@ -682,15 +693,13 @@ class _RecentSubmissionTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
+                    MixedMathListTitle(
                       item.title,
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 15,
                         height: 1.35,
                       ),
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                     ),
                     if (item.createdAt.isNotEmpty) ...[
                       const SizedBox(height: AppSpacing.xs),

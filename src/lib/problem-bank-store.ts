@@ -445,7 +445,7 @@ export async function aggregateUnitPracticeForUser(
   if ("deliveries" in store) {
     const bankUnit = new Map(
       store.bankItems
-        .filter((item) => item.active && item.unitId)
+        .filter((item) => item.active && item.unitId?.trim())
         .map((item) => [item.id, item.unitId!.trim()] as const),
     );
     for (const delivery of store.deliveries) {
@@ -465,12 +465,18 @@ export async function aggregateUnitPracticeForUser(
     const items = await store
       .collection<ProblemBankItem>("problem_bank_items")
       .find(
-        { id: { $in: bankIds }, active: true, unitId: { $exists: true, $ne: "" } },
+        {
+          id: { $in: bankIds },
+          active: true,
+          unitId: { $type: "string", $ne: "" },
+        },
         { projection: { id: 1, unitId: 1, _id: 0 } },
       )
       .toArray();
     const bankUnit = new Map(
-      items.map((item) => [item.id, item.unitId!.trim()] as const),
+      items
+        .filter((item) => Boolean(item.unitId?.trim()))
+        .map((item) => [item.id, item.unitId!.trim()] as const),
     );
 
     for (const delivery of deliveries) {

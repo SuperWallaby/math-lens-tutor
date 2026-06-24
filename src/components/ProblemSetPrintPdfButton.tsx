@@ -4,6 +4,7 @@ import { useRef } from "react";
 import { useReactToPrint } from "react-to-print";
 import { MathMixedRich } from "@/components/MathMixedRich";
 import type { GeneratedProblem, GeneratedProblemSet } from "@/lib/types";
+import { formatChoiceDisplayLabel } from "@/lib/choice-label-format";
 import { formatDifficultyLabel } from "@/lib/problem-labels";
 
 function documentTitleFromSet(set: GeneratedProblemSet) {
@@ -40,13 +41,13 @@ function ProblemPrintBlock({
         </p>
       ) : null}
       {problem.type === "multiple_choice" && problem.choices ? (
-        <ol className="mt-3 list-decimal space-y-1 pl-5 text-sm text-black">
+        <ul className="mt-3 space-y-1 text-sm text-black">
           {problem.choices.map((c) => (
             <li key={c.id} className="math-mixed-root">
-              <MathMixedRich text={`${c.id}. ${c.label}`} />
+              <MathMixedRich text={formatChoiceDisplayLabel(c.id, c.label)} />
             </li>
           ))}
-        </ol>
+        </ul>
       ) : null}
     </section>
   );

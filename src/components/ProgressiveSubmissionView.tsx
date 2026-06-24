@@ -82,18 +82,17 @@ export function ProgressiveSubmissionView({
       <section className="space-y-6">
         <section className="rounded-[var(--wy-radius-md)] border border-wy-border bg-wy-surface p-6">
           <p className="text-sm text-wy-text-muted">제출한 풀이 사진</p>
-          <h2 className="mt-1 text-lg font-bold text-foreground">
-            {state.imageName || "풀이 사진"}
-          </h2>
           {imageSrc ? (
-            <Image
-              src={imageSrc}
-              alt="업로드한 풀이 사진"
-              width={800}
-              height={600}
-              unoptimized={imageSrc.startsWith("blob:")}
-              className="mt-3 max-h-[min(280px,40vh)] w-full rounded-wy-md object-contain"
-            />
+            <div className="mt-3 overflow-hidden rounded-wy-md bg-wy-surface-muted">
+              <Image
+                src={imageSrc}
+                alt="업로드한 풀이 사진"
+                width={800}
+                height={600}
+                unoptimized={imageSrc.startsWith("blob:")}
+                className="max-h-[min(280px,40vh)] w-full object-contain"
+              />
+            </div>
           ) : (
             <div className="mt-3 space-y-2.5">
               <Skeleton className="skeleton-line w-[88%]" />

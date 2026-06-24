@@ -30,13 +30,13 @@ export async function POST(request: Request) {
       );
     }
 
-    if (existing.profileComplete) {
+    const body = bodySchema.parse(await request.json());
+
+    if (existing.profileComplete && existing.role === body.role) {
       return NextResponse.json({
         user: publicUser(existing),
       });
     }
-
-    const body = bodySchema.parse(await request.json());
 
     if (body.role === "teacher") {
       return NextResponse.json(

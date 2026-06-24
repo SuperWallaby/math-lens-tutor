@@ -195,6 +195,26 @@ class AuthSession extends ChangeNotifier {
     }
   }
 
+  /// 스토어 스크린샷용 — SharedPreferences 없이 메모리만.
+  void useStoreScreenshotDemoStudent({
+    AppUserRole role = AppUserRole.student,
+    String grade = '중1',
+    String displayName = '민수',
+  }) {
+    _guestMode = false;
+    _token = 'store-screenshot-demo';
+    _linkedStudents = const [];
+    _viewAsStudentId = null;
+    _user = AppUser(
+      id: 'store_demo_user',
+      displayName: displayName,
+      profileComplete: true,
+      role: role,
+      grade: role == AppUserRole.student ? grade : null,
+    );
+    notifyListeners();
+  }
+
   /// SharedPreferences deadlock 등으로 bootstrap 이 막힐 때 메모리만 복구.
   void enterGuestRecovery(String deviceScopedUserId) {
     _guestMode = true;

@@ -10,6 +10,7 @@ import {
   hasAzureOpenAiConfig,
 } from "@/lib/azure";
 import { authErrorResponse, resolveActorUserId } from "@/lib/request";
+import { withRequestDb } from "@/lib/db-variant";
 import { sampleAnalysis } from "@/lib/sample";
 import { studyLog } from "@/lib/server-log";
 import { uploadSolutionImage } from "@/lib/store";
@@ -18,6 +19,7 @@ export const runtime = "nodejs";
 export const maxDuration = 120;
 
 export async function POST(request: Request) {
+  return withRequestDb(request, async () => {
   let userId = "anonymous";
 
   try {
@@ -107,4 +109,5 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+  });
 }

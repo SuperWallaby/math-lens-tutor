@@ -6,6 +6,7 @@ import {
   resolveAzureDeploymentName,
 } from "@/lib/azure";
 import { authErrorResponse, resolveActorUserId } from "@/lib/request";
+import { withRequestDb } from "@/lib/db-variant";
 import { recordPracticeAttempt } from "@/lib/problem-bank";
 import { recordTrainingFeedActivity } from "@/lib/training-feed";
 import { studyLog } from "@/lib/server-log";
@@ -40,6 +41,7 @@ function expectedAnswerForProblem(problem: GeneratedProblem): string {
 }
 
 export async function POST(request: Request) {
+  return withRequestDb(request, async () => {
   let authUserId = "anonymous";
   let actor;
 
@@ -167,4 +169,5 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+  });
 }

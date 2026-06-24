@@ -1,21 +1,16 @@
 import 'package:flutter/material.dart';
 
+import '../dev/design_review_data.dart';
 import '../layout/tablet_layout.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
 import '../widgets/app_card.dart';
 import '../widgets/learning_profile_widgets.dart';
+import '../widgets/mixed_math_text.dart';
+import '../widgets/skeleton_box.dart';
+import '../widgets/skeleton_lines.dart';
 import 'open_practice_flow.dart';
 import '../theme/app_design_system.dart';
-
-class StudentTrainingScreen extends StatefulWidget {
-  const StudentTrainingScreen({super.key, required this.apiClient});
-
-  final ApiClient apiClient;
-
-  @override
-  State<StudentTrainingScreen> createState() => _StudentTrainingScreenState();
-}
 
 class _TrainingScreenData {
   const _TrainingScreenData({
@@ -27,8 +22,27 @@ class _TrainingScreenData {
   final TrainingFeedResponse feed;
 }
 
-class _StudentTrainingScreenState extends State<StudentTrainingScreen> {
+class StudentTrainingScreen extends StatefulWidget {
+  const StudentTrainingScreen({
+    super.key,
+    required this.apiClient,
+    this.demoProfile,
+    this.demoFeed,
+  });
+
+  final ApiClient apiClient;
+  final LearningProfile? demoProfile;
+  final TrainingFeedResponse? demoFeed;
+
+  @override
+  StudentTrainingScreenState createState() => StudentTrainingScreenState();
+}
+
+class StudentTrainingScreenState extends State<StudentTrainingScreen> {
   Future<_TrainingScreenData>? _screenFuture;
+
+  /// 하단 탭 전환 시 최신 훈련·피드를 다시 불러옵니다.
+  void refreshFromTab() => _reload(forceRefresh: true);
 
   @override
   void initState() {
@@ -43,6 +57,12 @@ class _StudentTrainingScreenState extends State<StudentTrainingScreen> {
   }
 
   Future<_TrainingScreenData> _loadScreen({bool forceRefresh = false}) async {
+    if (widget.demoProfile != null) {
+      return _TrainingScreenData(
+        profile: widget.demoProfile!,
+        feed: widget.demoFeed ?? designReviewTrainingFeed(),
+      );
+    }
     final results = await Future.wait([
       widget.apiClient.getLearningProfile(forceRefresh: forceRefresh),
       widget.apiClient.getTrainingFeed(),
@@ -92,7 +112,7 @@ class _StudentTrainingScreenState extends State<StudentTrainingScreen> {
       future: _screenFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
-          return const ProfileLoadingView(message: '훈련 정보 불러오는 중…');
+          return const _TrainingTabSkeleton();
         }
         if (snapshot.hasError) {
           return ProfileLoadingError(
@@ -157,7 +177,10 @@ class _StudentTrainingScreenState extends State<StudentTrainingScreen> {
                   ],
                   const SizedBox(height: 20),
                   if (training.available) ...[
-                    _TrainingHeroCard(training: training),
+                    _TrainingHeroCard(
+                      training: training,
+                      displayName: widget.apiClient.authSession.user?.displayName,
+                    ),
                     const SizedBox(height: 16),
                     if (training.activeSetId != null && training.remainingCount > 0)
                       _ContinueTrainingCard(
@@ -240,86 +263,114 @@ class _TrainingFeedCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.surface,
-      borderRadius: BorderRadius.circular(AppRadii.lg),
+    final primaryLine = _feedCardPrimaryLine(item);
+    final reasonLine = _feedCardReasonLine(item);
+
+    return AppCard(
+      padding: const EdgeInsets.all(16),
       child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadii.lg),
+        borderRadius: BorderRadius.circular(AppRadii.md),
         onTap: onTap,
-        child: Ink(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadii.lg),
-            border: Border.all(color: AppColors.border),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.04),
-                blurRadius: 12,
-                offset: const Offset(0, 4),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Wrap(
-                  spacing: 8,
-                  runSpacing: 8,
-                  children: [
-                    _FeedTag(text: item.concept, color: AppColors.primary),
-                    _FeedTag(text: item.difficultyLabel, color: AppColors.accent),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                Text(
-                  item.title.isNotEmpty ? item.title : item.concept,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w900,
-                    fontSize: 16,
-                    height: 1.35,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Wrap(
+                    spacing: 8,
+                    runSpacing: 8,
+                    children: [
+                      _FeedTag(text: item.concept, color: AppColors.primary),
+                      _FeedTag(
+                        text: item.difficultyLabel,
+                        color: AppColors.accent,
+                      ),
+                    ],
                   ),
-                ),
-                if (item.promptPreview.isNotEmpty) ...[
-                  const SizedBox(height: 8),
-                  Text(
-                    item.promptPreview,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      color: AppColors.textSub,
-                      height: 1.45,
-                      fontSize: 13,
-                    ),
-                  ),
-                ],
-                const SizedBox(height: 12),
-                Row(
-                  children: [
-                    Expanded(
-                      child: Text(
-                        item.reason,
-                        style: const TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
+                  if (primaryLine != null) ...[
+                    const SizedBox(height: 10),
+                    MixedMathText(
+                      primaryLine,
+                      paragraphSoftBreak: true,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                        height: 1.4,
                       ),
                     ),
-                    const Icon(
-                      Icons.play_circle_fill_rounded,
-                      color: AppColors.primary,
-                      size: 28,
+                  ],
+                  if (reasonLine != null) ...[
+                    const SizedBox(height: 6),
+                    Text(
+                      reasonLine,
+                      style: const TextStyle(
+                        color: AppColors.textMuted,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
+                      ),
                     ),
                   ],
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+            const SizedBox(width: 8),
+            const Padding(
+              padding: EdgeInsets.only(top: 2),
+              child: Icon(
+                Icons.play_circle_fill_rounded,
+                color: AppColors.primary,
+                size: 28,
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
+}
+
+String? _feedCardPrimaryLine(TrainingFeedItem item) {
+  final preview = item.promptPreview.trim();
+  if (preview.isNotEmpty) return preview;
+
+  final title = item.title.trim();
+  if (title.isEmpty) return null;
+
+  final concept = item.concept.trim().toLowerCase();
+  final normalizedTitle = title.toLowerCase();
+  if (normalizedTitle == concept) return null;
+
+  return title;
+}
+
+String? _feedCardReasonLine(TrainingFeedItem item) {
+  var reason = item.reason.trim();
+  if (reason.isEmpty) return null;
+
+  final concept = item.concept.trim();
+  final diffLabel = item.difficultyLabel;
+  final parts = reason
+      .split('·')
+      .map((part) => part.trim())
+      .where((part) => part.isNotEmpty)
+      .toList();
+
+  if (parts.isNotEmpty && parts.first == concept) {
+    if (parts.length >= 2 &&
+        (parts[1] == diffLabel || parts[1] == item.difficulty)) {
+      reason = parts.length > 2 ? parts.sublist(2).join(' · ') : '';
+    } else if (parts.length == 1) {
+      reason = '';
+    }
+  }
+
+  reason = reason.trim();
+  if (reason.isEmpty || reason == '맞춤 추천' || reason == concept) {
+    return null;
+  }
+  return reason;
 }
 
 class _FeedTag extends StatelessWidget {
@@ -417,9 +468,24 @@ class _TrainingEmptyState extends StatelessWidget {
 }
 
 class _TrainingHeroCard extends StatelessWidget {
-  const _TrainingHeroCard({required this.training});
+  const _TrainingHeroCard({
+    required this.training,
+    this.displayName,
+  });
 
   final TrainingSnapshot training;
+  final String? displayName;
+
+  String _heroMessage() {
+    final fromApi = training.headline.trim();
+    if (fromApi.isNotEmpty) return fromApi;
+
+    final name = displayName?.trim();
+    if (name != null && name.isNotEmpty && name != '게스트') {
+      return '$name님을 위한 맞춤 문제가 준비되었습니다.';
+    }
+    return '맞춤 문제가 준비되었습니다.';
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -445,34 +511,28 @@ class _TrainingHeroCard extends StatelessWidget {
               ),
               const SizedBox(width: 14),
               Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      training.headline.isNotEmpty
-                          ? training.headline
-                          : '틀렸던 개념을 다시 연습해요',
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      training.description.isNotEmpty
-                          ? training.description
-                          : '분석·연습에서 틀린 부분을 모아 비슷한 문제로 반복 훈련합니다.',
-                      style: const TextStyle(
-                        color: AppColors.textSub,
-                        height: 1.5,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
+                child: Text(
+                  _heroMessage(),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                    height: 1.45,
+                  ),
                 ),
               ),
             ],
           ),
+          if (training.focusConcepts.isNotEmpty) ...[
+            const SizedBox(height: 10),
+            Text(
+              training.focusConcepts.take(3).join(' · '),
+              style: const TextStyle(
+                color: AppColors.textSub,
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+          ],
           if (training.totalMisses > 0 || training.relearnedCount > 0) ...[
             const SizedBox(height: 14),
             Text(
@@ -624,6 +684,117 @@ class _TrainingFocusRow extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+/// 훈련 탭 본문과 같은 구조의 로딩 플레이스홀더.
+class _TrainingTabSkeleton extends StatelessWidget {
+  const _TrainingTabSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      padding: TabletLayout.pagePadding(context),
+      children: [
+        Text(
+          '복습 훈련',
+          style: TextStyle(
+            fontSize: TabletLayout.titleSection(context),
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const SkeletonBox(width: 248, height: 14, borderRadius: 6),
+        const SizedBox(height: 20),
+        const _TrainingHeroCardSkeleton(),
+        const SizedBox(height: 16),
+        const SkeletonBox(height: AppSizes.buttonHeight, borderRadius: AppRadii.md),
+        const SizedBox(height: 24),
+        const SectionLabel('맞춤 피드'),
+        const SizedBox(height: 10),
+        for (var i = 0; i < 3; i++) ...[
+          const _TrainingFeedCardSkeleton(),
+          if (i < 2) const SizedBox(height: 12),
+        ],
+        const SizedBox(height: 24),
+      ],
+    );
+  }
+}
+
+class _TrainingHeroCardSkeleton extends StatelessWidget {
+  const _TrainingHeroCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.all(18),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const SkeletonBox(
+            width: 44,
+            height: 44,
+            borderRadius: AppRadii.md,
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                SkeletonLines(
+                  widthFactors: [0.94, 0.72],
+                  lineHeight: 14,
+                  gap: 8,
+                ),
+                SizedBox(height: 10),
+                SkeletonBox(width: 168, height: 12, borderRadius: 6),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TrainingFeedCardSkeleton extends StatelessWidget {
+  const _TrainingFeedCardSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.all(16),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                Row(
+                  children: [
+                    SkeletonBox(width: 72, height: 26, borderRadius: AppRadii.pill),
+                    SizedBox(width: 8),
+                    SkeletonBox(width: 56, height: 26, borderRadius: AppRadii.pill),
+                  ],
+                ),
+                SizedBox(height: 10),
+                SkeletonLines(
+                  widthFactors: [0.92, 0.68],
+                  lineHeight: 14,
+                  gap: 6,
+                ),
+                SizedBox(height: 6),
+                SkeletonBox(width: 96, height: 12, borderRadius: 6),
+              ],
+            ),
+          ),
+          SizedBox(width: 8),
+          SkeletonBox(width: 28, height: 28, borderRadius: AppRadii.pill),
+        ],
+      ),
     );
   }
 }

@@ -203,6 +203,10 @@ function bankItemToProblem(
     conceptTags: item.conceptTags,
     chart: item.chart,
     jsxGraph: item.jsxGraph,
+    visualizationData: item.visualizationData ?? null,
+    solutionVisualizationData: item.solutionVisualizationData ?? null,
+    visualizationMigrationStatus: item.visualizationMigrationStatus,
+    visualizationMigrationError: item.visualizationMigrationError ?? null,
     source: "bank",
     bankItemId: item.id,
   };
@@ -402,6 +406,11 @@ export async function ingestGeneratedProblems(params: {
       deliveryCount: 0,
       chart: problem.chart,
       jsxGraph: problem.jsxGraph,
+      visualizationData: problem.visualizationData ?? null,
+      solutionVisualizationData: problem.solutionVisualizationData ?? null,
+      visualizationMigrationStatus:
+        problem.visualizationMigrationStatus ?? "completed",
+      visualizationMigrationError: problem.visualizationMigrationError ?? null,
       createdAt: new Date().toISOString(),
     };
 

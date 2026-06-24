@@ -12,9 +12,14 @@ import '../widgets/mixed_math_text.dart';
 import '../theme/app_design_system.dart';
 
 class ParentExplainScreen extends StatefulWidget {
-  const ParentExplainScreen({super.key, required this.apiClient});
+  const ParentExplainScreen({
+    super.key,
+    required this.apiClient,
+    this.demoProfile,
+  });
 
   final ApiClient apiClient;
+  final LearningProfile? demoProfile;
 
   @override
   State<ParentExplainScreen> createState() => _ParentExplainScreenState();
@@ -31,7 +36,9 @@ class _ParentExplainScreenState extends State<ParentExplainScreen> {
 
   void _reload() {
     setState(() {
-      _profileFuture = widget.apiClient.getLearningProfile(forceRefresh: true);
+      _profileFuture = widget.demoProfile != null
+          ? Future.value(widget.demoProfile)
+          : widget.apiClient.getLearningProfile(forceRefresh: true);
     });
   }
 
@@ -48,104 +55,87 @@ class _ParentExplainScreenState extends State<ParentExplainScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final body = FutureBuilder<LearningProfile>(
+      future: _profileFuture,
+      builder: (context, snapshot) {
+        if (snapshot.connectionState != ConnectionState.done) {
+          return const Center(child: CircularProgressIndicator());
+        }
+        if (snapshot.hasError) {
+          return ProfileLoadingError(error: snapshot.error, onRetry: _reload);
+        }
+
+        final items = snapshot.data!.parentWrongExplains;
+        return ParentLinkedScrollView(
+          apiClient: widget.apiClient,
+          onStudentChanged: _reload,
+          showStudentPicker: widget.demoProfile == null,
+          children: [
+            Text(
+              '이해하기 쉬운 설명',
+              style: TextStyle(
+                fontSize: TabletLayout.titleSection(context),
+                fontWeight: FontWeight.w900,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              '학부모가 자녀에게 바로 설명할 수 있도록 정리했어요.',
+              style: TextStyle(color: AppColors.textSub, fontSize: 12),
+            ),
+            const SizedBox(height: 16),
+            if (items.isEmpty)
+              const AppCard(
+                child: Text(
+                  '아직 틀린 문제가 없거나, 학습 기록이 쌓이는 중이에요.',
+                  style: TextStyle(color: AppColors.textSub, height: 1.5),
+                ),
+              )
+            else
+              for (final item in items) ...[
+                AppCard(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      ParentWrongExplainTile(
+                        item: item,
+                        apiBaseUrl: widget.apiClient.baseUrl,
+                        onTap: widget.demoProfile == null
+                            ? () => _openDetail(item)
+                            : null,
+                      ),
+                      if (widget.demoProfile == null) ...[
+                        const SizedBox(height: 4),
+                        const Align(
+                          alignment: Alignment.centerRight,
+                          child: Text(
+                            '자세히 · 연습 PDF',
+                            style: TextStyle(
+                              color: AppColors.textSub,
+                              fontSize: 11,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 10),
+              ],
+          ],
+        );
+      },
+    );
+
+    if (widget.demoProfile != null) {
+      return Scaffold(body: SafeArea(child: body));
+    }
+
     return GuardianLearningGate(
       apiClient: widget.apiClient,
       title: '틀린 문제 설명',
       onStudentChanged: _reload,
-      child: FutureBuilder<LearningProfile>(
-        future: _profileFuture,
-        builder: (context, snapshot) {
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Center(child: CircularProgressIndicator());
-          }
-          if (snapshot.hasError) {
-            return ProfileLoadingError(error: snapshot.error, onRetry: _reload);
-          }
-
-          final items = snapshot.data!.parentWrongExplains;
-          return ParentLinkedScrollView(
-            apiClient: widget.apiClient,
-            onStudentChanged: _reload,
-            children: [
-              Text(
-                '이해하기 쉬운 설명',
-                style: TextStyle(
-                  fontSize: TabletLayout.titleSection(context),
-                  fontWeight: FontWeight.w900,
-                ),
-              ),
-              const SizedBox(height: 4),
-              const Text(
-                '학부모가 자녀에게 바로 설명할 수 있도록 정리했어요.',
-                style: TextStyle(color: AppColors.textSub, fontSize: 12),
-              ),
-              const SizedBox(height: 16),
-              if (items.isEmpty)
-                const AppCard(
-                  child: Text(
-                    '아직 틀린 문제가 없거나, 학습 기록이 쌓이는 중이에요.',
-                    style: TextStyle(color: AppColors.textSub, height: 1.5),
-                  ),
-                )
-              else
-                for (final item in items) ...[
-                  AppCard(
-                    child: InkWell(
-                      onTap: () => _openDetail(item),
-                      borderRadius: BorderRadius.circular(AppRadii.md),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            children: [
-                              TagChip(item.concept, color: AppColors.accent),
-                              const Spacer(),
-                              Text(
-                                item.title,
-                                style: const TextStyle(
-                                  color: AppColors.textSub,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 10),
-                          Text(
-                            item.easyExplain,
-                            maxLines: 4,
-                            overflow: TextOverflow.ellipsis,
-                            style: const TextStyle(height: 1.45, fontSize: 13),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            item.parentScript,
-                            style: const TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.w700,
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          const Align(
-                            alignment: Alignment.centerRight,
-                            child: Text(
-                              '자세히 · 연습 PDF',
-                              style: TextStyle(
-                                color: AppColors.textSub,
-                                fontSize: 11,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 10),
-                ],
-            ],
-          );
-        },
-      ),
+      child: body,
     );
   }
 }
@@ -168,6 +158,33 @@ class ParentExplainDetailScreen extends StatefulWidget {
 class _ParentExplainDetailScreenState extends State<ParentExplainDetailScreen> {
   bool _loadingPdf = false;
   String? _pdfError;
+  String? _imageUrl;
+
+  @override
+  void initState() {
+    super.initState();
+    _imageUrl = ApiClient.resolveImageUrl(
+      widget.apiClient.baseUrl,
+      widget.item.imageUrl,
+    );
+    if (_imageUrl == null && widget.item.sourceType == 'submission') {
+      _loadSubmissionImage();
+    }
+  }
+
+  Future<void> _loadSubmissionImage() async {
+    try {
+      final detail =
+          await widget.apiClient.getSubmissionDetail(widget.item.sourceId);
+      final url = ApiClient.resolveImageUrl(
+        widget.apiClient.baseUrl,
+        detail.submission.imageUrl,
+      );
+      if (mounted && url != null) {
+        setState(() => _imageUrl = url);
+      }
+    } catch (_) {}
+  }
 
   Future<void> _openPracticePdf() async {
     if (widget.item.sourceType != 'submission') {
@@ -209,25 +226,49 @@ class _ParentExplainDetailScreenState extends State<ParentExplainDetailScreen> {
   @override
   Widget build(BuildContext context) {
     final item = widget.item;
+    final showProblemTitle =
+        item.title.trim().isNotEmpty &&
+            !parentExplainTitleIsImageFilename(item.title);
 
     return Scaffold(
-      appBar: AppBar(title: Text(item.title)),
+      appBar: AppBar(title: Text(item.concept)),
       body: ListView(
         padding: TabletLayout.pagePadding(context),
         children: [
+          if (item.sourceType == 'submission') ...[
+            ParentSubmissionHeroImage(imageUrl: _imageUrl),
+            const SizedBox(height: 16),
+          ],
           TagChip(item.concept, color: AppColors.accent),
+          if (showProblemTitle) ...[
+            const SizedBox(height: 16),
+            const SectionLabel('문제'),
+            AppCard(
+              child: MixedMathText(
+                item.title,
+                readableSolutionStep: true,
+                style: const TextStyle(
+                  fontWeight: FontWeight.w800,
+                  height: 1.5,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+          ],
           const SizedBox(height: 16),
           const SectionLabel('쉬운 설명'),
           AppCard(
             child: MixedMathText(
               item.easyExplain,
+              readableSolutionStep: true,
               style: const TextStyle(height: 1.55, fontSize: 14),
             ),
           ),
           const SectionLabel('자녀에게 이렇게 말해보세요'),
           AppCard(
-            child: Text(
+            child: MixedMathText(
               item.parentScript,
+              readableSolutionStep: true,
               style: const TextStyle(
                 fontSize: 15,
                 fontWeight: FontWeight.w800,

@@ -9,12 +9,12 @@ import '../theme/app_design_system.dart';
 import '../services/api_client.dart';
 import '../services/magic_link_auth.dart';
 import '../services/oauth_service.dart';
+import '../dev/dev_oauth_login_chip.dart';
 import '../widgets/hero_icon_3d.dart';
 import '../widgets/oauth_sign_in_button.dart';
-import 'profile_onboarding_screen.dart';
 
-/// 서버 bypass (`devstudy*@wooyeol.com`) 와 동일한 기본값
-const _devBypassEmail = 'devstudy@wooyeol.com';
+/// 서버 bypass (`devstudy*@wooyeol.com`, dev `crawl123@naver.com`) 와 동일한 기본값
+const _devBypassEmail = 'crawl123@naver.com';
 
 class SignupScreen extends StatefulWidget {
   const SignupScreen({
@@ -88,21 +88,7 @@ class _SignupScreenState extends State<SignupScreen> {
 
   Future<void> _continueAfterAuth(AppUser user) async {
     if (!mounted) return;
-
-    if (!widget.signupOnly &&
-        (!user.profileComplete || user.role == null)) {
-      await Navigator.of(context).push(
-        MaterialPageRoute(
-          builder: (_) => ProfileOnboardingScreen(
-            apiClient: widget.apiClient,
-            oauthService: widget.oauthService,
-            onComplete: () => Navigator.of(context).pop(),
-          ),
-        ),
-      );
-    }
-
-    if (!mounted) return;
+    // 프로필 온보딩은 AuthGate 가 담당 (중복 push 시 완료 후 다시 role부터 시작하는 버그)
     widget.onSignedIn();
   }
 
@@ -331,10 +317,12 @@ class _SignupScreenState extends State<SignupScreen> {
 
     return Scaffold(
       body: SafeArea(
-        child: TabletBody(
-          child: ListView(
-            padding: TabletLayout.pagePadding(context),
-            children: [
+        child: Stack(
+          children: [
+            TabletBody(
+              child: ListView(
+                padding: TabletLayout.pagePadding(context),
+                children: [
               const SizedBox(height: 24),
               Center(
                 child: HeroIcon3d(
@@ -344,7 +332,7 @@ class _SignupScreenState extends State<SignupScreen> {
               ),
               const SizedBox(height: AppSpacing.xxl),
               Text(
-                widget.signupOnly ? '새 계정으로 가입하기' : '로그인하고 시작하기',
+                widget.signupOnly ? '새 계정으로 가입하기' : '우열 시작하기',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   fontSize: TabletLayout.titleHero(context),
@@ -355,7 +343,7 @@ class _SignupScreenState extends State<SignupScreen> {
               Text(
                 widget.signupOnly
                     ? '체험 중이던 기록을 계정에 저장합니다.\n이미 가입한 계정은 앱을 처음부터 다시 열어 로그인해 주세요.'
-                    : '가입하면 학습 기록이 계정에 저장됩니다.\n로그인 후 나이·역할·학년을 설정해 주세요.',
+                    : '가입하면 학습 기록이 계정에 저장됩니다.\n이메일·간편 로그인으로 바로 시작할 수 있어요.',
                 textAlign: TextAlign.center,
                 style: TextStyle(
                   color: AppColors.textSub,
@@ -422,8 +410,18 @@ class _SignupScreenState extends State<SignupScreen> {
                   ),
                 ),
               ],
-            ],
-          ),
+                ],
+              ),
+            ),
+            Positioned(
+              top: 8,
+              right: 16,
+              child: DevOAuthLoginChip(
+                apiClient: widget.apiClient,
+                onSignedIn: widget.onSignedIn,
+              ),
+            ),
+          ],
         ),
       ),
     );

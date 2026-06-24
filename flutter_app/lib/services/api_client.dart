@@ -8,6 +8,7 @@ import 'package:http/http.dart' as http;
 import 'package:http_parser/http_parser.dart';
 
 import '../models/app_models.dart';
+import '../app_variant.dart';
 import 'api_base_url.dart';
 import 'app_prefs.dart';
 import 'auth_session.dart';
@@ -28,7 +29,7 @@ class ApiClient {
     }
   }
 
-  static const _deviceIdKey = 'anonymous_device_id';
+  static String get _deviceIdKey => deviceIdPrefsKey;
 
   final String baseUrl;
   final AuthSession authSession;
@@ -718,6 +719,37 @@ class ApiClient {
     return user;
   }
 
+  /// 로컬 개발 전용 — 카카오/Apple OAuth 계정 즉시 로그인 (프로덕션 API는 404)
+  Future<AppUser> devOAuthLogin(String accountId) async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/auth/dev-oauth-login'),
+      headers: await _jsonHeaders(),
+      body: jsonEncode({'accountId': accountId}),
+    );
+    final body = _decode(response);
+    if (response.statusCode >= 400) {
+      throw ApiException(
+        body['error'] as String? ?? '개발용 OAuth 로그인에 실패했습니다.',
+      );
+    }
+
+    final token = body['token'] as String? ?? '';
+    final user = AppUser.fromJson(
+      (body['user'] as Map).cast<String, dynamic>(),
+    );
+    final linkedStudents = ((body['linkedStudents'] as List?) ?? [])
+        .whereType<Map>()
+        .map((item) => LinkedStudent.fromJson(item.cast<String, dynamic>()))
+        .toList();
+
+    await authSession.setSession(
+      token: token,
+      user: user,
+      linkedStudents: linkedStudents,
+    );
+    return user;
+  }
+
   Future<LearningProfile> _fetchLearningProfile() async {
     try {
       final response = await http.get(
@@ -924,6 +956,42 @@ class ApiClient {
     return student;
   }
 
+  Future<void> _upsertLinkedStudent(LinkedStudent student) async {
+    final students = [...authSession.linkedStudents];
+    final index = students.indexWhere((item) => item.id == student.id);
+    if (index >= 0) {
+      students[index] = student;
+    } else {
+      students.insert(0, student);
+    }
+    await authSession.setLinkedStudents(students);
+  }
+
+  Future<LinkedStudent> updateLinkedStudentLabel({
+    required String studentId,
+    String? guardianLabel,
+  }) async {
+    final trimmed = guardianLabel?.trim();
+    final response = await http.patch(
+      Uri.parse('$baseUrl/api/students/linked/$studentId'),
+      headers: await _jsonHeaders(),
+      body: jsonEncode({
+        'guardianLabel': trimmed == null || trimmed.isEmpty ? null : trimmed,
+      }),
+    );
+    final body = _decode(response);
+    if (response.statusCode >= 400) {
+      _handleAuthStatus(response.statusCode);
+      throw ApiException(body['error'] as String? ?? '표시 이름을 저장하지 못했습니다.');
+    }
+
+    final student = LinkedStudent.fromJson(
+      (body['student'] as Map).cast<String, dynamic>(),
+    );
+    await _upsertLinkedStudent(student);
+    return student;
+  }
+
   Future<List<LinkedStudent>> fetchLinkedStudents() async {
     final response = await http.get(
       Uri.parse('$baseUrl/api/students/linked'),
@@ -1014,6 +1082,7 @@ class ApiClient {
   Future<Map<String, String>> _authHeaders() async {
     final headers = <String, String>{
       'X-Device-Id': await _deviceId,
+      'X-App-Variant': appVariantHeader,
     };
     final token = authSession.token;
     if (token != null && token.isNotEmpty) {

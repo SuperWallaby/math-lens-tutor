@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { parseAnalyzeQualityMode } from "@/lib/analyze-mode";
 import { indexScannedSubmission } from "@/lib/problem-bank";
 import { authErrorResponse, resolveActorUserId } from "@/lib/request";
+import { withRequestDb } from "@/lib/db-variant";
 import { studyLog } from "@/lib/server-log";
 import { getProblemSet, saveSubmission } from "@/lib/store";
 import { findUserById } from "@/lib/users";
@@ -16,6 +17,7 @@ export const maxDuration = 30;
 
 /** phased 분석: 튜터·유사문제 병렬 후 제출 기록 저장 */
 export async function POST(request: Request) {
+  return withRequestDb(request, async () => {
   let userId = "anonymous";
 
   try {
@@ -105,4 +107,5 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+  });
 }

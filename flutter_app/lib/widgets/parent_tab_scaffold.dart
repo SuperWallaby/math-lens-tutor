@@ -14,24 +14,28 @@ class ParentLinkedScrollView extends StatelessWidget {
     required this.onStudentChanged,
     required this.children,
     this.onRefresh,
+    this.showStudentPicker = true,
   });
 
   final ApiClient apiClient;
   final VoidCallback onStudentChanged;
   final List<Widget> children;
   final Future<void> Function()? onRefresh;
+  final bool showStudentPicker;
 
   @override
   Widget build(BuildContext context) {
     final body = ListView(
       padding: TabletLayout.pagePadding(context),
       children: [
-        StudentPicker(
-          authSession: apiClient.authSession,
-          apiClient: apiClient,
-          onChanged: onStudentChanged,
-        ),
-        const SizedBox(height: 12),
+        if (showStudentPicker) ...[
+          StudentPicker(
+            authSession: apiClient.authSession,
+            apiClient: apiClient,
+            onChanged: onStudentChanged,
+          ),
+          const SizedBox(height: 12),
+        ],
         ...children,
       ],
     );

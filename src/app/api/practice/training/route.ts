@@ -21,10 +21,12 @@ export const maxDuration = 120;
 
 export async function POST(request: Request) {
   let userId = "anonymous";
+  let displayName: string | undefined;
 
   try {
     const actor = await resolveActorUserId(request, { write: true });
     userId = actor.actorUserId;
+    displayName = actor.user.displayName;
   } catch (error) {
     const authResponse = authErrorResponse(error);
     if (authResponse) return authResponse;
@@ -52,6 +54,7 @@ export async function POST(request: Request) {
 
     const training = await buildTrainingSnapshot({
       userId,
+      displayName,
       attempts,
       mistakes,
       scanned,
@@ -129,6 +132,7 @@ export async function POST(request: Request) {
 
     const refreshedTraining = await buildTrainingSnapshot({
       userId,
+      displayName: user?.displayName ?? displayName,
       attempts,
       mistakes,
       scanned,

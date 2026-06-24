@@ -6,6 +6,7 @@ import '../models/app_models.dart';
 import '../services/api_client.dart';
 import '../theme/app_design_system.dart';
 import 'app_card.dart';
+import 'mixed_math_text.dart';
 import 'parent_tab_scaffold.dart';
 import 'skeleton_box.dart';
 
@@ -830,6 +831,301 @@ class _UnitCard extends StatelessWidget {
   }
 }
 
+Color parentWeeklyStepColor(int step) {
+  return switch (step) {
+    1 => AppColors.accent,
+    2 => AppColors.primary,
+    3 => AppColors.success,
+    4 => AppColors.warning,
+    5 => AppColors.success,
+    6 => AppColors.primary,
+    7 => AppColors.accent,
+    _ => AppColors.warning,
+  };
+}
+
+class _ParentBodyText extends StatelessWidget {
+  const _ParentBodyText(
+    this.text, {
+    required this.style,
+    this.readableSolutionStep = false,
+  });
+
+  final String text;
+  final TextStyle style;
+  final bool readableSolutionStep;
+
+  @override
+  Widget build(BuildContext context) {
+    if (text.trim().isEmpty) return const SizedBox.shrink();
+    return MixedMathText(
+      text,
+      style: style,
+      paragraphSoftBreak: !readableSolutionStep,
+      readableSolutionStep: readableSolutionStep,
+    );
+  }
+}
+
+bool parentExplainTitleIsImageFilename(String title) {
+  final t = title.trim();
+  if (t.isEmpty) return false;
+  return RegExp(r'\.(jpe?g|png|webp|heic|gif|jfif)$', caseSensitive: false)
+      .hasMatch(t);
+}
+
+/// 오답 설명 상세 — 제출 풀이 사진
+class ParentSubmissionHeroImage extends StatelessWidget {
+  const ParentSubmissionHeroImage({
+    super.key,
+    required this.imageUrl,
+    this.maxHeight = 320,
+  });
+
+  final String? imageUrl;
+  final double maxHeight;
+
+  @override
+  Widget build(BuildContext context) {
+    if (imageUrl == null) return const SizedBox.shrink();
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadii.md),
+      child: Container(
+        width: double.infinity,
+        color: AppColors.surfaceMuted,
+        constraints: BoxConstraints(maxHeight: maxHeight),
+        child: Image.network(
+          imageUrl!,
+          fit: BoxFit.contain,
+          loadingBuilder: (context, child, progress) {
+            if (progress == null) return child;
+            return SizedBox(
+              height: 180,
+              child: Center(
+                child: CircularProgressIndicator(
+                  value: progress.expectedTotalBytes == null
+                      ? null
+                      : progress.cumulativeBytesLoaded /
+                          progress.expectedTotalBytes!,
+                ),
+              ),
+            );
+          },
+          errorBuilder: (context, error, stackTrace) => SizedBox(
+            height: 120,
+            child: Center(
+              child: Icon(
+                Icons.broken_image_outlined,
+                color: AppColors.textMuted.withValues(alpha: 0.7),
+                size: 36,
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ParentSubmissionThumbnail extends StatelessWidget {
+  const _ParentSubmissionThumbnail({required this.imageUrl});
+
+  final String? imageUrl;
+
+  @override
+  Widget build(BuildContext context) {
+    const size = 56.0;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(AppRadii.sm),
+      child: SizedBox(
+        width: size,
+        height: size,
+        child: imageUrl == null
+            ? Container(
+                color: AppColors.primary.withValues(alpha: 0.08),
+                alignment: Alignment.center,
+                child: Icon(
+                  Icons.image_outlined,
+                  color: AppColors.primary.withValues(alpha: 0.55),
+                  size: 24,
+                ),
+              )
+            : Image.network(
+                imageUrl!,
+                fit: BoxFit.cover,
+                errorBuilder: (context, error, stackTrace) => Container(
+                  color: AppColors.primary.withValues(alpha: 0.08),
+                  alignment: Alignment.center,
+                  child: Icon(
+                    Icons.broken_image_outlined,
+                    color: AppColors.primary.withValues(alpha: 0.55),
+                    size: 24,
+                  ),
+                ),
+              ),
+      ),
+    );
+  }
+}
+
+class ParentWrongExplainTile extends StatelessWidget {
+  const ParentWrongExplainTile({
+    super.key,
+    required this.item,
+    required this.apiBaseUrl,
+    this.onTap,
+    this.compact = false,
+  });
+
+  final ParentWrongExplainItem item;
+  final String apiBaseUrl;
+  final VoidCallback? onTap;
+  final bool compact;
+
+  @override
+  Widget build(BuildContext context) {
+    final imageUrl = ApiClient.resolveImageUrl(apiBaseUrl, item.imageUrl);
+    final content = Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        if (item.sourceType == 'submission') ...[
+          _ParentSubmissionThumbnail(imageUrl: imageUrl),
+          const SizedBox(width: 12),
+        ],
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              TagChip(item.concept, color: AppColors.accent),
+              if (item.title.trim().isNotEmpty &&
+                  !parentExplainTitleIsImageFilename(item.title)) ...[
+                const SizedBox(height: 8),
+                _ParentBodyText(
+                  item.title,
+                  readableSolutionStep: true,
+                  style: TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: compact ? 13 : 14,
+                    height: 1.4,
+                  ),
+                ),
+              ],
+              const SizedBox(height: 8),
+              _ParentBodyText(
+                item.easyExplain,
+                readableSolutionStep: true,
+                style: TextStyle(
+                  fontSize: compact ? 13 : 14,
+                  height: 1.45,
+                  color: AppColors.text,
+                ),
+              ),
+              const SizedBox(height: 8),
+              _ParentBodyText(
+                item.parentScript,
+                readableSolutionStep: true,
+                style: const TextStyle(
+                  fontSize: 12,
+                  height: 1.45,
+                  color: AppColors.primary,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+
+    if (onTap == null) return content;
+
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(AppRadii.sm),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 2),
+        child: content,
+      ),
+    );
+  }
+}
+
+class ParentWeeklyCycleList extends StatelessWidget {
+  const ParentWeeklyCycleList({super.key, required this.steps});
+
+  final List<WeeklyReportStep> steps;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          for (var i = 0; i < steps.length; i++) ...[
+            if (i > 0) const Divider(height: 20, color: AppColors.border),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  width: 28,
+                  height: 28,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: parentWeeklyStepColor(steps[i].step),
+                    borderRadius: BorderRadius.circular(99),
+                  ),
+                  child: Text(
+                    '${steps[i].step}',
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 12,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        steps[i].label,
+                        style: TextStyle(
+                          color: parentWeeklyStepColor(steps[i].step),
+                          fontWeight: FontWeight.w800,
+                          fontSize: 12,
+                        ),
+                      ),
+                      Text(
+                        steps[i].title,
+                        style: const TextStyle(
+                          fontWeight: FontWeight.w800,
+                          fontSize: 13,
+                        ),
+                      ),
+                      _ParentBodyText(
+                        steps[i].text,
+                        readableSolutionStep: true,
+                        style: const TextStyle(
+                          color: AppColors.textSub,
+                          fontSize: 12,
+                          height: 1.45,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
 class ParentActionList extends StatelessWidget {
   const ParentActionList({
     super.key,
@@ -876,7 +1172,7 @@ class ParentActionList extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 4),
-                      Text(
+                      _ParentBodyText(
                         items[i].subtitle,
                         style: const TextStyle(
                           color: AppColors.textSub,
@@ -939,7 +1235,7 @@ class ParentCoachingCardWidget extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 8),
-          Text(
+          _ParentBodyText(
             card.question,
             style: const TextStyle(
               color: Colors.white,
@@ -950,7 +1246,7 @@ class ParentCoachingCardWidget extends StatelessWidget {
           ),
           if (card.context.isNotEmpty) ...[
             const SizedBox(height: 10),
-            Text(
+            _ParentBodyText(
               card.context,
               style: TextStyle(
                 color: Colors.white.withValues(alpha: 0.82),
@@ -972,8 +1268,9 @@ class ParentCoachingCardWidget extends StatelessWidget {
                 const Icon(Icons.flag_outlined, size: 16, color: Colors.white),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: Text(
+                  child: _ParentBodyText(
                     '채점 포인트: ${card.gradingPoint}',
+                    readableSolutionStep: true,
                     style: TextStyle(
                       color: Colors.white.withValues(alpha: 0.95),
                       fontSize: 12,
@@ -994,11 +1291,13 @@ class ParentWrongExplainPreviewList extends StatelessWidget {
   const ParentWrongExplainPreviewList({
     super.key,
     required this.items,
+    required this.apiBaseUrl,
     this.onTapItem,
     this.onSeeAll,
   });
 
   final List<ParentWrongExplainItem> items;
+  final String apiBaseUrl;
   final ValueChanged<ParentWrongExplainItem>? onTapItem;
   final VoidCallback? onSeeAll;
 
@@ -1020,53 +1319,11 @@ class ParentWrongExplainPreviewList extends StatelessWidget {
         children: [
           for (var i = 0; i < preview.length; i++) ...[
             if (i > 0) const Divider(height: 20, color: AppColors.border),
-            InkWell(
+            ParentWrongExplainTile(
+              item: preview[i],
+              apiBaseUrl: apiBaseUrl,
+              compact: true,
               onTap: onTapItem == null ? null : () => onTapItem!(preview[i]),
-              borderRadius: BorderRadius.circular(AppRadii.sm),
-              child: Padding(
-                padding: const EdgeInsets.symmetric(vertical: 2),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        TagChip(preview[i].concept, color: AppColors.accent),
-                        const Spacer(),
-                        Text(
-                          preview[i].title,
-                          style: const TextStyle(
-                            color: AppColors.textSub,
-                            fontSize: 11,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      preview[i].easyExplain,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 13,
-                        height: 1.45,
-                        color: AppColors.text,
-                      ),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      preview[i].parentScript,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 12,
-                        height: 1.4,
-                        color: AppColors.primary,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
             ),
           ],
           if (onSeeAll != null && items.length > 2) ...[

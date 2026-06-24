@@ -1,5 +1,7 @@
 import type { GeneratedProblem } from "./types";
+import { normalizeProblemVisualization } from "./visualization-schema";
 import { stripMathDelimiters } from "./answer-normalize";
+import { normalizeMultipleChoiceProblem } from "./choice-label-format";
 
 export { stripMathDelimiters };
 
@@ -199,15 +201,18 @@ export function repairProblemForShortInput(
 }
 
 export function sanitizeGeneratedProblem(problem: GeneratedProblem): GeneratedProblem {
+  let result: GeneratedProblem;
   if (problem.type === "multiple_choice") {
     const { answerFormat: _drop, ...rest } = problem;
-    return rest as GeneratedProblem;
+    result = normalizeMultipleChoiceProblem(rest).problem;
+  } else {
+    const repaired = repairProblemForShortInput(problem);
+    if (repaired) {
+      result = repaired;
+    } else {
+      const mc = repairAsMultipleChoice(problem);
+      result = mc ?? problem;
+    }
   }
-
-  const repaired = repairProblemForShortInput(problem);
-  if (repaired) return repaired;
-
-  // 최후: 객관식 변환 시도
-  const mc = repairAsMultipleChoice(problem);
-  return mc ?? problem;
+  return normalizeProblemVisualization(result);
 }

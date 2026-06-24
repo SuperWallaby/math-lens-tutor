@@ -6,6 +6,7 @@ import 'package:pdf/widgets.dart' as pw;
 import 'package:printing/printing.dart';
 
 import '../models/app_models.dart';
+import 'choice_label_format.dart';
 import 'math_mixed_segments.dart';
 import 'math_tex_raster.dart';
 import 'problem_answer_format.dart';
@@ -174,7 +175,7 @@ Future<Uint8List> buildSimilarProblemsPdf(
       for (final c in p.choices) {
         final choiceBlocks = await _buildPdfMixedBlocks(
           overlay,
-          '${c.id}. ${c.label}',
+          formatChoiceDisplayLabel(c.id, c.label),
           style: bodyStyle,
         );
         children.addAll([

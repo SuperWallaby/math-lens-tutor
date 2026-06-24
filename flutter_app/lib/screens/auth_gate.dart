@@ -93,6 +93,9 @@ class _AuthGateState extends State<AuthGate> {
         if (me.user.isGuardian) {
           await widget.apiClient.fetchLinkedStudents();
         }
+        if (mounted && widget.authSession.isProfileComplete) {
+          setState(() => _profileOnboardingDismissed = true);
+        }
       } catch (_) {
         await widget.authSession.clear();
       }
@@ -127,17 +130,22 @@ class _AuthGateState extends State<AuthGate> {
       return SignupScreen(
         apiClient: widget.apiClient,
         oauthService: widget.oauthService,
-        onSignedIn: () => setState(() {}),
+        onSignedIn: () => setState(() {
+          if (widget.authSession.isProfileComplete) {
+            _profileOnboardingDismissed = true;
+          }
+        }),
         onContinueAsGuest: () async {
           await session.enterGuestMode(
             await widget.apiClient.deviceScopedUserId,
           );
-          if (mounted) setState(() {});
+          if (mounted) setState(() => _profileOnboardingDismissed = false);
         },
       );
     }
 
-    if (!_profileOnboardingDismissed) {
+    if (!_profileOnboardingDismissed &&
+        (session.isGuest || !session.isProfileComplete)) {
       return ProfileOnboardingScreen(
         apiClient: widget.apiClient,
         oauthService: widget.oauthService,

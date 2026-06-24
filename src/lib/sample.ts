@@ -58,6 +58,8 @@ export const sampleProblemSet: GeneratedProblemSet = {
       conceptTags: ["완전제곱식", "최솟값"],
       chart: null,
       jsxGraph: null,
+      visualizationData: null,
+      solutionVisualizationData: null,
       source: "generated",
     },
     {
@@ -78,6 +80,8 @@ export const sampleProblemSet: GeneratedProblemSet = {
       conceptTags: ["꼭짓점"],
       chart: null,
       jsxGraph: null,
+      visualizationData: null,
+      solutionVisualizationData: null,
       source: "generated",
     },
     {
@@ -92,6 +96,8 @@ export const sampleProblemSet: GeneratedProblemSet = {
       answerFormat: "short_answer",
       chart: null,
       jsxGraph: null,
+      visualizationData: null,
+      solutionVisualizationData: null,
       source: "generated",
     },
     {
@@ -126,6 +132,8 @@ export const sampleProblemSet: GeneratedProblemSet = {
         options: { responsive: true },
       },
       jsxGraph: null,
+      visualizationData: null,
+      solutionVisualizationData: null,
       source: "generated",
     },
     {
@@ -179,6 +187,8 @@ export const sampleProblemSet: GeneratedProblemSet = {
           },
         ],
       },
+      visualizationData: null,
+      solutionVisualizationData: null,
       source: "generated",
     },
   ],

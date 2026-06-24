@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import { parseAnalyzeQualityMode } from "@/lib/analyze-mode";
 import { hasAzureOpenAiConfig } from "@/lib/azure";
 import { authErrorResponse, resolveActorUserId } from "@/lib/request";
+import { withRequestDb } from "@/lib/db-variant";
 import { studyLog } from "@/lib/server-log";
 import { resolvePracticeProblemSet } from "@/lib/problem-bank";
 import { saveProblemSet } from "@/lib/store";
@@ -15,6 +16,7 @@ export const runtime = "nodejs";
 export const maxDuration = 120;
 
 export async function POST(request: Request) {
+  return withRequestDb(request, async () => {
   let userId = "anonymous";
 
   try {
@@ -90,4 +92,5 @@ export async function POST(request: Request) {
       { status: 500 },
     );
   }
+  });
 }

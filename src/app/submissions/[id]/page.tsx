@@ -56,13 +56,15 @@ export default async function SubmissionPage({
           <section className="rounded-[var(--wy-radius-md)] border border-wy-border bg-wy-surface p-6">
             <p className="text-sm text-wy-text-muted">제출한 풀이 사진</p>
             {submission.imageUrl ? (
-              <Image
-                src={submission.imageUrl}
-                alt="업로드한 풀이 사진"
-                width={800}
-                height={600}
-                className="mt-3 max-h-[min(280px,40vh)] w-full rounded-wy-md object-contain"
-              />
+              <div className="mt-3 overflow-hidden rounded-wy-md bg-wy-surface-muted">
+                <Image
+                  src={submission.imageUrl}
+                  alt="업로드한 풀이 사진"
+                  width={800}
+                  height={600}
+                  className="max-h-[min(280px,40vh)] w-full object-contain"
+                />
+              </div>
             ) : (
               <p className="mt-3 text-sm text-wy-text-muted">이미지를 불러올 수 없습니다.</p>
             )}

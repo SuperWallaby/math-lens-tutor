@@ -225,6 +225,15 @@ export async function completeUserProfile(
     throw new Error("User not found.");
   }
 
+  const previousRole = user.role;
+  if (
+    previousRole &&
+    previousRole !== role &&
+    (previousRole === "parent" || previousRole === "teacher")
+  ) {
+    await clearAllLinksForUser(userId);
+  }
+
   user.role = role;
   user.profileComplete = true;
 
@@ -361,6 +370,61 @@ export async function findUserByStudentCode(
     .findOne({ studentCode: normalized }, { projection: { _id: 0 } });
 }
 
+function toLinkedStudentSummary(
+  student: User,
+  link?: Pick<StudentLink, "guardianLabel"> | null,
+): LinkedStudentSummary {
+  return {
+    id: student.id,
+    displayName: student.displayName,
+    studentCode: student.studentCode!,
+    guardianLabel: link?.guardianLabel?.trim() || null,
+    profileImageUrl: student.profileImageUrl ?? null,
+  };
+}
+
+export async function findUserByEmailAndProvider(
+  email: string,
+  provider: User["oauthProvider"],
+): Promise<User | null> {
+  const normalized = email.trim().toLowerCase();
+  const store = await requireUsersStore();
+
+  if ("users" in store) {
+    return (
+      store.users.find(
+        (user) =>
+          user.oauthProvider === provider &&
+          user.email?.trim().toLowerCase() === normalized,
+      ) ?? null
+    );
+  }
+
+  return store.collection<User>("users").findOne(
+    { oauthProvider: provider, email: normalized },
+    { projection: { _id: 0 } },
+  );
+}
+
+export async function loginDevOAuthUser(params: {
+  userId: string;
+  provider: User["oauthProvider"];
+  deviceUserId?: string | null;
+}): Promise<User> {
+  const user = await findUserById(params.userId);
+  if (!user || user.oauthProvider !== params.provider) {
+    throw new Error("개발용 OAuth 계정을 찾을 수 없습니다.");
+  }
+
+  if (params.deviceUserId && !user.linkedDeviceIds.includes(params.deviceUserId)) {
+    user.linkedDeviceIds.push(params.deviceUserId);
+    await saveUser(user);
+    await mergeDeviceData(params.deviceUserId, user.id);
+  }
+
+  return user;
+}
+
 export async function linkStudentToGuardian(
   guardianUserId: string,
   studentCode: string,
@@ -396,52 +460,98 @@ export async function linkStudentToGuardian(
     if (!exists) {
       store.links.unshift(link);
     }
+    const savedLink = store.links.find(
+      (item) =>
+        item.guardianUserId === guardianUserId &&
+        item.studentUserId === student.id,
+    );
+    return toLinkedStudentSummary(student, savedLink);
   } else {
     await store.collection<StudentLink>("student_links").updateOne(
       { guardianUserId, studentUserId: student.id },
       { $setOnInsert: link },
       { upsert: true },
     );
+    const savedLink = await store
+      .collection<StudentLink>("student_links")
+      .findOne({ guardianUserId, studentUserId: student.id });
+    return toLinkedStudentSummary(student, savedLink);
   }
-
-  return {
-    id: student.id,
-    displayName: student.displayName,
-    studentCode: student.studentCode,
-  };
 }
 
 export async function getLinkedStudents(
   guardianUserId: string,
 ): Promise<LinkedStudentSummary[]> {
   const store = await requireUsersStore();
-  let studentIds: string[] = [];
+  const students: LinkedStudentSummary[] = [];
 
   if ("links" in store) {
-    studentIds = store.links
-      .filter((link) => link.guardianUserId === guardianUserId)
-      .map((link) => link.studentUserId);
-  } else {
-    const links = await store
-      .collection<StudentLink>("student_links")
-      .find({ guardianUserId }, { projection: { _id: 0 } })
-      .toArray();
-    studentIds = links.map((link) => link.studentUserId);
+    const links = store.links.filter(
+      (link) => link.guardianUserId === guardianUserId,
+    );
+    for (const link of links) {
+      const student = await findUserById(link.studentUserId);
+      if (student?.studentCode) {
+        students.push(toLinkedStudentSummary(student, link));
+      }
+    }
+    return students;
   }
 
-  const students: LinkedStudentSummary[] = [];
-  for (const studentId of studentIds) {
-    const student = await findUserById(studentId);
+  const links = await store
+    .collection<StudentLink>("student_links")
+    .find({ guardianUserId }, { projection: { _id: 0 } })
+    .toArray();
+
+  for (const link of links) {
+    const student = await findUserById(link.studentUserId);
     if (student?.studentCode) {
-      students.push({
-        id: student.id,
-        displayName: student.displayName,
-        studentCode: student.studentCode,
-      });
+      students.push(toLinkedStudentSummary(student, link));
     }
   }
 
   return students;
+}
+
+export async function updateLinkedStudentGuardianLabel(
+  guardianUserId: string,
+  studentUserId: string,
+  guardianLabel: string | null,
+): Promise<LinkedStudentSummary> {
+  const linked = await isGuardianLinkedToStudent(guardianUserId, studentUserId);
+  if (!linked) {
+    throw new Error("연결된 학생을 찾을 수 없습니다.");
+  }
+
+  const student = await findUserById(studentUserId);
+  if (!student?.studentCode) {
+    throw new Error("연결된 학생을 찾을 수 없습니다.");
+  }
+
+  const label = guardianLabel?.trim() || null;
+  const store = await requireUsersStore();
+
+  if ("links" in store) {
+    const link = store.links.find(
+      (item) =>
+        item.guardianUserId === guardianUserId &&
+        item.studentUserId === studentUserId,
+    );
+    if (!link) {
+      throw new Error("연결된 학생을 찾을 수 없습니다.");
+    }
+    link.guardianLabel = label;
+    return toLinkedStudentSummary(student, link);
+  }
+
+  await store.collection<StudentLink>("student_links").updateOne(
+    { guardianUserId, studentUserId },
+    { $set: { guardianLabel: label } },
+  );
+  const savedLink = await store
+    .collection<StudentLink>("student_links")
+    .findOne({ guardianUserId, studentUserId });
+  return toLinkedStudentSummary(student, savedLink);
 }
 
 export async function isGuardianLinkedToStudent(

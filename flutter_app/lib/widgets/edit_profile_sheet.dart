@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../models/app_models.dart';
+import '../screens/role_select_screen.dart';
 import '../services/api_client.dart';
 import '../theme/app_design_system.dart';
 import '../utils/grade_options.dart';
@@ -23,10 +24,8 @@ Future<void> showEditProfileSheet({
       return _EditProfileSheet(
         apiClient: apiClient,
         user: user,
-        onSaved: () {
-          Navigator.of(sheetContext).pop();
-          onSaved();
-        },
+        onUpdated: onSaved,
+        onClose: () => Navigator.of(sheetContext).pop(),
       );
     },
   );
@@ -36,18 +35,31 @@ class _EditProfileSheet extends StatefulWidget {
   const _EditProfileSheet({
     required this.apiClient,
     required this.user,
-    required this.onSaved,
+    required this.onUpdated,
+    required this.onClose,
   });
 
   final ApiClient apiClient;
   final AppUser user;
-  final VoidCallback onSaved;
+  final VoidCallback onUpdated;
+  final VoidCallback onClose;
 
   @override
   State<_EditProfileSheet> createState() => _EditProfileSheetState();
 }
 
 class _EditProfileSheetState extends State<_EditProfileSheet> {
+  static const _fieldPadding = EdgeInsets.symmetric(
+    horizontal: AppSpacing.lg,
+    vertical: 16,
+  );
+
+  static const _fieldTextStyle = TextStyle(
+    fontSize: 16,
+    fontWeight: FontWeight.w500,
+    color: AppColors.text,
+  );
+
   late final TextEditingController _nameController;
   late final TextEditingController _orgController;
   late String? _selectedGrade;
@@ -98,7 +110,8 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
             : null,
       );
       if (!mounted) return;
-      widget.onSaved();
+      widget.onClose();
+      widget.onUpdated();
     } on ApiException catch (error) {
       setState(() => _error = error.message);
     } catch (_) {
@@ -106,6 +119,45 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
     } finally {
       if (mounted) setState(() => _loading = false);
     }
+  }
+
+  Future<void> _openRoleChange() async {
+    if (_loading) return;
+
+    final rootNav = Navigator.of(context, rootNavigator: true);
+    final apiClient = widget.apiClient;
+    final onUpdated = widget.onUpdated;
+    final initialRole = widget.user.role;
+    final initialGrade = widget.user.grade;
+
+    widget.onClose();
+
+    final changed = await rootNav.push<bool>(
+      MaterialPageRoute(
+        builder: (_) => RoleSelectScreen(
+          apiClient: apiClient,
+          changingAccount: true,
+          initialRole: initialRole,
+          initialGrade: initialGrade,
+        ),
+      ),
+    );
+
+    if (changed == true) {
+      apiClient.invalidateLearningProfileCache();
+      onUpdated();
+    }
+  }
+
+  InputDecoration _fieldDecoration({
+    required String label,
+    String? hint,
+  }) {
+    return InputDecoration(
+      labelText: label,
+      hintText: hint,
+      contentPadding: _fieldPadding,
+    );
   }
 
   @override
@@ -128,43 +180,74 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
             style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
           ),
           const SizedBox(height: AppSpacing.lg),
+          const Text(
+            '계정 타입',
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textSub,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          Row(
+            children: [
+              Expanded(
+                child: InputDecorator(
+                  decoration: _fieldDecoration(label: '현재 타입'),
+                  child: Text(
+                    widget.user.role?.label ?? '미설정',
+                    style: _fieldTextStyle,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              OutlinedButton(
+                onPressed: _loading ? null : _openRoleChange,
+                child: const Text('변경'),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.xl),
           TextField(
             controller: _nameController,
             enabled: !_loading,
             textInputAction: TextInputAction.next,
-            decoration: const InputDecoration(
-              labelText: '이름',
-              hintText: '표시 이름',
-            ),
+            style: _fieldTextStyle,
+            decoration: _fieldDecoration(label: '이름', hint: '표시 이름'),
           ),
           if (widget.user.isStudent) ...[
-            const SizedBox(height: AppSpacing.md),
-            InputDecorator(
-              decoration: const InputDecoration(labelText: '학년'),
-              child: DropdownButtonHideUnderline(
-                child: DropdownButton<String>(
-                  value: _selectedGrade,
-                  isExpanded: true,
-                  hint: const Text('학년 선택'),
-                  items: [
-                    for (final grade in gradeOptionsList)
-                      DropdownMenuItem(value: grade, child: Text(grade)),
-                  ],
-                  onChanged: _loading
-                      ? null
-                      : (value) => setState(() => _selectedGrade = value),
+            const SizedBox(height: AppSpacing.xl),
+            DropdownButtonFormField<String>(
+              value: _selectedGrade,
+              isExpanded: true,
+              style: _fieldTextStyle,
+              decoration: _fieldDecoration(label: '학년'),
+              hint: const Text(
+                '학년 선택',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w400,
+                  color: AppColors.textMuted,
                 ),
               ),
+              items: [
+                for (final grade in gradeOptionsList)
+                  DropdownMenuItem(value: grade, child: Text(grade)),
+              ],
+              onChanged: _loading
+                  ? null
+                  : (value) => setState(() => _selectedGrade = value),
             ),
           ],
           if (widget.user.isTeacher) ...[
-            const SizedBox(height: AppSpacing.md),
+            const SizedBox(height: AppSpacing.xl),
             TextField(
               controller: _orgController,
               enabled: !_loading,
-              decoration: const InputDecoration(
-                labelText: '소속 (학원·학교)',
-                hintText: '예: OO학원',
+              style: _fieldTextStyle,
+              decoration: _fieldDecoration(
+                label: '소속 (학원·학교)',
+                hint: '예: OO학원',
               ),
             ),
           ],

@@ -42,21 +42,15 @@ import {
 export const FEED_QUEUE_SIZE = 10;
 export const FEED_QUEUE_MAX_AGE_MS = 6 * 60 * 60 * 1000;
 
-const DIFFICULTY_LABEL: Record<string, string> = {
-  easy: "쉬움",
-  medium: "보통",
-  hard: "어려움",
-};
-
 function defaultReason(params: {
   concept: string;
   difficulty: string;
   missScore?: number;
 }): string {
   if (params.missScore && params.missScore > 0) {
-    return `${params.concept} · ${DIFFICULTY_LABEL[params.difficulty] ?? params.difficulty} · 오답 ${params.missScore}회 복습`;
+    return `오답 ${params.missScore}회 복습`;
   }
-  return `${params.concept} · ${DIFFICULTY_LABEL[params.difficulty] ?? params.difficulty} · 맞춤 추천`;
+  return "맞춤 추천";
 }
 
 function isQueueFresh(queue: UserFeedQueue | null): boolean {

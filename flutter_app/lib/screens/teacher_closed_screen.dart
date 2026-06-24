@@ -14,10 +14,8 @@ class TeacherClosedScreen extends StatelessWidget {
   final ApiClient apiClient;
 
   Future<void> _logout(BuildContext context) async {
+    apiClient.invalidateLearningProfileCache();
     await apiClient.authSession.clear();
-    await apiClient.authSession.enterGuestMode(
-      await apiClient.deviceScopedUserId,
-    );
   }
 
   @override

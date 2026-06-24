@@ -1,3 +1,5 @@
+import { formatSubmissionListTitle } from "./submission-list";
+import { truncateMathSafe } from "./truncate-math-safe";
 import type {
   ParentCoachingCard,
   ParentWrongExplainItem,
@@ -7,9 +9,11 @@ import type {
 } from "./types";
 
 function truncate(text: string, max: number): string {
-  const t = text.replace(/\s+/g, " ").trim();
-  if (t.length <= max) return t;
-  return `${t.slice(0, max - 1)}…`;
+  return truncateMathSafe(text, max, { preserveBreaks: false });
+}
+
+export function truncatePreserveBreaks(text: string, max: number): string {
+  return truncateMathSafe(text, max, { preserveBreaks: true });
 }
 
 /** STEP 7 — 모범 풀이 7단계 중 핵심 채점 포인트 (없으면 recommendedFocus / errorSummary) */
@@ -29,9 +33,14 @@ function submissionProblemLabel(submission: SolutionSubmission): string {
   if (name) {
     const num = name.match(/(\d+)\s*번/);
     if (num) return `${num[1]}번`;
-    return truncate(name, 24);
   }
-  return truncate(submission.analysis.problemText, 28);
+  return truncate(
+    formatSubmissionListTitle(
+      submission.analysis.problemText,
+      submission.imageName ?? "",
+    ),
+    28,
+  );
 }
 
 function buildEasyExplainFromAnalysis(analysis: SolutionAnalysis): string {
@@ -39,7 +48,7 @@ function buildEasyExplainFromAnalysis(analysis: SolutionAnalysis): string {
     analysis.errorSummary.trim(),
     ...(analysis.referenceSolutionSteps ?? []).slice(0, 2).map((s) => s.trim()),
   ].filter(Boolean);
-  return truncate(parts.join("\n\n"), 480);
+  return truncatePreserveBreaks(parts.join("\n\n"), 480);
 }
 
 function buildParentScript(
@@ -85,7 +94,7 @@ export function buildParentCoachingCard(params: {
       label: "오늘의 부모 코칭",
       question: buildCoachingQuestion(problemLabel, gradingPoint, concept),
       gradingPoint,
-      context: truncate(analysis.problemText, 160),
+      context: truncatePreserveBreaks(analysis.problemText, 160),
       sourceType: "submission",
       sourceId: latestWrongSubmission.id,
       problemLabel,
@@ -133,11 +142,15 @@ export function buildParentWrongExplains(params: {
       id: `sub-${submission.id}`,
       sourceType: "submission",
       sourceId: submission.id,
-      title: submissionProblemLabel(submission),
+      title: formatSubmissionListTitle(
+        analysis.problemText,
+        submission.imageName ?? "",
+      ),
       concept,
       easyExplain: buildEasyExplainFromAnalysis(analysis),
       parentScript: buildParentScript(gradingPoint, concept),
       problemSetId: null,
+      imageUrl: submission.imageUrl,
       createdAt: submission.createdAt,
     });
     if (items.length >= limit) return items;
@@ -168,6 +181,7 @@ export function buildParentWrongExplains(params: {
       ),
       parentScript: buildParentScript(gradingPoint, concept),
       problemSetId: mistake.setId,
+      imageUrl: null,
       createdAt: mistake.createdAt,
     });
     if (items.length >= limit) return items;
