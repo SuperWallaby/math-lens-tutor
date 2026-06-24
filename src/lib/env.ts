@@ -43,6 +43,9 @@ export const env = {
     process.env.AZURE_OPENAI_REASONING_EFFORT ?? "medium",
   mongodbUri: process.env.MONGODB_URI,
   mongodbDbName: process.env.MONGODB_DB_NAME ?? "math_lens_tutor",
+  /** 우열 라이트 앱 (`X-App-Variant: lite`) 전용 DB */
+  mongodbDbNameLite:
+    process.env.MONGODB_DB_NAME_LITE ?? "math_lens_tutor_lite",
   jwtSecret: process.env.JWT_SECRET,
   googleClientIdIos: process.env.GOOGLE_CLIENT_ID_IOS,
   googleClientIdAndroid: process.env.GOOGLE_CLIENT_ID_ANDROID,

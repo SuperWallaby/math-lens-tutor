@@ -1,6 +1,7 @@
 import { createHash, randomBytes } from "crypto";
 
 import { getMongoDb } from "./mongodb";
+import { isDevEnvironment } from "./is-dev";
 
 export type MagicLinkIntent = "signup" | "login";
 
@@ -70,9 +71,24 @@ export function isPlayReviewBypassEmail(email: string): boolean {
   return allowed.includes(normalized);
 }
 
+/** 로컬 `next dev` 전용 — 매직 링크 없이 즉시 로그인 */
+export function isDevOnlyInstantLoginEmail(email: string): boolean {
+  if (!isDevEnvironment()) return false;
+
+  const raw = process.env.DEV_INSTANT_LOGIN_EMAILS?.trim();
+  const defaults = ["crawl123@naver.com"];
+  const allowed = (raw ? raw.split(",") : defaults)
+    .map((item) => normalizeEmail(item.trim()))
+    .filter(Boolean);
+
+  return allowed.includes(normalizeEmail(email));
+}
+
 export function isMagicLinkInstantLoginEmail(email: string): boolean {
   return (
-    isDevMagicLinkBypassEmail(email) || isPlayReviewBypassEmail(email)
+    isDevMagicLinkBypassEmail(email) ||
+    isPlayReviewBypassEmail(email) ||
+    isDevOnlyInstantLoginEmail(email)
   );
 }
 

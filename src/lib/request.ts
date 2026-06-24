@@ -6,7 +6,15 @@ import type { User, UserRole } from "./types";
 
 const DEVICE_ID_HEADER = "x-device-id";
 const VIEW_AS_STUDENT_HEADER = "x-view-as-student";
+const APP_VARIANT_HEADER = "x-app-variant";
 const SAFE_DEVICE_ID = /^[a-zA-Z0-9._:-]{8,128}$/;
+
+export type AppDbVariant = "full" | "lite";
+
+export function getRequestAppVariant(request: Request): AppDbVariant {
+  const raw = request.headers.get(APP_VARIANT_HEADER)?.trim().toLowerCase();
+  return raw === "lite" ? "lite" : "full";
+}
 
 export class RequestAuthError extends Error {
   constructor(

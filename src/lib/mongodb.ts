@@ -1,9 +1,16 @@
 import { MongoClient, type Db } from "mongodb";
+import { getActiveDbVariant } from "./db-variant";
 import { env, hasMongoConfig } from "./env";
 
 const globalForMongo = globalThis as typeof globalThis & {
   mongoClientPromise?: Promise<MongoClient>;
 };
+
+function resolveDbName(): string {
+  return getActiveDbVariant() === "lite"
+    ? env.mongodbDbNameLite
+    : env.mongodbDbName;
+}
 
 export async function getMongoDb(): Promise<Db | null> {
   if (!hasMongoConfig() || !env.mongodbUri) {
@@ -16,5 +23,5 @@ export async function getMongoDb(): Promise<Db | null> {
   }
 
   const client = await globalForMongo.mongoClientPromise;
-  return client.db(env.mongodbDbName);
+  return client.db(resolveDbName());
 }

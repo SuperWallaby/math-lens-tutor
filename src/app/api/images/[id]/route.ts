@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { withRequestDb } from "@/lib/db-variant";
 import { getFromR2 } from "@/lib/object-storage";
 import { getMongoDb } from "@/lib/mongodb";
 
@@ -13,9 +14,10 @@ type StoredImage = {
 export const runtime = "nodejs";
 
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: Promise<{ id: string }> },
 ) {
+  return withRequestDb(request, async () => {
   const { id } = await params;
   const db = await getMongoDb();
 
@@ -66,5 +68,6 @@ export async function GET(
       "Content-Type": image.mimeType,
       "Cache-Control": "private, max-age=3600",
     },
+  });
   });
 }

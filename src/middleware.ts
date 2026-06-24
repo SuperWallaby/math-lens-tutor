@@ -27,7 +27,7 @@ function corsHeadersFor(origin: string | null): Headers {
   );
   headers.set(
     "Access-Control-Allow-Headers",
-    "Content-Type, X-Device-Id, Authorization, X-View-As-Student",
+    "Content-Type, X-Device-Id, X-App-Variant, Authorization, X-View-As-Student",
   );
   headers.set("Access-Control-Max-Age", "86400");
 
@@ -38,20 +38,19 @@ function corsHeadersFor(origin: string | null): Headers {
 
   try {
     const { hostname } = new URL(origin);
-    const devAllowed =
-      process.env.NODE_ENV !== "production" && isDevOriginAllowed(hostname);
-    if (devAllowed) {
+    // Flutter web 로컬 개발(localhost·LAN) — 프로덕션 배포에서도 허용
+    if (isDevOriginAllowed(hostname)) {
       headers.set("Access-Control-Allow-Origin", origin);
       headers.set("Vary", "Origin");
-    } else {
-      const allowed = (process.env.CORS_ORIGIN ?? "")
-        .split(",")
-        .map((s) => s.trim())
-        .filter(Boolean);
-      if (allowed.includes(origin)) {
-        headers.set("Access-Control-Allow-Origin", origin);
-        headers.set("Vary", "Origin");
-      }
+      return headers;
+    }
+    const allowed = (process.env.CORS_ORIGIN ?? "")
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+    if (allowed.includes(origin)) {
+      headers.set("Access-Control-Allow-Origin", origin);
+      headers.set("Vary", "Origin");
     }
   } catch {
     headers.set("Access-Control-Allow-Origin", "*");
