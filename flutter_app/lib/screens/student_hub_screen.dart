@@ -9,7 +9,8 @@ import '../theme/app_design_system.dart';
 import '../utils/problem_image_picker.dart';
 import '../widgets/app_card.dart';
 import '../widgets/learning_profile_widgets.dart';
-import '../widgets/mixed_math_list_title.dart';
+import '../widgets/skeleton_box.dart';
+import '../widgets/skeleton_lines.dart';
 import 'analysis_screen.dart';
 import 'practice_screen.dart';
 import 'signup_screen.dart';
@@ -41,11 +42,14 @@ class StudentHubScreen extends StatefulWidget {
   final bool? demoIsGuest;
 
   @override
-  State<StudentHubScreen> createState() => _StudentHubScreenState();
+  State<StudentHubScreen> createState() => StudentHubScreenState();
 }
 
-class _StudentHubScreenState extends State<StudentHubScreen> {
+class StudentHubScreenState extends State<StudentHubScreen> {
   Future<_HubData>? _hubFuture;
+
+  /// 다른 탭(업로드·훈련) 후 홈 복귀 시 최신 profile/submissions 로드
+  void refreshFromTab({bool forceRefresh = true}) => _reload(forceRefresh: forceRefresh);
 
   @override
   void initState() {
@@ -53,13 +57,16 @@ class _StudentHubScreenState extends State<StudentHubScreen> {
     _reload();
   }
 
-  void _reload() {
+  void _reload({bool forceRefresh = false}) {
+    if (forceRefresh) {
+      widget.apiClient.invalidateLearningProfileCache();
+    }
     setState(() {
-      _hubFuture = _loadHub();
+      _hubFuture = _loadHub(forceRefresh: forceRefresh);
     });
   }
 
-  Future<_HubData> _loadHub() async {
+  Future<_HubData> _loadHub({bool forceRefresh = false}) async {
     if (widget.demoProfile != null) {
       return _HubData(
         profile: widget.demoProfile!,
@@ -67,7 +74,7 @@ class _StudentHubScreenState extends State<StudentHubScreen> {
       );
     }
     final results = await Future.wait([
-      widget.apiClient.getLearningProfile(),
+      widget.apiClient.getLearningProfile(forceRefresh: forceRefresh),
       widget.apiClient.getSubmissionSummaries(),
     ]);
     return _HubData(
@@ -75,6 +82,8 @@ class _StudentHubScreenState extends State<StudentHubScreen> {
       submissions: results[1] as List<SubmissionSummary>,
     );
   }
+
+  void _refreshAfterLearning() => _reload(forceRefresh: true);
 
   Future<void> _captureAndAnalyze() async {
     final picked = await pickProblemImage(
@@ -92,7 +101,7 @@ class _StudentHubScreenState extends State<StudentHubScreen> {
         ),
       ),
     );
-    _reload();
+    _refreshAfterLearning();
   }
 
   Future<void> _openGalleryAndAnalyze() async {
@@ -111,7 +120,7 @@ class _StudentHubScreenState extends State<StudentHubScreen> {
         ),
       ),
     );
-    _reload();
+    _refreshAfterLearning();
   }
 
   Future<void> _openSignup() async {
@@ -123,7 +132,7 @@ class _StudentHubScreenState extends State<StudentHubScreen> {
           signupOnly: true,
           onSignedIn: () {
             if (mounted) Navigator.of(context).pop();
-            _reload();
+            _refreshAfterLearning();
           },
           onContinueAsGuest: () {
             if (mounted) Navigator.of(context).pop();
@@ -143,7 +152,7 @@ class _StudentHubScreenState extends State<StudentHubScreen> {
               AnalysisScreen(apiClient: widget.apiClient, result: result),
         ),
       );
-      _reload();
+      _refreshAfterLearning();
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -171,7 +180,7 @@ class _StudentHubScreenState extends State<StudentHubScreen> {
               PracticeScreen(apiClient: widget.apiClient, problemSet: set),
         ),
       );
-      _reload();
+      _refreshAfterLearning();
     } catch (error) {
       if (!mounted) return;
       ScaffoldMessenger.of(
@@ -185,18 +194,16 @@ class _StudentHubScreenState extends State<StudentHubScreen> {
     final isGuest = widget.demoIsGuest ?? widget.apiClient.authSession.isGuest;
 
     return RefreshIndicator(
-      onRefresh: () async => _reload(),
+      onRefresh: () async => _reload(forceRefresh: true),
       child: FutureBuilder<_HubData>(
         future: _hubFuture,
         builder: (context, snapshot) {
           if (snapshot.connectionState != ConnectionState.done) {
             return ListView(
               physics: const AlwaysScrollableScrollPhysics(),
+              padding: TabletLayout.pagePadding(context),
               children: const [
-                SizedBox(
-                  height: 240,
-                  child: Center(child: CircularProgressIndicator()),
-                ),
+                _HubLoadingSkeleton(),
               ],
             );
           }
@@ -205,7 +212,7 @@ class _StudentHubScreenState extends State<StudentHubScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: TabletLayout.pagePadding(context),
               children: [
-                ProfileLoadingError(error: snapshot.error, onRetry: _reload),
+                ProfileLoadingError(error: snapshot.error, onRetry: () => _reload(forceRefresh: true)),
               ],
             );
           }
@@ -398,7 +405,7 @@ class _TodayLearningCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final missionTitle = mission?.title.trim();
     final hasMission = missionTitle != null && missionTitle.isNotEmpty;
-    final title = hasMission ? '오늘은 이어서 훈련해요' : '오늘의 문제를 등록해요';
+    final title = hasMission ? '오늘은 이어서 훈련해요' : '오늘 어떤문제를 풀어볼까요?';
     final body = hasMission
         ? missionTitle
         : '풀이 사진을 올리면 오답 원인과 비슷한 문제를 바로 만들어요.';
@@ -411,50 +418,40 @@ class _TodayLearningCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Stack(
-            clipBehavior: Clip.none,
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Padding(
-                padding: const EdgeInsets.only(right: 4),
+              Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     TagChip('$grade 맞춤', color: AppColors.primary),
                     const SizedBox(height: AppSpacing.sm),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 48),
-                      child: Text(
-                        title,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.w800,
-                          height: 1.22,
-                        ),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 24,
+                        fontWeight: FontWeight.w800,
+                        height: 1.22,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    Padding(
-                      padding: const EdgeInsets.only(right: 52),
-                      child: Text(
-                        body,
-                        style: const TextStyle(
-                          color: AppColors.textSub,
-                          height: 1.5,
-                        ),
+                    Text(
+                      body,
+                      style: const TextStyle(
+                        color: AppColors.textSub,
+                        height: 1.5,
                       ),
                     ),
                   ],
                 ),
               ),
-              Positioned(
-                top: -6,
-                right: -4,
-                child: Image.asset(
-                  'assets/icons/3d/training_active.png',
-                  width: 58,
-                  height: 58,
-                  fit: BoxFit.contain,
-                ),
+              const SizedBox(width: AppSpacing.sm),
+              Image.asset(
+                'assets/icons/3d/training_active.png',
+                width: 58,
+                height: 58,
+                fit: BoxFit.contain,
               ),
             ],
           ),
@@ -693,8 +690,10 @@ class _RecentSubmissionTile extends StatelessWidget {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    MixedMathListTitle(
-                      item.title,
+                    Text(
+                      item.displayTitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 15,
@@ -797,6 +796,85 @@ class _MiniStatusChip extends StatelessWidget {
           fontWeight: FontWeight.w800,
         ),
       ),
+    );
+  }
+}
+
+class _HubLoadingSkeleton extends StatelessWidget {
+  const _HubLoadingSkeleton();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        AppCard(
+          padding: const EdgeInsets.all(AppSpacing.lg + 2),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: const [
+                    SkeletonBox(width: 72, height: 26, borderRadius: AppRadii.pill),
+                    SizedBox(height: AppSpacing.sm),
+                    SkeletonLines(
+                      widthFactors: [0.92, 0.64],
+                      lineHeight: 18,
+                      gap: 10,
+                    ),
+                    SizedBox(height: AppSpacing.sm),
+                    SkeletonLines(
+                      widthFactors: [0.98, 0.82],
+                      lineHeight: 12,
+                      gap: 8,
+                    ),
+                    SizedBox(height: AppSpacing.lg),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: SkeletonBox(height: 36, borderRadius: AppRadii.pill),
+                        ),
+                        SizedBox(width: AppSpacing.sm),
+                        Expanded(
+                          child: SkeletonBox(height: 36, borderRadius: AppRadii.pill),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: AppSpacing.md),
+                    SkeletonBox(height: AppSizes.buttonHeight, borderRadius: AppRadii.md),
+                  ],
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              const SkeletonBox(width: 58, height: 58, borderRadius: AppRadii.md),
+            ],
+          ),
+        ),
+        const SizedBox(height: AppSpacing.section),
+        const SkeletonBox(width: 120, height: 14, borderRadius: 6),
+        const SizedBox(height: AppSpacing.md),
+        for (var i = 0; i < 2; i++) ...[
+          AppCard(
+            padding: const EdgeInsets.all(AppSpacing.md),
+            child: Row(
+              children: const [
+                SkeletonBox(width: 56, height: 56, borderRadius: AppRadii.sm),
+                SizedBox(width: 12),
+                Expanded(
+                  child: SkeletonLines(
+                    widthFactors: [0.88, 0.55],
+                    lineHeight: 12,
+                    gap: 8,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          if (i == 0) const SizedBox(height: AppSpacing.sm),
+        ],
+      ],
     );
   }
 }

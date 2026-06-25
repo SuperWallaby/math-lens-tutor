@@ -10,7 +10,7 @@ import 'dev/app_restart.dart';
 import 'dev/design_review_shell.dart';
 import 'dev/dev_menu_overlay.dart';
 import 'dev/store_screenshot_shell.dart';
-import 'services/api_base_url.dart';
+import 'services/api_base_url.dart' show loadDebugApiConfigFromAsset, resolveApiBaseUrl;
 import 'services/api_client.dart';
 import 'services/auth_session.dart';
 import 'services/magic_link_auth.dart';
@@ -18,6 +18,8 @@ import 'services/oauth_service.dart';
 import 'screens/auth_gate.dart';
 import 'screens/lite_gate.dart';
 import 'theme/app_design_system.dart';
+import 'webview_init_stub.dart'
+    if (dart.library.js_interop) 'webview_init_web.dart';
 
 String resolveDesignReviewKey() {
   const fromDefine = String.fromEnvironment('DESIGN_REVIEW', defaultValue: '');
@@ -57,13 +59,20 @@ void _configureAndroidPhotoPicker() {
   }
 }
 
+void _configureWebView() {
+  if (!kIsWeb) return;
+  configureWebViewPlatform();
+}
+
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  _configureWebView();
   _configureAndroidPhotoPicker();
   if (!isLiteApp) {
     unawaited(initializeOAuthSdk());
     unawaited(initializeMagicLinkAuth());
   }
+  await loadDebugApiConfigFromAsset();
   if (kDebugMode) {
     debugPrint('[study] variant=$appVariantHeader API baseUrl=${resolveApiBaseUrl()}');
   }

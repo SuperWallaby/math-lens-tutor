@@ -4,6 +4,7 @@ import { indexScannedSubmission } from "@/lib/problem-bank";
 import { authErrorResponse, resolveActorUserId } from "@/lib/request";
 import { withRequestDb } from "@/lib/db-variant";
 import { studyLog } from "@/lib/server-log";
+import { refreshLearningProfileAfterWrite } from "@/lib/learning-profile-snapshot";
 import { getProblemSet, saveSubmission } from "@/lib/store";
 import { findUserById } from "@/lib/users";
 import {
@@ -90,6 +91,7 @@ export async function POST(request: Request) {
     studyLog("analyze:finalize", "POST save", { submissionId, problemSetId });
     await saveSubmission(submission);
     await indexScannedSubmission(submission, user?.grade);
+    await refreshLearningProfileAfterWrite(userId, user?.grade);
 
     return NextResponse.json({
       submissionId,

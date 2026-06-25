@@ -35,10 +35,7 @@ function submissionProblemLabel(submission: SolutionSubmission): string {
     if (num) return `${num[1]}번`;
   }
   return truncate(
-    formatSubmissionListTitle(
-      submission.analysis.problemText,
-      submission.imageName ?? "",
-    ),
+    formatSubmissionListTitle(submission),
     28,
   );
 }
@@ -142,10 +139,7 @@ export function buildParentWrongExplains(params: {
       id: `sub-${submission.id}`,
       sourceType: "submission",
       sourceId: submission.id,
-      title: formatSubmissionListTitle(
-        analysis.problemText,
-        submission.imageName ?? "",
-      ),
+      title: formatSubmissionListTitle(submission),
       concept,
       easyExplain: buildEasyExplainFromAnalysis(analysis),
       parentScript: buildParentScript(gradingPoint, concept),

@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 
 import { GENERIC_INSIGHT_ERROR, logApiError } from "@/lib/api-errors";
-import { buildLearningProfile } from "@/lib/learning-profile";
+import { getLearningProfileForUser } from "@/lib/learning-profile-snapshot";
 import { authErrorResponse, resolveActorUserId } from "@/lib/request";
 import { findUserById } from "@/lib/users";
 
@@ -12,7 +12,7 @@ export async function GET(request: Request) {
     const actor = await resolveActorUserId(request);
     authUserId = actor.authUserId;
     const student = await findUserById(actor.actorUserId);
-    const profile = await buildLearningProfile(
+    const profile = await getLearningProfileForUser(
       actor.actorUserId,
       student?.grade ?? actor.user.grade ?? "중1",
     );

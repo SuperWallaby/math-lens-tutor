@@ -721,33 +721,47 @@ class ApiClient {
 
   /// 로컬 개발 전용 — 카카오/Apple OAuth 계정 즉시 로그인 (프로덕션 API는 404)
   Future<AppUser> devOAuthLogin(String accountId) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/api/auth/dev-oauth-login'),
-      headers: await _jsonHeaders(),
-      body: jsonEncode({'accountId': accountId}),
-    );
-    final body = _decode(response);
-    if (response.statusCode >= 400) {
-      throw ApiException(
-        body['error'] as String? ?? '개발용 OAuth 로그인에 실패했습니다.',
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/auth/dev-oauth-login'),
+        headers: await _jsonHeaders(),
+        body: jsonEncode({'accountId': accountId}),
       );
+      final body = _decode(response);
+      if (response.statusCode >= 400) {
+        final error = body['error'] as String? ?? '개발용 OAuth 로그인에 실패했습니다.';
+        if (response.statusCode == 404 && error == 'Not found') {
+          throw ApiException(
+            '개발용 OAuth는 로컬 API에서만 동작합니다.\n'
+            'npm run dev:next 실행 후 yarn app 으로 앱을 띄워 주세요.\n'
+            '(현재 API: $baseUrl)',
+          );
+        }
+        throw ApiException(error);
+      }
+
+      final token = body['token'] as String? ?? '';
+      final userJson = body['user'];
+      if (userJson is! Map) {
+        throw ApiException('서버 응답에 사용자 정보가 없습니다.');
+      }
+      final user = AppUser.fromJson(userJson.cast<String, dynamic>());
+      final linkedStudents = ((body['linkedStudents'] as List?) ?? [])
+          .whereType<Map>()
+          .map((item) => LinkedStudent.fromJson(item.cast<String, dynamic>()))
+          .toList();
+
+      await authSession.setSession(
+        token: token,
+        user: user,
+        linkedStudents: linkedStudents,
+      );
+      return user;
+    } on ApiException {
+      rethrow;
+    } catch (error) {
+      throw ApiException(_friendlyNetworkMessage(error));
     }
-
-    final token = body['token'] as String? ?? '';
-    final user = AppUser.fromJson(
-      (body['user'] as Map).cast<String, dynamic>(),
-    );
-    final linkedStudents = ((body['linkedStudents'] as List?) ?? [])
-        .whereType<Map>()
-        .map((item) => LinkedStudent.fromJson(item.cast<String, dynamic>()))
-        .toList();
-
-    await authSession.setSession(
-      token: token,
-      user: user,
-      linkedStudents: linkedStudents,
-    );
-    return user;
   }
 
   Future<LearningProfile> _fetchLearningProfile() async {

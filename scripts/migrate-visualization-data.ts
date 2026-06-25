@@ -77,6 +77,7 @@ function buildBankFilter(options: CliOptions): Document {
       $or: [
         { visualizationMigrationStatus: { $exists: false } },
         { visualizationMigrationStatus: "pending" },
+        { visualizationMigrationStatus: "processing" },
         { visualizationMigrationStatus: "failed" },
       ],
     };
@@ -91,6 +92,7 @@ function buildSetFilter(options: CliOptions): Document {
       $or: [
         { "problems.visualizationMigrationStatus": { $exists: false } },
         { "problems.visualizationMigrationStatus": "pending" },
+        { "problems.visualizationMigrationStatus": "processing" },
         { "problems.visualizationMigrationStatus": "failed" },
         {
           problems: {
@@ -119,22 +121,38 @@ async function flushBulk(
   ops.length = 0;
 }
 
+/** Azure 호출이 길어져도 커서가 끊기지 않게 id 목록을 먼저 받고 findOne 으로 처리 */
+async function listIds(
+  col: Collection<Document>,
+  filter: Document,
+  limit: number,
+): Promise<string[]> {
+  const rows = await col
+    .find(filter, { projection: { id: 1, _id: 0 } })
+    .limit(Number.isFinite(limit) ? limit : 0)
+    .toArray();
+  return rows
+    .map((row) => row.id)
+    .filter((id): id is string => typeof id === "string" && id.length > 0);
+}
+
 async function migrateBankItems(options: CliOptions) {
   const db = await getMongoDb();
   if (!db) throw new Error("MongoDB not configured");
 
   const col = db.collection<Document>("problem_bank_items");
   const filter = buildBankFilter(options);
-  const cursor = col.find(filter);
+  const ids = await listIds(col, filter, options.batchSize);
 
   let scanned = 0;
   let completed = 0;
   let failed = 0;
   const ops: AnyBulkWriteOperation<Document>[] = [];
 
-  for await (const doc of cursor) {
-    if (!options.id && scanned >= options.batchSize) break;
+  for (const id of ids) {
     scanned += 1;
+    const doc = await col.findOne({ id });
+    if (!doc) continue;
     const item = doc as unknown as ProblemBankItem;
 
     if (!options.dryRun) {
@@ -187,16 +205,17 @@ async function migrateProblemSets(options: CliOptions) {
 
   const col = db.collection<Document>("generated_problem_sets");
   const filter = buildSetFilter(options);
-  const cursor = col.find(filter);
+  const ids = await listIds(col, filter, options.batchSize);
 
   let scanned = 0;
   let completedProblems = 0;
   let failedProblems = 0;
   const ops: AnyBulkWriteOperation<Document>[] = [];
 
-  for await (const doc of cursor) {
-    if (!options.id && scanned >= options.batchSize) break;
+  for (const id of ids) {
     scanned += 1;
+    const doc = await col.findOne({ id });
+    if (!doc) continue;
     const set = doc as unknown as GeneratedProblemSet;
 
     const problems = await migrateGeneratedProblemSet(set);

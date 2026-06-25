@@ -14,8 +14,14 @@ if [[ -f "$PORT_FILE" ]]; then
 fi
 
 cd "$ROOT/flutter_app"
-exec flutter run \
-  --flavor lite \
-  --dart-define=APP_VARIANT=lite \
-  --dart-define=API_BASE_URL="$API_BASE" \
-  "$@"
+
+FLUTTER_DEFINE_ARGS=(
+  --flavor lite
+  --dart-define=APP_VARIANT=lite
+  --dart-define=API_BASE_URL="$API_BASE"
+)
+# shellcheck source=flutter-oauth-defines.sh
+source "$ROOT/scripts/flutter-oauth-defines.sh"
+flutter_oauth_append_defines FLUTTER_DEFINE_ARGS
+
+exec flutter run "${FLUTTER_DEFINE_ARGS[@]}" "$@"

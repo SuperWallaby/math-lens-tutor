@@ -6,7 +6,6 @@ import '../models/app_models.dart';
 import '../services/api_client.dart';
 import '../widgets/app_card.dart';
 import '../widgets/learning_profile_widgets.dart';
-import '../widgets/mixed_math_text.dart';
 import '../widgets/skeleton_box.dart';
 import '../widgets/skeleton_lines.dart';
 import 'open_practice_flow.dart';
@@ -287,13 +286,18 @@ class _TrainingFeedCard extends StatelessWidget {
                         text: item.difficultyLabel,
                         color: AppColors.accent,
                       ),
+                      _FeedTag(
+                        text: '${item.problemCount}문제',
+                        color: AppColors.textSub,
+                      ),
                     ],
                   ),
                   if (primaryLine != null) ...[
                     const SizedBox(height: 10),
-                    MixedMathText(
+                    Text(
                       primaryLine,
-                      paragraphSoftBreak: true,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 15,
@@ -332,17 +336,9 @@ class _TrainingFeedCard extends StatelessWidget {
 }
 
 String? _feedCardPrimaryLine(TrainingFeedItem item) {
-  final preview = item.promptPreview.trim();
-  if (preview.isNotEmpty) return preview;
-
   final title = item.title.trim();
-  if (title.isEmpty) return null;
-
-  final concept = item.concept.trim().toLowerCase();
-  final normalizedTitle = title.toLowerCase();
-  if (normalizedTitle == concept) return null;
-
-  return title;
+  if (title.isNotEmpty) return title;
+  return null;
 }
 
 String? _feedCardReasonLine(TrainingFeedItem item) {

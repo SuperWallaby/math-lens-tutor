@@ -1,6 +1,8 @@
 #!/usr/bin/env node
 /**
- * Atlas analysis_jobs 큐를 처리해 user_feed_queue 를 갱신합니다.
+ * Atlas analysis_jobs 큐 처리:
+ *   refresh_user_feed    → user_feed_queues
+ *   refresh_user_profile → user_learning_snapshots
  *
  *   npm run worker:training-feed
  *   npm run worker:training-feed -- --once

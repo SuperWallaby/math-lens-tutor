@@ -33,6 +33,7 @@ String stripLeadingChoiceMarker(String label, [String? choiceId]) {
   return text;
 }
 
+/// UI 표시용 — label만 쓰고 id 인덱스(1. 2. …)는 붙이지 않음
 String formatChoiceDisplayLabel(String id, String label) {
-  return '$id. ${stripLeadingChoiceMarker(label, id)}';
+  return stripLeadingChoiceMarker(label, id);
 }

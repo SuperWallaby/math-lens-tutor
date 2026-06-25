@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# V100 워커(calnode02)에 우열 training-feed worker + Ollama 모델을 설치합니다.
+# V100 워커(calnode02)에 우열 analysis_jobs worker + Ollama 모델을 설치합니다.
+# 처리 job: refresh_user_feed, refresh_user_profile
 # 로컬(Mac)에서 실행:
 #   bash scripts/v100/setup-training-worker.sh
 set -euo pipefail

@@ -106,9 +106,11 @@ class DesignReviewShell extends StatelessWidget {
   }
 
   Widget _practice(String state) {
-    final set = state == 'question'
-        ? designReviewProblemSetQuestion()
-        : designReviewProblemSet();
+    final set = switch (state) {
+      'question' => designReviewProblemSetQuestion(),
+      'trig_graph' => designReviewProblemSetTrigGraph(),
+      _ => designReviewProblemSet(),
+    };
     switch (state) {
       case 'feedback_correct':
         return PracticeScreen(

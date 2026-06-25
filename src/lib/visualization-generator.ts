@@ -37,16 +37,55 @@ Return JSON only:
 }
 
 Rules:
-- function_graph + engine desmos: y= expression, optional xRange/yRange [-5,5] style tuples
+- function_graph + engine desmos: data.expression **required** (e.g. "y=2^x"). Optional data.expressions array. Optional xRange/yRange [-5,5] tuples
 - geometry + engine jsxgraph: shape triangle|rectangle|circle|polygon|custom, points { "A": [x,y], ... }, showLabels
 - coordinate + engine jsxgraph: board.boundingbox + elements array for JSXGraph
 - If no diagram needed, needed=false and both visualization fields null
+- If you cannot produce valid expression/points, set needed=false (do not omit expression)
 - Solution diagram only when explanation benefits from a separate figure (e.g. completed graph, auxiliary lines)
 - Do NOT duplicate prompt diagram in solution unless it adds new information
 - Prefer null over weak or decorative visuals`;
 
 function hasAzure(): boolean {
   return Boolean(env.azureOpenAiEndpoint?.trim() && env.azureOpenAiDeployment?.trim());
+}
+
+function isRetryableAzureError(error: unknown): boolean {
+  const message = error instanceof Error ? error.message : String(error);
+  return /fetch failed|timeout|ECONNRESET|ETIMEDOUT|503|429|502|504/i.test(
+    message,
+  );
+}
+
+async function sleep(ms: number) {
+  await new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+async function completeVisualizationPrompt(params: {
+  deploymentName: string;
+  userPrompt: string;
+}) {
+  const maxAttempts = 3;
+  let lastError: unknown;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt += 1) {
+    try {
+      return await completeAzureJsonPrompt({
+        deploymentName: params.deploymentName,
+        userPrompt: params.userPrompt,
+        temperatureForChat: 0.2,
+        maxTokens: 2048,
+      });
+    } catch (error) {
+      lastError = error;
+      if (!isRetryableAzureError(error) || attempt === maxAttempts) {
+        throw error;
+      }
+      await sleep(1500 * attempt);
+    }
+  }
+
+  throw lastError;
 }
 
 export async function generateVisualizationBundle(params: {
@@ -103,11 +142,9 @@ Explanation: ${params.explanation}
 Concept tags: ${params.conceptTags.join(", ")}`;
 
     const deployment = env.azureOpenAiDeployment!.trim();
-    const text = await completeAzureJsonPrompt({
+    const text = await completeVisualizationPrompt({
       deploymentName: deployment,
       userPrompt,
-      temperatureForChat: 0.2,
-      maxTokens: 2048,
     });
     const raw = parseJsonFromText(text);
 
@@ -133,6 +170,7 @@ Concept tags: ${params.conceptTags.join(", ")}`;
       visualizationData,
       solutionVisualizationData,
       migrationStatus: "completed",
+      migrationError: null,
     };
   } catch (error) {
     return {

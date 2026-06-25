@@ -8,24 +8,12 @@ FLUTTER_PID_FILE="$ROOT/.flutter-run.pid"
 WATCH_PID=""
 FLUTTER_DEFINE_ARGS=(--dart-define="API_BASE_URL=$API_BASE")
 
-load_env_var() {
-  local key="$1"
-  local file="$ROOT/.env.local"
-  [[ -f "$file" ]] || return 0
-  local line
-  line="$(grep -E "^${key}=" "$file" | tail -1 || true)"
-  [[ -n "$line" ]] || return 0
-  printf '%s' "${line#*=}"
-}
-
-web_id="$(load_env_var GOOGLE_CLIENT_ID_WEB)"
-ios_id="$(load_env_var GOOGLE_CLIENT_ID_IOS)"
-android_id="$(load_env_var GOOGLE_CLIENT_ID_ANDROID)"
-kakao_key="$(load_env_var KAKAO_NATIVE_APP_KEY)"
-[[ -n "$web_id" ]] && FLUTTER_DEFINE_ARGS+=(--dart-define=GOOGLE_CLIENT_ID_WEB="$web_id")
-[[ -n "$ios_id" ]] && FLUTTER_DEFINE_ARGS+=(--dart-define=GOOGLE_CLIENT_ID_IOS="$ios_id")
-[[ -n "$android_id" ]] && FLUTTER_DEFINE_ARGS+=(--dart-define=GOOGLE_CLIENT_ID_ANDROID="$android_id")
-[[ -n "$kakao_key" ]] && FLUTTER_DEFINE_ARGS+=(--dart-define=KAKAO_NATIVE_APP_KEY="$kakao_key")
+# shellcheck source=flutter-oauth-defines.sh
+source "$ROOT/scripts/flutter-oauth-defines.sh"
+flutter_oauth_append_defines FLUTTER_DEFINE_ARGS
+# shellcheck source=flutter-local-defines.sh
+source "$ROOT/scripts/flutter-local-defines.sh"
+flutter_append_local_defines FLUTTER_DEFINE_ARGS
 
 cleanup() {
   if [[ -n "$WATCH_PID" ]] && kill -0 "$WATCH_PID" 2>/dev/null; then

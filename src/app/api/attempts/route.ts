@@ -10,6 +10,7 @@ import { withRequestDb } from "@/lib/db-variant";
 import { recordPracticeAttempt } from "@/lib/problem-bank";
 import { recordTrainingFeedActivity } from "@/lib/training-feed";
 import { studyLog } from "@/lib/server-log";
+import { refreshLearningProfileAfterWrite } from "@/lib/learning-profile-snapshot";
 import { getProblemSet, saveAttempt } from "@/lib/store";
 import type { GeneratedProblem, ProblemAttempt } from "@/lib/types";
 import {
@@ -142,6 +143,8 @@ export async function POST(request: Request) {
     }
 
     await saveAttempt(attempt);
+
+    await refreshLearningProfileAfterWrite(actor.actorUserId);
 
     void recordTrainingFeedActivity({
       userId: actor.actorUserId,

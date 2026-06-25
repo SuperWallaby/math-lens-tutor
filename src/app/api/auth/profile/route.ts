@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import {
+  invalidateLearningProfileSnapshot,
+  refreshLearningProfileAfterWrite,
+} from "@/lib/learning-profile-snapshot";
 import { getSessionUserId } from "@/lib/auth";
 import { authErrorResponse } from "@/lib/request";
 import { publicUser, updateUserProfile } from "@/lib/users";
@@ -23,6 +27,11 @@ export async function PATCH(request: Request) {
   try {
     const body = bodySchema.parse(await request.json());
     const user = await updateUserProfile(authUserId, body);
+
+    if (body.grade !== undefined) {
+      await invalidateLearningProfileSnapshot(authUserId);
+    }
+    await refreshLearningProfileAfterWrite(authUserId, user.grade);
 
     return NextResponse.json({
       user: publicUser(user),

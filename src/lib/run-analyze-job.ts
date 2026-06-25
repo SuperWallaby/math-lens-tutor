@@ -15,6 +15,7 @@ import {
   refineSolutionAnalysisForAccurateMode,
   solveAndExpandFromVision,
 } from "./azure";
+import { refreshLearningProfileAfterWrite } from "./learning-profile-snapshot";
 import {
   indexScannedSubmission,
   resolvePracticeProblemSet,
@@ -213,6 +214,7 @@ export async function runAnalyzeJob(params: {
   await saveSubmission(submission);
   await indexScannedSubmission(submission, user?.grade);
   await saveProblemSet(problemSet);
+  await refreshLearningProfileAfterWrite(userId, user?.grade);
 
   return {
     submissionId: submission.id,

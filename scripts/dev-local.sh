@@ -100,38 +100,16 @@ if (phone) {
 NODE
 }
 
-load_env_var() {
-  local key="$1"
-  local file="$ROOT/.env.local"
-  [[ -f "$file" ]] || return 0
-  local line
-  line="$(grep -E "^${key}=" "$file" | tail -1 || true)"
-  [[ -n "$line" ]] || return 0
-  printf '%s' "${line#*=}"
-}
-
 flutter_dart_defines() {
   local api_base="$1"
   FLUTTER_DEFINE_ARGS=(--dart-define=API_BASE_URL="$api_base")
 
-  local web_id ios_id android_id kakao_key
-  web_id="$(load_env_var GOOGLE_CLIENT_ID_WEB)"
-  ios_id="$(load_env_var GOOGLE_CLIENT_ID_IOS)"
-  android_id="$(load_env_var GOOGLE_CLIENT_ID_ANDROID)"
-  kakao_key="$(load_env_var KAKAO_NATIVE_APP_KEY)"
-
-  if [[ -n "$web_id" ]]; then
-    FLUTTER_DEFINE_ARGS+=(--dart-define=GOOGLE_CLIENT_ID_WEB="$web_id")
-  fi
-  if [[ -n "$ios_id" ]]; then
-    FLUTTER_DEFINE_ARGS+=(--dart-define=GOOGLE_CLIENT_ID_IOS="$ios_id")
-  fi
-  if [[ -n "$android_id" ]]; then
-    FLUTTER_DEFINE_ARGS+=(--dart-define=GOOGLE_CLIENT_ID_ANDROID="$android_id")
-  fi
-  if [[ -n "$kakao_key" ]]; then
-    FLUTTER_DEFINE_ARGS+=(--dart-define=KAKAO_NATIVE_APP_KEY="$kakao_key")
-  fi
+  # shellcheck source=flutter-oauth-defines.sh
+  source "$ROOT/scripts/flutter-oauth-defines.sh"
+  flutter_oauth_append_defines FLUTTER_DEFINE_ARGS
+  # shellcheck source=flutter-local-defines.sh
+  source "$ROOT/scripts/flutter-local-defines.sh"
+  flutter_append_local_defines FLUTTER_DEFINE_ARGS
 }
 
 start_flutter_auto_reload() {

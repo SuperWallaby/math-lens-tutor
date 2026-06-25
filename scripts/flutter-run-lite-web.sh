@@ -9,18 +9,9 @@ FLUTTER_DEFINE_ARGS=(
   --dart-define=API_BASE_URL="$API_BASE"
 )
 
-load_env_var() {
-  local key="$1"
-  local file="$ROOT/.env.local"
-  [[ -f "$file" ]] || return 0
-  local line
-  line="$(grep -E "^${key}=" "$file" | tail -1 || true)"
-  [[ -n "$line" ]] || return 0
-  printf '%s' "${line#*=}"
-}
-
-web_id="$(load_env_var GOOGLE_CLIENT_ID_WEB)"
-[[ -n "$web_id" ]] && FLUTTER_DEFINE_ARGS+=(--dart-define=GOOGLE_CLIENT_ID_WEB="$web_id")
+# shellcheck source=flutter-oauth-defines.sh
+source "$ROOT/scripts/flutter-oauth-defines.sh"
+flutter_oauth_append_defines FLUTTER_DEFINE_ARGS
 
 if ! nc -z 127.0.0.1 "$(bash "$ROOT/scripts/read-dev-port.sh")" 2>/dev/null; then
   echo "[lite-web] 로컬 API가 없습니다. 먼저 실행: npm run dev:next  (또는 yarn app)" >&2

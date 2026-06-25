@@ -18,4 +18,12 @@ xcrun simctl boot "$DEVICE" 2>/dev/null || true
 open -a Simulator
 sleep 2
 
-exec flutter run -d "$DEVICE" --dart-define=API_BASE_URL="$API_BASE" "$@"
+FLUTTER_DEFINE_ARGS=(--dart-define=API_BASE_URL="$API_BASE")
+# shellcheck source=flutter-oauth-defines.sh
+source "$ROOT/scripts/flutter-oauth-defines.sh"
+flutter_oauth_append_defines FLUTTER_DEFINE_ARGS
+# shellcheck source=flutter-local-defines.sh
+source "$ROOT/scripts/flutter-local-defines.sh"
+flutter_append_local_defines FLUTTER_DEFINE_ARGS
+
+exec flutter run -d "$DEVICE" "${FLUTTER_DEFINE_ARGS[@]}" "$@"

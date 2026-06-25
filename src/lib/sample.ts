@@ -24,6 +24,7 @@ export const sampleAnalysis: SolutionAnalysis = {
   errorSummary:
     "완전제곱식으로 바꿀 때 더하고 뺀 값의 보정이 빠져 최솟값을 잘못 읽었습니다.",
   weakConcepts: ["완전제곱식", "이차함수의 꼭짓점", "상수항 보정"],
+  listTitle: "이차함수 최솟값",
   recommendedFocus: [
     "$x^2 + bx$를 $\\bigl(x + \\frac{b}{2}\\bigr)^2$ 형태로 바꾼 뒤 보정항을 확인하기",
     "꼭짓점 좌표와 최솟값을 구분해서 쓰기",

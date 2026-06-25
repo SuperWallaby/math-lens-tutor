@@ -18,6 +18,7 @@ import {
   getScannedProblemsForUser,
   type UnitPracticeAggregate,
 } from "./problem-bank-store";
+import { getLearningProfileForUser } from "./learning-profile-snapshot";
 import { buildSampleInsight } from "./sample";
 import { buildTrainingSnapshot } from "./concept-training";
 import {
@@ -659,7 +660,7 @@ export async function buildTeacherClassOverview(
   const profiles = await Promise.all(
     linked.map(async (student) => {
       const user = await findUserById(student.id);
-      const profile = await buildLearningProfile(
+      const profile = await getLearningProfileForUser(
         student.id,
         user?.grade ?? "중1",
       );

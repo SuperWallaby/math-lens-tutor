@@ -401,12 +401,14 @@ List<SubmissionSummary> designReviewSubmissionsRecent() => const [
       SubmissionSummary(
         id: 'sub_1',
         title: '2x + 5 = 13 일 때, x의 값을 구하시오.',
+        listTitle: '일차방정식',
         createdAt: '2026-05-26T10:00:00Z',
         weakConcepts: ['일차방정식'],
       ),
       SubmissionSummary(
         id: 'sub_2',
         title: '24와 36의 최소공배수를 구하시오.',
+        listTitle: '소인수분해',
         createdAt: '2026-05-24T15:30:00Z',
         weakConcepts: ['소인수분해'],
       ),
@@ -486,6 +488,45 @@ GeneratedProblemSet designReviewProblemSetQuestion() {
     title: '9까지의 수 · 순서 연습',
     learningGoal: '수의 순서를 보고 빈칸에 알맞은 수를 씁니다.',
     problems: [full.problems.first],
+  );
+}
+
+/// 삼각함수 Desmos 그래프 디버그용 (design_review=practice__trig_graph)
+GeneratedProblemSet designReviewProblemSetTrigGraph() {
+  return GeneratedProblemSet(
+    id: 'review_trig_set',
+    submissionId: 'review_trig_sub',
+    title: '삼각함수 · 주기 연습',
+    learningGoal: '사인 그래프의 주기를 읽습니다.',
+    problems: [
+      GeneratedProblem(
+        id: 'trig_p1',
+        type: 'multiple_choice',
+        title: '주기 구하기',
+        prompt: r'아래 그래프 $y=\sin(3x)$ 의 주기는?',
+        choices: const [
+          ProblemChoice(id: '1', label: r'$\dfrac{2\pi}{3}$'),
+          ProblemChoice(id: '2', label: r'$\dfrac{\pi}{3}$'),
+          ProblemChoice(id: '3', label: r'$2\pi$'),
+          ProblemChoice(id: '4', label: r'$\pi$'),
+          ProblemChoice(id: '5', label: r'$3\pi$'),
+        ],
+        correctAnswer: '1',
+        explanation: r'$\sin(3x)$ 의 주기는 $\dfrac{2\pi}{3}$ 입니다.',
+        difficulty: 'medium',
+        conceptTags: const ['삼각함수', 'sin'],
+        chart: null,
+        visualizationData: const {
+          'type': 'function_graph',
+          'engine': 'desmos',
+          'data': {
+            'expression': 'y=sin(3x)',
+            'xRange': [-2, 2],
+            'yRange': [-1.5, 1.5],
+          },
+        },
+      ),
+    ],
   );
 }
 

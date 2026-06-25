@@ -498,7 +498,24 @@ export async function aggregateUnitPracticeForUser(
   return out;
 }
 
+const UNIT_GROUPED_COUNT_TTL_MS = 10 * 60 * 1000;
+let groupedUnitCountCache: {
+  counts: Map<string, number>;
+  expiresAt: number;
+} | null = null;
+
+export function invalidateGroupedUnitCountCache() {
+  groupedUnitCountCache = null;
+}
+
 export async function countActiveBankItemsGroupedByUnit(): Promise<Map<string, number>> {
+  if (
+    groupedUnitCountCache &&
+    groupedUnitCountCache.expiresAt > Date.now()
+  ) {
+    return groupedUnitCountCache.counts;
+  }
+
   const store = await requireProblemBankStore();
   const counts = new Map<string, number>();
 
@@ -508,6 +525,10 @@ export async function countActiveBankItemsGroupedByUnit(): Promise<Map<string, n
       const id = item.unitId.trim();
       counts.set(id, (counts.get(id) ?? 0) + 1);
     }
+    groupedUnitCountCache = {
+      counts,
+      expiresAt: Date.now() + UNIT_GROUPED_COUNT_TTL_MS,
+    };
     return counts;
   }
 
@@ -522,6 +543,10 @@ export async function countActiveBankItemsGroupedByUnit(): Promise<Map<string, n
   for (const row of rows) {
     if (row._id?.trim()) counts.set(row._id.trim(), row.count);
   }
+  groupedUnitCountCache = {
+    counts,
+    expiresAt: Date.now() + UNIT_GROUPED_COUNT_TTL_MS,
+  };
   return counts;
 }
 

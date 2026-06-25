@@ -12,6 +12,7 @@
 #
 # 환경 변수:
 #   API_BASE_URL  (기본 https://study-hazel-six.vercel.app)
+#   OAuth dart-define 은 레포 루트 .env.local (GOOGLE_CLIENT_ID_*, KAKAO_NATIVE_APP_KEY)
 #   SKIP_PUB_GET=1  flutter pub get 생략
 #   OPEN_FINDER=0   빌드 후 Finder 자동 열기 끄기 (기본: 열기, macOS만)
 #
@@ -76,20 +77,9 @@ fi
 
 DEFINE=(--dart-define="API_BASE_URL=${API}")
 
-load_env_var() {
-  local key="$1"
-  local file="${SCRIPT_DIR}/../../.env.local"
-  [[ -f "$file" ]] || return 0
-  local line
-  line="$(grep -E "^${key}=" "$file" | tail -1 || true)"
-  [[ -n "$line" ]] || return 0
-  printf '%s' "${line#*=}"
-}
-
-kakao_key="$(load_env_var KAKAO_NATIVE_APP_KEY)"
-if [[ -n "$kakao_key" ]]; then
-  DEFINE+=(--dart-define="KAKAO_NATIVE_APP_KEY=${kakao_key}")
-fi
+# shellcheck source=../../scripts/flutter-oauth-defines.sh
+source "${SCRIPT_DIR}/../../scripts/flutter-oauth-defines.sh"
+flutter_oauth_append_defines DEFINE
 
 build_ios() {
   echo ""

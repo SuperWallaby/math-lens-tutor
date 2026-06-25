@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:webview_flutter/webview_flutter.dart';
 
+import '../dev/agent_debug_log.dart';
 import '../theme/app_design_system.dart';
 import 'problem_chart.dart';
 import 'problem_jsx_graph.dart';
@@ -83,6 +84,24 @@ class VisualizationView extends StatelessWidget {
     final type = viz['type'] as String? ?? '';
     final engine = viz['engine'] as String? ?? '';
     final data = (viz['data'] as Map?)?.cast<String, dynamic>() ?? {};
+
+    // #region agent log
+    agentDebugLog(
+      location: 'visualization_view.dart:_buildEngineWidget',
+      message: 'resolved visualization engine',
+      hypothesisId: 'A',
+      data: {
+        'type': type,
+        'engine': engine,
+        'dataKeys': data.keys.toList(),
+        'expression': data['expression'],
+        'expressions': data['expressions'],
+        'elementCount': data['elements'] is List
+            ? (data['elements'] as List).length
+            : null,
+      },
+    );
+    // #endregion
 
     if (engine == 'chartjs' || type == 'chart') {
       return Padding(
@@ -221,13 +240,48 @@ class _DesmosWebView extends StatefulWidget {
 class _DesmosWebViewState extends State<_DesmosWebView> {
   late final WebViewController _controller;
 
+  void _onAgentDebugMessage(JavaScriptMessage message) {
+    try {
+      final parsed = jsonDecode(message.message) as Map<String, dynamic>;
+      agentDebugLog(
+        location: 'visualization_view.dart:desmos-webview',
+        message: parsed['message'] as String? ?? 'desmos event',
+        hypothesisId: parsed['hypothesisId'] as String? ?? 'E',
+        data: (parsed['data'] as Map?)?.cast<String, dynamic>(),
+      );
+    } catch (_) {
+      agentDebugLog(
+        location: 'visualization_view.dart:desmos-webview',
+        message: message.message,
+        hypothesisId: 'E',
+      );
+    }
+  }
+
   @override
   void initState() {
     super.initState();
     _controller = WebViewController()
       ..setJavaScriptMode(JavaScriptMode.unrestricted)
       ..setBackgroundColor(Colors.white)
+      ..addJavaScriptChannel(
+        'AgentDebug',
+        onMessageReceived: _onAgentDebugMessage,
+      )
       ..loadHtmlString(_buildDesmosHtml(widget.data));
+    // #region agent log
+    agentDebugLog(
+      location: 'visualization_view.dart:_DesmosWebViewState.initState',
+      message: 'loading desmos html',
+      hypothesisId: 'B',
+      data: {
+        'expression': widget.data['expression'],
+        'expressions': widget.data['expressions'],
+        'xRange': widget.data['xRange'],
+        'yRange': widget.data['yRange'],
+      },
+    );
+    // #endregion
   }
 
   @override
@@ -261,6 +315,9 @@ String _buildDesmosHtml(Map<String, dynamic> data) {
 <style>html,body{margin:0;height:100%;}#calculator{width:100%;height:100%;}</style>
 </head><body><div id="calculator"></div>
 <script>(function(){
+function agentLog(message,hypothesisId,data){
+  try{AgentDebug.postMessage(JSON.stringify({message:message,hypothesisId:hypothesisId,data:data||{}}));}catch(e){}
+}
 var SAFE='$payload';
 function decodeB64Utf8(b64){
   var bin=atob(b64);
@@ -269,19 +326,32 @@ function decodeB64Utf8(b64){
   return new TextDecoder('utf-8').decode(u);
 }
 var data;
-try{data=JSON.parse(decodeB64Utf8(SAFE));}catch(e){return;}
+try{data=JSON.parse(decodeB64Utf8(SAFE));}catch(e){
+  agentLog('desmos json parse failed','B',{error:String(e)});
+  return;
+}
+agentLog('desmos data parsed','B',{expression:data.expression,expressions:data.expressions,xRange:data.xRange,yRange:data.yRange});
+if(typeof Desmos==='undefined'){
+  agentLog('Desmos global missing','C',{});
+  return;
+}
 var elt=document.getElementById('calculator');
 var calc=Desmos.GraphingCalculator(elt,{expressions:false,settingsMenu:false,zoomButtons:true});
 var expr=data.expression||'y=x^2';
+var applied=[];
 if(Array.isArray(data.expressions)){
   data.expressions.forEach(function(latex,i){
     calc.setExpression({id:'e'+i,latex:latex});
+    applied.push(latex);
   });
 }else{
   calc.setExpression({id:'main',latex:expr});
+  applied.push(expr);
 }
+agentLog('desmos expressions applied','E',{applied:applied,desmosReady:true});
 if(data.xRange&&data.yRange){
   calc.setMathBounds({left:data.xRange[0],right:data.xRange[1],bottom:data.yRange[0],top:data.yRange[1]});
+  agentLog('desmos bounds set','D',{left:data.xRange[0],right:data.xRange[1],bottom:data.yRange[0],top:data.yRange[1]});
 }
 })();</script></body></html>''';
 }
@@ -291,7 +361,10 @@ bool visualizationShows({
   Map<String, dynamic>? chart,
   Map<String, dynamic>? jsxGraph,
 }) {
-  if (visualizationData != null && visualizationData.isNotEmpty) return true;
-  if (chart != null) return true;
+  if (visualizationData != null && visualizationData.isNotEmpty) {
+    final type = visualizationData['type'];
+    if (type != null && '$type'.isNotEmpty) return true;
+  }
+  if (chart != null && chart.isNotEmpty) return true;
   return jsxDiagramShows(jsxGraph);
 }

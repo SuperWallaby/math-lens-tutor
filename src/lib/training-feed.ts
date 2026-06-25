@@ -24,6 +24,7 @@ import type {
   UserFeedQueue,
 } from "./types";
 import { findUserById } from "./users";
+import { refreshLearningProfileSnapshot } from "./learning-profile-snapshot";
 import {
   applyAttemptToMastery,
   buildFeedItemFromBank,
@@ -327,6 +328,8 @@ export async function processNextAnalysisJob(): Promise<boolean> {
   try {
     if (job.type === "refresh_user_feed") {
       await refreshUserFeedQueue(job.userId);
+    } else if (job.type === "refresh_user_profile") {
+      await refreshLearningProfileSnapshot(job.userId);
     }
     await finishAnalysisJob({ jobId: job.id, status: "done" });
   } catch (error) {

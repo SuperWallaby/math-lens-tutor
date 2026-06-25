@@ -45,8 +45,9 @@ export function stripLeadingChoiceMarker(
   return text;
 }
 
+/** UI 표시용 — label만 쓰고 id 인덱스(1. 2. …)는 붙이지 않음 */
 export function formatChoiceDisplayLabel(id: string, label: string): string {
-  return `${id}. ${stripLeadingChoiceMarker(label, id)}`;
+  return stripLeadingChoiceMarker(label, id);
 }
 
 export function sanitizeProblemChoices<T extends { id: string; label: string }>(

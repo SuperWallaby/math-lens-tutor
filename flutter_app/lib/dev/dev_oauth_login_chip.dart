@@ -95,9 +95,9 @@ class _DevOAuthLoginSheetState extends State<_DevOAuthLoginSheet> {
       widget.onSignedIn();
     } on ApiException catch (error) {
       if (mounted) setState(() => _error = error.message);
-    } catch (_) {
+    } catch (error) {
       if (mounted) {
-        setState(() => _error = '개발용 OAuth 로그인에 실패했습니다.');
+        setState(() => _error = error.toString());
       }
     } finally {
       if (mounted) setState(() => _busyId = null);

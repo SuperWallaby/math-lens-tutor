@@ -604,6 +604,7 @@ export async function expandAnalysisFromVisionDraft(
       errorSummary: sampleAnalysis.errorSummary,
       weakConcepts: sampleAnalysis.weakConcepts,
       recommendedFocus: sampleAnalysis.recommendedFocus,
+      listTitle: sampleAnalysis.listTitle,
     };
     return mergeVisionMetricsIntoAnalysis(expansion, vision, options.solved);
   }
@@ -630,13 +631,14 @@ Your tasks:
 2) Write errorSummary (short, Korean): is the student correct? What went wrong?
 3) List weakConcepts and recommendedFocus (Korean); empty arrays if unknown.
 4) Set confidence ∈ [0,1] for your diagnosis quality.
+5) listTitle: one short Korean phrase (8–28 chars) naming the problem type for a list UI — **no math symbols, no LaTeX, no numbers-only**.
 
 RULES:
 - Repeat problemText and extractedStudentAnswer **verbatim** from the vision JSON.
 - Do NOT output solutionSteps or referenceSolutionSteps (server attaches them).
 
 Return JSON with exactly these keys:
-problemText, extractedStudentAnswer, inferredCorrectAnswer, confidence, errorSummary, weakConcepts, recommendedFocus
+problemText, extractedStudentAnswer, inferredCorrectAnswer, confidence, errorSummary, weakConcepts, recommendedFocus, listTitle
 
 Use Korean for prose. KaTeX $...$ for math in errorSummary.`;
 
@@ -705,10 +707,11 @@ Work in two strict phases in one response:
 - Compare the student to your Phase A answer.
 - problemText and extractedStudentAnswer: copy **verbatim** from the vision JSON.
 - errorSummary (Korean): correct or what went wrong. weakConcepts, recommendedFocus (Korean arrays; empty if none).
+- listTitle: short Korean list label (8–28 chars), no math/LaTeX.
 - confidence ∈ [0,1] for diagnosis quality.
 
 Return JSON only with exactly these keys:
-problemText, extractedStudentAnswer, inferredCorrectAnswer, referenceSolutionSteps, confidence, errorSummary, weakConcepts, recommendedFocus
+problemText, extractedStudentAnswer, inferredCorrectAnswer, referenceSolutionSteps, confidence, errorSummary, weakConcepts, recommendedFocus, listTitle
 
 Use Korean for prose. KaTeX $...$ in errorSummary and steps.`;
 
@@ -733,6 +736,7 @@ Use Korean for prose. KaTeX $...$ in errorSummary and steps.`;
     errorSummary: combined.errorSummary,
     weakConcepts: combined.weakConcepts,
     recommendedFocus: combined.recommendedFocus,
+    listTitle: combined.listTitle,
   };
   return mergeVisionMetricsIntoAnalysis(expansion, vision, solved);
 }
@@ -819,7 +823,7 @@ Your tasks:
 Draft JSON to refine:
 ${JSON.stringify(draft, null, 2)}
 
-Return a single JSON object with these keys: problemText, extractedStudentAnswer, inferredCorrectAnswer, confidence, errorSummary, weakConcepts, recommendedFocus.
+Return a single JSON object with these keys: problemText, extractedStudentAnswer, inferredCorrectAnswer, confidence, errorSummary, weakConcepts, recommendedFocus, listTitle.
 (Omit solutionSteps from your reply—it will be taken from the draft server-side.)
 Copy problemText and extractedStudentAnswer exactly from the draft unless the exception in task (1) applies.
 Keep readable LaTeX: inline formulas in $ ... $ and display formulas in $$ ... $$ wherever math appears. Preserve JSON escaping rules for backslashes.`;

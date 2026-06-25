@@ -29,8 +29,10 @@ class AppShell extends StatefulWidget {
 
 class _AppShellState extends State<AppShell> {
   int _index = 0;
+  final _studentHubKey = GlobalKey<StudentHubScreenState>();
   final _studentTrainingKey = GlobalKey<StudentTrainingScreenState>();
 
+  static const _studentHomeTabIndex = 0;
   static const _studentTrainingTabIndex = 2;
 
   @override
@@ -73,9 +75,12 @@ class _AppShellState extends State<AppShell> {
             selectedIndex: safeIndex,
             onDestinationSelected: (value) {
               setState(() => _index = value);
-              if (user.role == AppUserRole.student &&
-                  value == _studentTrainingTabIndex) {
-                _studentTrainingKey.currentState?.refreshFromTab();
+              if (user.role == AppUserRole.student) {
+                if (value == _studentHomeTabIndex) {
+                  _studentHubKey.currentState?.refreshFromTab();
+                } else if (value == _studentTrainingTabIndex) {
+                  _studentTrainingKey.currentState?.refreshFromTab();
+                }
               }
             },
             destinations: [
@@ -171,6 +176,7 @@ class _AppShellState extends State<AppShell> {
             icon: Icons.home_outlined,
             selectedIcon: Icons.home_rounded,
             screen: StudentHubScreen(
+              key: _studentHubKey,
               apiClient: widget.apiClient,
               oauthService: widget.oauthService,
             ),

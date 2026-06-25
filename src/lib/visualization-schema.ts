@@ -20,6 +20,91 @@ export const functionGraphDataSchema = z.object({
   captionKo: z.string().optional(),
 });
 
+function pickNonEmptyString(...values: unknown[]): string | undefined {
+  for (const value of values) {
+    if (typeof value === "string" && value.trim()) return value.trim();
+  }
+  return undefined;
+}
+
+/** AI가 expression 대신 latex/formula 등으로 줄 때 보정 */
+export function coerceFunctionGraphData(
+  raw: Record<string, unknown>,
+): z.infer<typeof functionGraphDataSchema> | null {
+  const expressions = Array.isArray(raw.expressions)
+    ? raw.expressions
+        .filter(
+          (item): item is string =>
+            typeof item === "string" && item.trim().length > 0,
+        )
+        .map((item) => item.trim())
+    : [];
+
+  let expression = pickNonEmptyString(
+    raw.expression,
+    raw.latex,
+    raw.formula,
+    raw.y,
+    raw.function,
+    expressions[0],
+  );
+
+  if (!expression) return null;
+
+  if (!/^y\s*=/i.test(expression) && !expression.includes("=")) {
+    expression = `y=${expression}`;
+  }
+
+  const payload: Record<string, unknown> = {
+    expression,
+    expressions: expressions.length > 0 ? expressions : undefined,
+    captionKo: pickNonEmptyString(raw.captionKo),
+  };
+
+  if (
+    Array.isArray(raw.xRange) &&
+    raw.xRange.length === 2 &&
+    typeof raw.xRange[0] === "number" &&
+    typeof raw.xRange[1] === "number"
+  ) {
+    payload.xRange = raw.xRange;
+  }
+  if (
+    Array.isArray(raw.yRange) &&
+    raw.yRange.length === 2 &&
+    typeof raw.yRange[0] === "number" &&
+    typeof raw.yRange[1] === "number"
+  ) {
+    payload.yRange = raw.yRange;
+  }
+
+  const parsed = functionGraphDataSchema.safeParse(payload);
+  return parsed.success ? parsed.data : null;
+}
+
+export function coerceGeometryData(
+  raw: Record<string, unknown>,
+): z.infer<typeof geometryDataSchema> | null {
+  const points = raw.points;
+  const elements = raw.elements;
+  const hasPoints =
+    points &&
+    typeof points === "object" &&
+    Object.keys(points as object).length > 0;
+  const hasElements = Array.isArray(elements) && elements.length > 0;
+  if (!hasPoints && !hasElements) return null;
+
+  const parsed = geometryDataSchema.safeParse(raw);
+  return parsed.success ? parsed.data : null;
+}
+
+export function coerceCoordinateData(
+  raw: Record<string, unknown>,
+): z.infer<typeof coordinateDataSchema> | null {
+  const parsed = coordinateDataSchema.safeParse(raw);
+  return parsed.success ? parsed.data : null;
+}
+
 export const geometryDataSchema = z.object({
   shape: z
     .enum(["triangle", "rectangle", "circle", "polygon", "custom"])
@@ -187,37 +272,41 @@ export function legacyChartToVisualization(
   };
 }
 
-/** 렌더러가 사용할 정규화 payload — legacy 필드와 통합 */
+/** 렌더러가 사용할 정규화 payload — legacy 필드와 통합 (실패 시 null, throw 안 함) */
 export function validateVisualizationData(raw: VisualizationData): VisualizationData {
   if (!raw) return null;
-  const base = visualizationDataSchema.parse(raw);
-  if (!base) return null;
+  const base = visualizationDataSchema.safeParse(raw);
+  if (!base.success) return null;
 
-  switch (base.type) {
-    case "function_graph":
-      functionGraphDataSchema.parse(base.data);
-      if (base.engine !== "desmos") {
-        return { ...base, engine: "desmos" };
-      }
-      return base;
-    case "geometry":
-      geometryDataSchema.parse(base.data);
-      if (base.engine !== "jsxgraph") {
-        return { ...base, engine: "jsxgraph" };
-      }
-      return base;
-    case "coordinate":
-      coordinateDataSchema.parse(base.data);
-      if (base.engine !== "jsxgraph") {
-        return { ...base, engine: "jsxgraph" };
-      }
-      return base;
-    case "chart":
-      chartVisualizationDataSchema.parse(base.data);
-      if (base.engine !== "chartjs") {
-        return { ...base, engine: "chartjs" };
-      }
-      return base;
+  const viz = base.data;
+  if (!viz) return null;
+  const data = viz.data ?? {};
+
+  switch (viz.type) {
+    case "function_graph": {
+      const coerced = coerceFunctionGraphData(data);
+      if (!coerced) return null;
+      return { type: "function_graph", engine: "desmos", data: coerced };
+    }
+    case "geometry": {
+      const coerced = coerceGeometryData(data);
+      if (!coerced) return null;
+      return { type: "geometry", engine: "jsxgraph", data: coerced };
+    }
+    case "coordinate": {
+      const coerced = coerceCoordinateData(data);
+      if (!coerced) return null;
+      return { type: "coordinate", engine: "jsxgraph", data: coerced };
+    }
+    case "chart": {
+      const parsed = chartVisualizationDataSchema.safeParse(data);
+      if (!parsed.success) return null;
+      return {
+        type: "chart",
+        engine: "chartjs",
+        data: parsed.data,
+      };
+    }
     default:
       return null;
   }

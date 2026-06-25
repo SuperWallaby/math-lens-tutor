@@ -9,6 +9,7 @@ echo "$port" > "$ROOT/.dev-local-port"
 mkdir -p "$ROOT/flutter_app/dev"
 cat > "$ROOT/flutter_app/dev/local-defines.json" <<JSON
 {
+  "port": ${port},
   "API_BASE_URL": "http://127.0.0.1:${port}"
 }
 JSON

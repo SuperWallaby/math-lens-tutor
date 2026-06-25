@@ -108,6 +108,8 @@ export const tutorExpansionFromVisionSchema = z.object({
     .transform((arr) =>
       arr.map((s) => s.trim()).filter(Boolean),
     ),
+  /** 목록·피드 카드용 짧은 한글 제목 (수식 없음) */
+  listTitle: llmStringField().optional(),
 });
 
 export type TutorExpansionFromVision = z.infer<
@@ -152,6 +154,8 @@ export const solutionAnalysisSchema = z.object({
     .transform((arr) =>
       arr.map((s) => coerceLlmString(s)).filter(Boolean),
     ),
+  /** 카드·목록용 짧은 한글 제목 (수식 없음) */
+  listTitle: llmStringField().optional(),
   imageQualityWarning: z.boolean().optional().default(false),
   visionImageClarityScore: z.number().min(0).max(1).optional(),
   visionExtractionConfidence: z.number().min(0).max(1).optional(),
@@ -610,6 +614,7 @@ export type TrainingFeedItem = {
   reason: string;
   title: string;
   promptPreview: string;
+  problemCount: number;
 };
 
 export type UserFeedQueue = {
@@ -619,7 +624,7 @@ export type UserFeedQueue = {
   updatedAt: string;
 };
 
-export type AnalysisJobType = "refresh_user_feed";
+export type AnalysisJobType = "refresh_user_feed" | "refresh_user_profile";
 
 export type AnalysisJob = {
   id: string;

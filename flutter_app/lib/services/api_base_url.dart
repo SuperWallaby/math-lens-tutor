@@ -1,9 +1,13 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
+import 'package:flutter/services.dart';
 
 const _productionUrl = 'https://study-hazel-six.vercel.app';
-/// `yarn app` / `npm run dev:next` 가 `.dev-local-port` 에 기록한 포트와 맞추기 위한 fallback.
-/// 실제 dev 는 `--dart-define=API_BASE_URL=...` 또는 `dev/local-defines.json` 사용 권장.
+/// `write-dev-port.sh` 가 갱신하는 `dev/local-defines.json` 의 기본값.
 const _localPort = 3100;
+
+int? _debugPortFromAsset;
 
 /// `--dart-define=API_BASE_URL=...` 가 있으면 항상 우선.
 /// 릴리스 빌드: 프로덕션. 디버그/프로파일: 로컬 Next (`npm run dev:next`).
@@ -21,11 +25,39 @@ String resolveApiBaseUrl() {
   return _localDevBaseUrl();
 }
 
+/// `dev/local-defines.json` (에셋)에서 로컬 API 포트를 읽습니다.
+/// `npm run dev:next` 가 포트를 바꾼 뒤에는 앱을 한 번 재시작해야 반영됩니다.
+Future<void> loadDebugApiConfigFromAsset() async {
+  if (kReleaseMode) return;
+
+  try {
+    final raw = await rootBundle.loadString('dev/local-defines.json');
+    final map = jsonDecode(raw) as Map<String, dynamic>;
+
+    final port = map['port'];
+    if (port is int && port > 0) {
+      _debugPortFromAsset = port;
+      return;
+    }
+
+    final url = map['API_BASE_URL']?.toString().trim();
+    if (url != null && url.isNotEmpty) {
+      final uri = Uri.tryParse(url);
+      if (uri != null && uri.hasPort && uri.port > 0) {
+        _debugPortFromAsset = uri.port;
+      }
+    }
+  } catch (_) {
+    _debugPortFromAsset = null;
+  }
+}
+
 String _localDevBaseUrl() {
   const hostOverride = String.fromEnvironment('DEV_HOST', defaultValue: '');
   final host = hostOverride.trim().isNotEmpty ? hostOverride.trim() : _defaultDevHost();
+  final port = _debugPortFromAsset ?? _localPort;
 
-  return 'http://$host:$_localPort';
+  return 'http://$host:$port';
 }
 
 /// 플랫폼별 로컬 호스트 (실기기는 `--dart-define=DEV_HOST=<맥 IP>` 권장).

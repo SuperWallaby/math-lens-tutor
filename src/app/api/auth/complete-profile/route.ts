@@ -1,6 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 
+import {
+  invalidateLearningProfileSnapshot,
+  refreshLearningProfileAfterWrite,
+} from "@/lib/learning-profile-snapshot";
 import { getSessionUserId } from "@/lib/auth";
 import { authErrorResponse } from "@/lib/request";
 import { completeUserProfile, findUserById, publicUser } from "@/lib/users";
@@ -50,6 +54,9 @@ export async function POST(request: Request) {
       grade: body.grade,
       organizationName: body.organizationName,
     });
+
+    await invalidateLearningProfileSnapshot(authUserId);
+    await refreshLearningProfileAfterWrite(authUserId, user.grade);
 
     return NextResponse.json({
       user: publicUser(user),

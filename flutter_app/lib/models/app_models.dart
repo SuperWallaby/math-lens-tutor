@@ -538,32 +538,76 @@ class SubmissionSummary {
     required this.title,
     required this.createdAt,
     required this.weakConcepts,
+    this.listTitle,
     this.imageUrl,
     this.imageName = '',
   });
 
   factory SubmissionSummary.fromJson(Map<String, dynamic> json) {
-    final legacyTitle = (json['imageName'] as String? ?? '').trim();
-    final title = (json['title'] as String? ?? '').trim();
+    final listTitle = (json['listTitle'] as String? ?? '').trim();
+    final apiTitle = (json['title'] as String? ?? '').trim();
+    final imageName = (json['imageName'] as String? ?? '').trim();
 
     return SubmissionSummary(
       id: json['id'] as String? ?? '',
-      title: title.isNotEmpty
-          ? title
-          : (legacyTitle.isNotEmpty ? legacyTitle : '풀이 분석'),
+      title: apiTitle.isNotEmpty ? apiTitle : '풀이 분석',
+      listTitle: listTitle.isNotEmpty ? listTitle : null,
       createdAt: json['createdAt'] as String? ?? '',
       imageUrl: json['imageUrl'] as String?,
-      imageName: json['imageName'] as String? ?? '',
+      imageName: imageName,
       weakConcepts: _stringList(json['weakConcepts']),
     );
   }
 
   final String id;
   final String title;
+  final String? listTitle;
   final String createdAt;
   final String? imageUrl;
   final String imageName;
   final List<String> weakConcepts;
+
+  /// 목록에 표시할 제목 — 파일명 대신 개념·분석 타이틀 우선
+  String get displayTitle {
+    final explicit = listTitle?.trim();
+    if (explicit != null && explicit.isNotEmpty) return explicit;
+
+    for (final concept in weakConcepts) {
+      final trimmed = concept.trim();
+      if (trimmed.isNotEmpty) return trimmed;
+    }
+
+    final nameBase = _stripImageExtension(imageName);
+    final apiTitle = title.trim();
+    if (apiTitle.isNotEmpty &&
+        (nameBase.isEmpty || apiTitle != nameBase) &&
+        !_looksLikeImageFilename(apiTitle)) {
+      return apiTitle;
+    }
+
+    return '풀이 분석';
+  }
+
+  static String _stripImageExtension(String value) {
+    return value.replaceAll(
+      RegExp(r'\.(jpe?g|png|webp|heic|gif)$', caseSensitive: false),
+      '',
+    );
+  }
+
+  static bool _looksLikeImageFilename(String value) {
+    if (RegExp(r'\.(jpe?g|png|webp|heic|gif)$', caseSensitive: false)
+        .hasMatch(value)) {
+      return true;
+    }
+    if (RegExp(r'^(IMG_|DSC_|KakaoTalk_|photo_)', caseSensitive: false)
+        .hasMatch(value)) {
+      return true;
+    }
+    return value.contains('_') &&
+        !value.contains(' ') &&
+        value.length <= 48;
+  }
 }
 
 class TrainingFocusItem {
@@ -657,6 +701,7 @@ class TrainingFeedItem {
     required this.reason,
     required this.title,
     required this.promptPreview,
+    this.problemCount = 1,
   });
 
   factory TrainingFeedItem.fromJson(Map<String, dynamic> json) {
@@ -668,6 +713,7 @@ class TrainingFeedItem {
       reason: json['reason'] as String? ?? '',
       title: json['title'] as String? ?? '',
       promptPreview: json['promptPreview'] as String? ?? '',
+      problemCount: json['problemCount'] as int? ?? 1,
     );
   }
 
@@ -678,6 +724,7 @@ class TrainingFeedItem {
   final String reason;
   final String title;
   final String promptPreview;
+  final int problemCount;
 
   String get difficultyLabel {
     switch (difficulty) {
