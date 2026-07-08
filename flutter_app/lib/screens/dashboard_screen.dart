@@ -22,6 +22,14 @@ class DashboardScreen extends StatefulWidget {
   /// 스토어 스크린샷 등 API 없이 고정 데이터를 보여줄 때만 사용합니다.
   final LearningInsight? demoInsight;
 
+  static Future<void> open(BuildContext context, ApiClient apiClient) {
+    return Navigator.of(context).push<void>(
+      MaterialPageRoute(
+        builder: (_) => DashboardScreen(apiClient: apiClient),
+      ),
+    );
+  }
+
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
 }
@@ -278,9 +286,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 _DashboardSubmissionThumbnail(
-                                  imageUrl: ApiClient.resolveImageUrl(
+                                  imageUrl: ApiClient.resolveListThumbnailUrl(
                                     widget.apiClient.baseUrl,
-                                    item.imageUrl,
+                                    imageThumbUrl: item.imageThumbUrl,
+                                    imageUrl: item.imageUrl,
                                   ),
                                 ),
                                 const SizedBox(width: 12),

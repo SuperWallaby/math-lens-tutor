@@ -5,6 +5,7 @@ import { NextResponse } from "next/server";
 import { parseAnalyzeQualityMode } from "@/lib/analyze-mode";
 import { buildTrainingSnapshot } from "@/lib/concept-training";
 import { resolveAzureDeploymentName } from "@/lib/azure";
+import { stripProblemSetForClient } from "@/lib/client-problem";
 import { authErrorResponse, resolveActorUserId } from "@/lib/request";
 import { resolveTrainingProblemSet } from "@/lib/problem-bank";
 import {
@@ -75,7 +76,7 @@ export async function POST(request: Request) {
       if (existing) {
         return NextResponse.json({
           problemSetId: existing.id,
-          problemSet: existing,
+          problemSet: stripProblemSetForClient(existing),
           meta: resumeMeta,
           training,
         });
@@ -87,7 +88,7 @@ export async function POST(request: Request) {
       if (existing) {
         return NextResponse.json({
           problemSetId: existing.id,
-          problemSet: existing,
+          problemSet: stripProblemSetForClient(existing),
           meta: resumeMeta,
           training,
         });
@@ -141,7 +142,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       problemSetId,
-      problemSet: parsedSet,
+      problemSet: stripProblemSetForClient(parsedSet),
       meta,
       training: refreshedTraining,
     });

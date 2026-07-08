@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { parseAnalyzeQualityMode } from "@/lib/analyze-mode";
 import { hasAzureOpenAiConfig } from "@/lib/azure";
+import { stripProblemSetForClient } from "@/lib/client-problem";
 import { authErrorResponse, resolveActorUserId } from "@/lib/request";
 import { withRequestDb } from "@/lib/db-variant";
 import { studyLog } from "@/lib/server-log";
@@ -80,7 +81,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       submissionId,
       problemSetId,
-      problemSet: parsedSet,
+      problemSet: stripProblemSetForClient(parsedSet),
       usedSample,
     });
   } catch (error) {

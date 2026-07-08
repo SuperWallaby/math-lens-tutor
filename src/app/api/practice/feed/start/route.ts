@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { stripProblemSetForClient } from "@/lib/client-problem";
 import { authErrorResponse, resolveActorUserId } from "@/lib/request";
 import { startFeedItemPractice } from "@/lib/training-feed";
 
@@ -30,7 +31,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       problemSetId: problemSet.id,
-      problemSet,
+      problemSet: stripProblemSetForClient(problemSet),
       feedItem,
       meta: {
         bankCount: 1,

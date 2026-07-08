@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { stripProblemSetForClient } from "@/lib/client-problem";
 import { withRequestDb } from "@/lib/db-variant";
 import { getProblemSet } from "@/lib/store";
 
@@ -17,6 +18,8 @@ export async function GET(
       );
     }
 
-    return NextResponse.json({ problemSet });
+    return NextResponse.json({
+      problemSet: stripProblemSetForClient(problemSet),
+    });
   });
 }

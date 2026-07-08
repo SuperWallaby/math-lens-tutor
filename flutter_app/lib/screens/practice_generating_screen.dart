@@ -17,7 +17,7 @@ class PracticeGeneratingScreen extends StatefulWidget {
     this.request,
     this.title = '문제 만드는 중…',
     this.subtitle,
-    this.iconAsset = 'assets/icons/3d/practice_start.png',
+    this.iconAsset = 'assets/icons/3d/practice_start.webp',
     this.generateCount,
     this.setSize = 5,
   }) : assert(generate != null || request != null);
@@ -180,7 +180,7 @@ class _ErrorBody extends StatelessWidget {
       children: [
         const Spacer(flex: 2),
         HeroIcon3d(
-          asset: 'assets/icons/3d/analysis_fail.png',
+          asset: 'assets/icons/3d/analysis_fail.webp',
           size: 128,
           iconSize: 80,
           tint: AppColors.accent,

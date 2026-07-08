@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="preconnect" href="https://www.desmos.com" crossorigin />
+  <style>
+    html, body {
+      margin: 0;
+      background: #fafafa;
+      overflow: hidden;
+    }
+    #viz-root {
+      width: 800px;
+      height: 400px;
+      overflow: hidden;
+    }
+    .dcg-zoom-container,
+    .dcg-graph-toolbar-container,
+    .dcg-action-zoomin,
+    .dcg-action-zoomout,
+    .dcg-action-home {
+      display: none !important;
+    }
+  </style>
+<body>
+  <div id="viz-root"></div>
+  <script src="desmos_graph_embed.js"></script>
+</body>
+</html>

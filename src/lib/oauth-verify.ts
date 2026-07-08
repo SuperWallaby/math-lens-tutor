@@ -25,12 +25,41 @@ type AppleIdentityClaims = {
 
 type KakaoUserResponse = {
   id?: number;
+  properties?: {
+    nickname?: string;
+  };
   kakao_account?: {
     profile?: {
       nickname?: string;
     };
   };
 };
+
+const OAUTH_DISPLAY_NAME_PLACEHOLDERS = new Set([
+  "카카오 사용자",
+  "Google 사용자",
+  "Apple 사용자",
+]);
+
+function kakaoNicknameFromUser(user: KakaoUserResponse): string | null {
+  const fromProfile = user.kakao_account?.profile?.nickname?.trim();
+  if (fromProfile) return fromProfile;
+  const fromProperties = user.properties?.nickname?.trim();
+  if (fromProperties) return fromProperties;
+  return null;
+}
+
+function resolveKakaoDisplayName(
+  fromApi: string | null,
+  fromClient?: string,
+): string {
+  const client = fromClient?.trim();
+  if (fromApi && !OAUTH_DISPLAY_NAME_PLACEHOLDERS.has(fromApi)) {
+    return fromApi;
+  }
+  if (client) return client;
+  return fromApi || "카카오 사용자";
+}
 
 type AppleJwks = {
   keys?: Array<{
@@ -181,8 +210,11 @@ export async function verifyAppleIdentityToken(
 export async function verifyKakaoAccessToken(
   accessToken: string,
 ): Promise<VerifiedOAuthIdentity> {
+  const propertyKeys = encodeURIComponent(
+    JSON.stringify(["kakao_account.profile", "properties.nickname"]),
+  );
   const user = await fetchJson<KakaoUserResponse>(
-    "https://kapi.kakao.com/v2/user/me",
+    `https://kapi.kakao.com/v2/user/me?property_keys=${propertyKeys}`,
     {
       headers: {
         Authorization: `Bearer ${accessToken}`,
@@ -195,7 +227,7 @@ export async function verifyKakaoAccessToken(
     throw new Error("Kakao token is missing subject.");
   }
 
-  const nickname = user.kakao_account?.profile?.nickname?.trim();
+  const nickname = kakaoNicknameFromUser(user);
   return {
     provider: "kakao",
     subject: String(user.id),
@@ -231,7 +263,12 @@ export async function verifyOAuthToken(params: {
     if (!params.accessToken) {
       throw new Error("Kakao accessToken is required.");
     }
-    return verifyKakaoAccessToken(params.accessToken);
+    const verified = await verifyKakaoAccessToken(params.accessToken);
+    verified.displayName = resolveKakaoDisplayName(
+      verified.displayName,
+      params.displayName,
+    );
+    return verified;
   }
 
   throw new Error("Unsupported OAuth provider.");

@@ -21,7 +21,7 @@ Google Play Console에 **우열** Android 앱을 처음 등록·출시할 때 �
 | 앱 이름 (스토어)              | **우열**                                        |
 | 패키지 이름 (Application ID) | `**com.neoproject.study`** — 생성 후 **변경 불가**   |
 | API (프로덕션)              | `https://study-hazel-six.vercel.app`         |
-| 개인정보 처리방침 URL           | `https://study-hazel-six.vercel.app/privacy` |
+| 개인정보 처리방침 URL           | `https://study-hazel-six.vercel.app/privacy` (⚠️ `study-alpha-rosy` 등 구 URL 사용 금지) |
 | 계정·데이터 삭제 URL            | `https://study-hazel-six.vercel.app/account-deletion` |
 | 카테고리                    | 교육                                            |
 

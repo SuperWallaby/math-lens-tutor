@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 
 import { parseAnalyzeQualityMode } from "@/lib/analyze-mode";
 import { resolveAzureDeploymentName } from "@/lib/azure";
+import { stripProblemSetForClient } from "@/lib/client-problem";
 import { authErrorResponse, resolveActorUserId } from "@/lib/request";
 import {
   resolvePracticeProblemSet,
@@ -115,7 +116,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       submissionId,
       problemSetId,
-      problemSet: parsedSet,
+      problemSet: stripProblemSetForClient(parsedSet),
     });
   } catch (error) {
     studyLog("practice:retry", "failed", {

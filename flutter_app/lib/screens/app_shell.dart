@@ -41,7 +41,9 @@ class _AppShellState extends State<AppShell> {
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
       if (widget.apiClient.authSession.user != null) {
-        widget.apiClient.getLearningProfile();
+        widget.apiClient.getLearningProfile(
+          scope: LearningProfileScope.summary,
+        );
       }
     });
   }

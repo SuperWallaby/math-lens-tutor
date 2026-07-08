@@ -1,5 +1,6 @@
 import type { GeneratedProblem } from "./types";
 import { normalizeProblemVisualization } from "./visualization-schema";
+import { clearProblemVisualization } from "./visualization-policy";
 import { stripMathDelimiters } from "./answer-normalize";
 import { normalizeMultipleChoiceProblem } from "./choice-label-format";
 
@@ -214,5 +215,5 @@ export function sanitizeGeneratedProblem(problem: GeneratedProblem): GeneratedPr
       result = mc ?? problem;
     }
   }
-  return normalizeProblemVisualization(result);
+  return normalizeProblemVisualization(clearProblemVisualization(result));
 }

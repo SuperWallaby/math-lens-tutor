@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/jsxgraph@1.12.2/distrib/jsxgraph.css" />
+  <script src="https://cdn.jsdelivr.net/npm/jsxgraph@1.12.2/distrib/jsxgraphcore.js"></script>
+  <style>
+    html, body { margin: 0; background: #fafafa; overflow: hidden; }
+    #viz-root { width: 800px; height: 392px; }
+  </style>
+</head>
+<body>
+  <div id="viz-root" class="jxgbox"></div>
+  <script>
+    (function () {
+      function markReady() { window.__STUDY_VIZ_READY = true; }
+
+      function decodeHash() {
+        var raw = (location.hash || '').replace(/^#/, '');
+        if (!raw) return null;
+        try {
+          raw = decodeURIComponent(raw);
+          var bin = atob(raw);
+          var u = new Uint8Array(bin.length);
+          for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+          return JSON.parse(new TextDecoder('utf-8').decode(u));
+        } catch (e) {
+          return null;
+        }
+      }
+
+      var diagram = decodeHash();
+      if (!diagram || !diagram.diagramNeeded) {
+        markReady();
+        return;
+      }
+
+      var els = diagram.elements || [];
+      var bb = (diagram.board && diagram.board.boundingbox && diagram.board.boundingbox.length === 4)
+        ? diagram.board.boundingbox
+        : [-6, 12, 12, -6];
+
+      var board = JXG.JSXGraph.initBoard('viz-root', {
+        boundingbox: bb,
+        axis: diagram.board ? !!diagram.board.axis : true,
+        keepaspectratio: diagram.board ? diagram.board.keepaspectratio !== false : true,
+        showCopyright: false,
+        showNavigation: false,
+        resize: { enabled: false },
+      });
+
+      var ALLOW = new Set([
+        'point', 'segment', 'line', 'polygon', 'circle', 'arc', 'sector', 'angle',
+        'text', 'ticks', 'grid', 'midpoint', 'perpendicular', 'perpendicularsegment',
+        'bisector', 'glider',
+      ]);
+      var reg = {};
+
+      function res(p) {
+        if (typeof p === 'string' && reg[p]) return reg[p];
+        if (Array.isArray(p) && p.length === 2 && typeof p[0] === 'number' && typeof p[1] === 'number') return p;
+        return p;
+      }
+
+      for (var i = 0; i < els.length; i++) {
+        var el = els[i];
+        var t = String(el.elType || '').trim();
+        if (!ALLOW.has(t)) continue;
+        var ps = el.parents || [];
+        if (t === 'point' && el.coord && ps.length === 0) ps = [el.coord];
+        var rp = ps.map(res);
+        try {
+          var o = board.create(t, rp, el.attrs || {});
+          if (el.id) reg[String(el.id)] = o;
+        } catch (err) {}
+      }
+
+      setTimeout(markReady, 500);
+    })();
+  </script>
+</body>
+</html>

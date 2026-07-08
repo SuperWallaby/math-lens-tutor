@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html><head><meta charset="utf-8"/><title>blob vs data URI</title></head>
+<body>
+<pre id="log"></pre>
+<script>
+const log = (m) => document.getElementById('log').textContent += m + '\n';
+const html = `<!DOCTYPE html><html><head><script src='https://www.desmos.com/api/v1.9/calculator.js?apiKey=dcb31709b452b1f69fc8a5890484ff01'><\/script></head><body><div id='c' style='width:400px;height:300px'></div><script>function w(n){parent.postMessage({n:n,desmos:typeof Desmos},'*')} function go(){if(typeof Desmos==='undefined'){setTimeout(go,50);return} var calc=Desmos.GraphingCalculator(document.getElementById('c'),{}); calc.setExpression({id:'1',latex:'y=sin(x)'}); w('ok');} go();<\/script></body></html>`;
+
+function test(label, url){
+  return new Promise((resolve)=>{
+    const f=document.createElement('iframe');
+    f.style='width:420px;height:320px;border:1px solid #999;margin:8px 0';
+    f.src=url;
+    const t=setTimeout(()=>resolve({label,result:'timeout'}),12000);
+    function onMsg(e){ if(e.data&&e.data.n){ clearTimeout(t); window.removeEventListener('message',onMsg); resolve({label,result:e.data}); f.remove(); } }
+    window.addEventListener('message',onMsg);
+    document.body.appendChild(f);
+  });
+}
+(async()=>{
+  const blobUrl = URL.createObjectURL(new Blob([html],{type:'text/html'}));
+  const dataUrl = 'data:text/html;charset=utf-8,'+encodeURIComponent(html);
+  log('data URI: '+JSON.stringify(await test('data', dataUrl)));
+  log('blob URI: '+JSON.stringify(await test('blob', blobUrl)));
+})();
+</script></body></html>

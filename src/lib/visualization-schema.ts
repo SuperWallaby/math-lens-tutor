@@ -1,9 +1,25 @@
 import { z } from "zod";
 
+import { sanitizeFunctionGraphData } from "./desmos-latex";
 import type { JsxGraphDiagram } from "./jsx-graph-spec";
 
-/** 문제·풀이 시각화 엔진 — 추후 geogebra 등 확장 가능 */
-export const visualizationEngineSchema = z.enum(["desmos", "jsxgraph", "chartjs"]);
+/** 문제·풀이 시각화 엔진 — bake 후 static */
+export const visualizationEngineSchema = z.enum([
+  "desmos",
+  "jsxgraph",
+  "chartjs",
+  "static",
+]);
+
+/** bake 완료 후 data에 포함되는 정적 에셋 필드 */
+export const staticAssetFieldsSchema = z.object({
+  imageUrl: z.string().min(1),
+  width: z.number().int().positive(),
+  height: z.number().int().positive(),
+  contentHash: z.string().min(1).optional(),
+});
+
+export type StaticAssetFields = z.infer<typeof staticAssetFieldsSchema>;
 
 export const visualizationTypeSchema = z.enum([
   "function_graph",
@@ -18,6 +34,10 @@ export const functionGraphDataSchema = z.object({
   xRange: z.tuple([z.number(), z.number()]).optional(),
   yRange: z.tuple([z.number(), z.number()]).optional(),
   captionKo: z.string().optional(),
+  imageUrl: z.string().min(1).optional(),
+  width: z.number().int().positive().optional(),
+  height: z.number().int().positive().optional(),
+  contentHash: z.string().min(1).optional(),
 });
 
 function pickNonEmptyString(...values: unknown[]): string | undefined {
@@ -105,6 +125,13 @@ export function coerceCoordinateData(
   return parsed.success ? parsed.data : null;
 }
 
+const staticAssetOptionalFields = {
+  imageUrl: z.string().min(1).optional(),
+  width: z.number().int().positive().optional(),
+  height: z.number().int().positive().optional(),
+  contentHash: z.string().min(1).optional(),
+} as const;
+
 export const geometryDataSchema = z.object({
   shape: z
     .enum(["triangle", "rectangle", "circle", "polygon", "custom"])
@@ -121,6 +148,7 @@ export const geometryDataSchema = z.object({
       axis: z.boolean().optional(),
     })
     .optional(),
+  ...staticAssetOptionalFields,
 });
 
 export const coordinateDataSchema = z.object({
@@ -132,12 +160,14 @@ export const coordinateDataSchema = z.object({
     })
     .optional(),
   elements: z.array(z.record(z.string(), z.unknown())).default([]),
+  ...staticAssetOptionalFields,
 });
 
 export const chartVisualizationDataSchema = z.object({
   type: z.enum(["bar", "line", "pie", "doughnut", "radar", "scatter"]),
   data: z.record(z.string(), z.unknown()),
   options: z.record(z.string(), z.unknown()).optional(),
+  ...staticAssetOptionalFields,
 });
 
 export const visualizationDataSchema = z
@@ -272,6 +302,111 @@ export function legacyChartToVisualization(
   };
 }
 
+function normalizeFunctionGraphExpressions(
+  data: z.infer<typeof functionGraphDataSchema>,
+): z.infer<typeof functionGraphDataSchema> {
+  return sanitizeFunctionGraphData(data);
+}
+
+function parseStaticBakedVisualization(
+  viz: NonNullable<z.infer<typeof visualizationDataSchema>>,
+): VisualizationData {
+  const data = viz.data ?? {};
+  const asset = staticAssetFieldsSchema.safeParse(data);
+  if (!asset.success) return null;
+
+  switch (viz.type) {
+    case "function_graph": {
+      const coerced = coerceFunctionGraphData(data);
+      if (!coerced) return null;
+      return {
+        type: "function_graph",
+        engine: "static",
+        data: { ...normalizeFunctionGraphExpressions(coerced), ...asset.data },
+      };
+    }
+    case "geometry": {
+      const legacy = data.legacyJsxGraph;
+      if (legacy && typeof legacy === "object") {
+        return {
+          type: "geometry",
+          engine: "static",
+          data: {
+            legacyJsxGraph: legacy,
+            captionKo: pickNonEmptyString(data.captionKo),
+            ...asset.data,
+          },
+        };
+      }
+      const coerced = coerceGeometryData(data);
+      if (!coerced) return null;
+      return { type: "geometry", engine: "static", data: { ...coerced, ...asset.data } };
+    }
+    case "coordinate": {
+      const coerced = coerceCoordinateData(data);
+      if (!coerced) return null;
+      return { type: "coordinate", engine: "static", data: { ...coerced, ...asset.data } };
+    }
+    case "chart": {
+      const parsed = chartVisualizationDataSchema.safeParse(data);
+      if (!parsed.success) return null;
+      return {
+        type: "chart",
+        engine: "static",
+        data: { ...parsed.data, ...asset.data },
+      };
+    }
+    default:
+      return null;
+  }
+}
+
+/** imageUrl이 있으면 bake 완료로 간주 */
+export function visualizationHasBakedAsset(viz: VisualizationData): boolean {
+  if (!viz) return false;
+  const imageUrl = viz.data?.imageUrl;
+  return typeof imageUrl === "string" && imageUrl.trim().length > 0;
+}
+
+/** viz 정의는 있으나 PNG가 아직 없음 */
+export function visualizationAwaitingBake(
+  viz: VisualizationData,
+  status?: string | null,
+): boolean {
+  if (!viz || status === "failed") return false;
+  if (visualizationHasBakedAsset(viz)) return false;
+  return Boolean(viz.type);
+}
+
+/** viz가 있으나 정적 에셋이 없거나 engine이 static이 아니면 bake 필요 */
+export function visualizationNeedsBaking(viz: VisualizationData): boolean {
+  if (!viz) return false;
+  if (!visualizationHasBakedAsset(viz)) return true;
+  return viz.engine !== "static";
+}
+
+export function problemVisualizationPending(problem: {
+  visualizationData?: VisualizationData | null;
+  solutionVisualizationData?: VisualizationData | null;
+  visualizationMigrationStatus?: string | null;
+}): boolean {
+  const status = problem.visualizationMigrationStatus;
+  return (
+    visualizationAwaitingBake(problem.visualizationData ?? null, status) ||
+    visualizationAwaitingBake(problem.solutionVisualizationData ?? null, status)
+  );
+}
+
+export function problemSetHasPendingVisualization(problemSet: {
+  problems: Array<{
+    visualizationData?: VisualizationData | null;
+    solutionVisualizationData?: VisualizationData | null;
+    visualizationMigrationStatus?: string | null;
+  }>;
+}): boolean {
+  return problemSet.problems.some((problem) => problemVisualizationPending(problem));
+}
+
 /** 렌더러가 사용할 정규화 payload — legacy 필드와 통합 (실패 시 null, throw 안 함) */
 export function validateVisualizationData(raw: VisualizationData): VisualizationData {
   if (!raw) return null;
@@ -282,13 +417,32 @@ export function validateVisualizationData(raw: VisualizationData): Visualization
   if (!viz) return null;
   const data = viz.data ?? {};
 
+  if (viz.engine === "static" || visualizationHasBakedAsset(viz)) {
+    return parseStaticBakedVisualization(viz);
+  }
+
   switch (viz.type) {
     case "function_graph": {
       const coerced = coerceFunctionGraphData(data);
       if (!coerced) return null;
-      return { type: "function_graph", engine: "desmos", data: coerced };
+      return {
+        type: "function_graph",
+        engine: "desmos",
+        data: normalizeFunctionGraphExpressions(coerced),
+      };
     }
     case "geometry": {
+      const legacy = data.legacyJsxGraph;
+      if (legacy && typeof legacy === "object") {
+        return {
+          type: "geometry",
+          engine: "jsxgraph",
+          data: {
+            legacyJsxGraph: legacy,
+            captionKo: pickNonEmptyString(data.captionKo),
+          },
+        };
+      }
       const coerced = coerceGeometryData(data);
       if (!coerced) return null;
       return { type: "geometry", engine: "jsxgraph", data: coerced };

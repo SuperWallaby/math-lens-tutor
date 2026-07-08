@@ -1,0 +1,13 @@
+<!DOCTYPE html>
+<html><head>
+<meta charset="utf-8"/>
+<script src="https://www.desmos.com/api/v1.9/calculator.js?apiKey=dcb31709b452b1f69fc8a5890484ff01"></script>
+<style>html,body{margin:0;height:100%;}#calculator{width:100%;height:400px;}</style>
+</head><body><div id="calculator"></div>
+<script>
+var data = {expression:'y=sin(3x)',xRange:[-2,2],yRange:[-1.5,1.5]};
+var elt=document.getElementById('calculator');
+var calc=Desmos.GraphingCalculator(elt,{expressions:false,settingsMenu:false,zoomButtons:true});
+calc.setExpression({id:'main',latex:data.expression});
+calc.setMathBounds({left:data.xRange[0],right:data.xRange[1],bottom:data.yRange[0],top:data.yRange[1]});
+</script></body></html>

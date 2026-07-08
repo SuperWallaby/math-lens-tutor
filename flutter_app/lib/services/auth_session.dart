@@ -92,7 +92,7 @@ class AuthSession extends ChangeNotifier {
     final org = organizationName?.trim();
     _user = AppUser(
       id: _user?.id ?? 'guest',
-      displayName: '게스트',
+      displayName: _user?.displayName ?? '게스트',
       profileComplete: role == AppUserRole.student,
       role: role,
       age: age,
@@ -104,6 +104,49 @@ class AuthSession extends ChangeNotifier {
     final prefs = await getAppPrefs();
     await prefs.setBool(_guestKey, true);
     await prefs.setString(_userKey, jsonEncode(_user!.toJson()));
+    notifyListeners();
+  }
+
+  Future<void> updateGuestDisplayName(String displayName) async {
+    if (!isGuest || _user == null) return;
+
+    final trimmed = displayName.trim();
+    if (trimmed.isEmpty) return;
+
+    _user = AppUser(
+      id: _user!.id,
+      displayName: trimmed,
+      profileComplete: _user!.profileComplete,
+      role: _user!.role,
+      age: _user!.age,
+      grade: _user!.grade,
+      organizationName: _user!.organizationName,
+      studentCode: _user!.studentCode,
+    );
+
+    final prefs = await getAppPrefs();
+    await prefs.setString(_userKey, jsonEncode(_user!.toJson()));
+    notifyListeners();
+  }
+
+  Future<void> resetGuestProfileRole() async {
+    if (!isGuest || _user == null) return;
+
+    _user = AppUser(
+      id: _user!.id,
+      displayName: _user!.displayName,
+      profileComplete: false,
+      role: null,
+      studentCode: _user!.studentCode,
+    );
+    _linkedStudents = const [];
+    _viewAsStudentId = null;
+
+    final prefs = await getAppPrefs();
+    await prefs.setBool(_guestKey, true);
+    await prefs.setString(_userKey, jsonEncode(_user!.toJson()));
+    await prefs.remove(_linkedStudentsKey);
+    await prefs.remove(_viewAsStudentKey);
     notifyListeners();
   }
 

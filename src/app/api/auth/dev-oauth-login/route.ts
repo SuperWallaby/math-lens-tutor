@@ -2,12 +2,15 @@ import { NextResponse } from "next/server";
 import { z } from "zod";
 
 import { signSessionToken } from "@/lib/auth";
-import { findDevOAuthLoginAccount, getDevOAuthLoginAccounts } from "@/lib/dev-oauth-accounts";
+import {
+  findDevOAuthLoginAccount,
+  getDevOAuthLoginAccounts,
+  resolveDevOAuthAccountUserId,
+} from "@/lib/dev-oauth-accounts";
 import { isDevEnvironment } from "@/lib/is-dev";
 import { hasAuthConfig, hasMongoConfig } from "@/lib/env";
 import { getDeviceUserId } from "@/lib/request";
 import {
-  findUserByEmailAndProvider,
   getLinkedStudents,
   loginDevOAuthUser,
   publicUser,
@@ -54,8 +57,7 @@ export async function POST(request: Request) {
       );
     }
 
-    const byEmail = await findUserByEmailAndProvider(spec.email, spec.provider);
-    const userId = spec.userId ?? byEmail?.id;
+    const userId = await resolveDevOAuthAccountUserId(spec);
     if (!userId) {
       return NextResponse.json(
         {

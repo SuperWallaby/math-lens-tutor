@@ -48,8 +48,15 @@ class StudentHubScreen extends StatefulWidget {
 class StudentHubScreenState extends State<StudentHubScreen> {
   Future<_HubData>? _hubFuture;
 
-  /// 다른 탭(업로드·훈련) 후 홈 복귀 시 최신 profile/submissions 로드
-  void refreshFromTab({bool forceRefresh = true}) => _reload(forceRefresh: forceRefresh);
+  /// 다른 탭(업로드·훈련) 후 홈 복귀 — TTL 내면 캐시 재사용.
+  void refreshFromTab({bool forceRefresh = false}) {
+    if (!forceRefresh &&
+        widget.apiClient.isStudentTabDataFresh &&
+        _hubFuture != null) {
+      return;
+    }
+    _reload(forceRefresh: forceRefresh);
+  }
 
   @override
   void initState() {
@@ -74,8 +81,11 @@ class StudentHubScreenState extends State<StudentHubScreen> {
       );
     }
     final results = await Future.wait([
-      widget.apiClient.getLearningProfile(forceRefresh: forceRefresh),
-      widget.apiClient.getSubmissionSummaries(),
+      widget.apiClient.getLearningProfile(
+        forceRefresh: forceRefresh,
+        scope: LearningProfileScope.summary,
+      ),
+      widget.apiClient.getSubmissionSummaries(forceRefresh: forceRefresh),
     ]);
     return _HubData(
       profile: results[0] as LearningProfile,
@@ -448,7 +458,7 @@ class _TodayLearningCard extends StatelessWidget {
               ),
               const SizedBox(width: AppSpacing.sm),
               Image.asset(
-                'assets/icons/3d/training_active.png',
+                'assets/icons/3d/training_active.webp',
                 width: 58,
                 height: 58,
                 fit: BoxFit.contain,
@@ -662,7 +672,11 @@ class _RecentSubmissionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl = ApiClient.resolveImageUrl(apiBaseUrl, item.imageUrl);
+    final imageUrl = ApiClient.resolveListThumbnailUrl(
+      apiBaseUrl,
+      imageThumbUrl: item.imageThumbUrl,
+      imageUrl: item.imageUrl,
+    );
     final weakConcepts = item.weakConcepts
         .map((concept) => concept.trim())
         .where((concept) => concept.isNotEmpty)

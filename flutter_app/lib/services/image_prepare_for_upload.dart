@@ -17,6 +17,29 @@ class PreparedAnalyzeImage {
   final String filename;
 }
 
+class _PrepareImageArgs {
+  const _PrepareImageArgs({
+    required this.raw,
+    required this.filename,
+    required this.maxSide,
+    required this.jpegQuality,
+  });
+
+  final Uint8List raw;
+  final String filename;
+  final int maxSide;
+  final int jpegQuality;
+}
+
+PreparedAnalyzeImage _prepareImageBytesIsolate(_PrepareImageArgs args) {
+  return prepareImageBytesForAnalyzeUpload(
+    args.raw,
+    args.filename,
+    maxSide: args.maxSide,
+    jpegQuality: args.jpegQuality,
+  );
+}
+
 PreparedAnalyzeImage prepareImageBytesForAnalyzeUpload(
   Uint8List raw,
   String filename, {
@@ -65,12 +88,51 @@ PreparedAnalyzeImage prepareImageBytesForAnalyzeUpload(
   );
 }
 
+Future<PreparedAnalyzeImage> prepareImageBytesForAnalyzeUploadAsync(
+  Uint8List raw,
+  String filename, {
+  int? maxSide,
+  int? jpegQuality,
+}) async {
+  final side = maxSide ?? (_aggressiveMobileCompress ? 1024 : 1200);
+  final quality = jpegQuality ?? (_aggressiveMobileCompress ? 85 : 88);
+  if (kIsWeb) {
+    return prepareImageBytesForAnalyzeUpload(
+      raw,
+      filename,
+      maxSide: side,
+      jpegQuality: quality,
+    );
+  }
+  return compute(
+    _prepareImageBytesIsolate,
+    _PrepareImageArgs(
+      raw: raw,
+      filename: filename,
+      maxSide: side,
+      jpegQuality: quality,
+    ),
+  );
+}
+
 /// 프로필 아바타용 — 작은 정사각형·낮은 품질로 업로드 크기를 줄입니다.
 PreparedAnalyzeImage prepareImageBytesForProfileUpload(
   Uint8List raw,
   String filename,
 ) {
   return prepareImageBytesForAnalyzeUpload(
+    raw,
+    filename,
+    maxSide: 384,
+    jpegQuality: 80,
+  );
+}
+
+Future<PreparedAnalyzeImage> prepareImageBytesForProfileUploadAsync(
+  Uint8List raw,
+  String filename,
+) {
+  return prepareImageBytesForAnalyzeUploadAsync(
     raw,
     filename,
     maxSide: 384,

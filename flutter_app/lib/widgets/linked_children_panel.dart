@@ -292,7 +292,7 @@ class _LinkedChildrenPanelState extends State<LinkedChildrenPanel> {
         if (!widget.compact) ...[
           Center(
             child: HeroIcon3d(
-              asset: 'assets/icons/3d/link_student.png',
+              asset: 'assets/icons/3d/link_student.webp',
               tint: AppColors.success,
             ),
           ),

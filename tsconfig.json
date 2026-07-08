@@ -33,6 +33,7 @@
   "exclude": [
     "node_modules",
     "mobile",
-    "flutter_app"
+    "flutter_app",
+    "scripts"
   ]
 }

@@ -214,6 +214,17 @@ export async function refreshUserFeedQueue(userId: string): Promise<UserFeedQueu
   return queue;
 }
 
+/** 앱 홈/훈련 탭 진입 시 — 큐가 stale이면 백그라운드 refresh job 등록 */
+export async function prewarmTrainingFeedIfNeeded(userId: string): Promise<void> {
+  const [queue, refreshPending] = await Promise.all([
+    getUserFeedQueue(userId),
+    hasPendingFeedRefresh(userId),
+  ]);
+  if (refreshPending) return;
+  if (isQueueFresh(queue) && (queue?.items.length ?? 0) > 0) return;
+  await enqueueAnalysisJob({ userId, type: "refresh_user_feed" });
+}
+
 export async function getTrainingFeedResponse(
   userId: string,
 ): Promise<TrainingFeedResponse> {

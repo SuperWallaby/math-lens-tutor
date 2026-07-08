@@ -21,6 +21,12 @@ const devOAuthLoginOptions = [
     email: 'crawl123@naver.com',
   ),
   DevOAuthLoginOption(
+    id: 'google-colton',
+    label: 'Google · colton950901@gmail.com',
+    provider: 'google',
+    email: 'colton950901@gmail.com',
+  ),
+  DevOAuthLoginOption(
     id: 'apple-crawl123',
     label: 'Apple · crawl123@naver.com',
     provider: 'apple',

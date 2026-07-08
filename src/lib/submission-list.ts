@@ -1,5 +1,6 @@
 import type { SolutionSubmission } from "./types";
 import { deriveSubmissionListTitle, normalizeListTitle } from "./list-title";
+import { resolveSolutionImageThumbUrl } from "./solution-image";
 
 export function formatSubmissionListTitle(
   submission: Pick<SolutionSubmission, "imageName"> & {
@@ -23,6 +24,7 @@ export function toSubmissionListItem(submission: SolutionSubmission) {
   return {
     id: submission.id,
     imageUrl: submission.imageUrl,
+    imageThumbUrl: resolveSolutionImageThumbUrl(submission.imageUrl),
     title,
     listTitle,
     createdAt: submission.createdAt,

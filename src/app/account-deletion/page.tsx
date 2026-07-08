@@ -4,10 +4,15 @@ import type { ReactNode } from "react";
 
 import { AppShell } from "@/components/AppShell";
 import {
+  ANDROID_PACKAGE_ID,
   APP_NAME,
   APP_NAME_EN,
+  DEVELOPER_CONTACT,
+  DEVELOPER_LEGAL_NAME,
+  DEVELOPER_REPRESENTATIVE,
   accountDeletionUrl,
   deletedDataItems,
+  privacyPolicyUrl,
   retainedDataItems,
   supportEmail,
 } from "@/lib/account-deletion-content";
@@ -58,9 +63,12 @@ export default function AccountDeletionPage() {
         <p className="text-sm font-medium text-wy-primary">Account &amp; Data Deletion</p>
         <h1 className="mt-3 text-4xl font-black">계정 및 데이터 삭제</h1>
         <p className="mt-4 leading-8 text-wy-text-sub">
-          <strong className="text-foreground">{APP_NAME}</strong>({APP_NAME_EN}) 이용자는
-          아래 방법으로 <strong className="text-foreground">계정과 관련 학습 데이터</strong>를
-          삭제할 수 있습니다. Google Play · App Store 심사 및 이용자 문의용 공개 페이지입니다.
+          <strong className="text-foreground">{APP_NAME}</strong>({APP_NAME_EN}) · Android{" "}
+          <code className="text-xs">{ANDROID_PACKAGE_ID}</code> · 운영:{" "}
+          <strong className="text-foreground">{DEVELOPER_LEGAL_NAME}</strong> (대표{" "}
+          {DEVELOPER_REPRESENTATIVE}, 문의 담당 {DEVELOPER_CONTACT}) 이용자는 아래 방법으로{" "}
+          <strong className="text-foreground">계정과 관련 학습 데이터</strong>를 삭제할 수
+          있습니다. Google Play · App Store 심사 및 이용자 문의용 공개 페이지입니다.
         </p>
 
         <div className="mt-10 space-y-6">
@@ -156,7 +164,9 @@ export default function AccountDeletionPage() {
           </Link>
           을 참고해 주세요.
           <br />
-          공개 URL: {accountDeletionUrl()}
+          개인정보 처리방침 URL: {privacyPolicyUrl()}
+          <br />
+          본 페이지 URL: {accountDeletionUrl()}
         </p>
       </article>
     </AppShell>

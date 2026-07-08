@@ -12,8 +12,14 @@ export type UserLearningSnapshotDoc = {
 };
 
 const COLLECTION = "user_learning_snapshots";
-/** 6h — stale이면 read는 캐시 반환 + 백그라운드 갱신 */
-export const PROFILE_SNAPSHOT_STALE_MS = 6 * 60 * 60 * 1000;
+/** stale이면 read는 캐시 반환 + 백그라운드 갱신 (기본 12h, env로 조정) */
+export const PROFILE_SNAPSHOT_STALE_MS = (() => {
+  const hours = Number(process.env.PROFILE_SNAPSHOT_STALE_HOURS ?? "12");
+  if (!Number.isFinite(hours) || hours <= 0) {
+    return 12 * 60 * 60 * 1000;
+  }
+  return Math.round(hours * 60 * 60 * 1000);
+})();
 
 const memorySnapshots = new Map<string, UserLearningSnapshotDoc>();
 const refreshInflight = new Map<string, Promise<LearningProfile>>();

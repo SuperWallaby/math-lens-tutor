@@ -218,7 +218,7 @@ export const generatedProblemSchema = z.preprocess((raw) => {
   chart: chartConfigSchema,
   /** 필요할 때만: 좌표평면 도형 (JSXGraph). 불필요하면 null — legacy, visualizationData 우선 */
   jsxGraph: jsxGraphDiagramSchema,
-  /** 통합 시각화 (Desmos / JSXGraph / Chart.js) */
+  /** 통합 시각화 (bake 후 static PNG) */
   visualizationData: visualizationDataSchema,
   /** 풀이 설명용 추가 시각화 */
   solutionVisualizationData: visualizationDataSchema,
@@ -377,6 +377,7 @@ export type ParentWrongExplainItem = {
   parentScript: string;
   problemSetId: string | null;
   imageUrl: string | null;
+  imageThumbUrl?: string | null;
   createdAt: string;
 };
 

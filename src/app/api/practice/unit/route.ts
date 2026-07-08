@@ -4,6 +4,7 @@ import { NextResponse } from "next/server";
 
 import { parseAnalyzeQualityMode } from "@/lib/analyze-mode";
 import { resolveAzureDeploymentName } from "@/lib/azure";
+import { stripProblemSetForClient } from "@/lib/client-problem";
 import { authErrorResponse, resolveActorUserId } from "@/lib/request";
 import { resolveUnitPracticeProblemSet } from "@/lib/problem-bank";
 import { studyLog } from "@/lib/server-log";
@@ -69,7 +70,7 @@ export async function POST(request: Request) {
     return NextResponse.json({
       unitId,
       problemSetId,
-      problemSet: parsedSet,
+      problemSet: stripProblemSetForClient(parsedSet),
       meta,
     });
   } catch (error) {

@@ -117,6 +117,13 @@ class _AuthGateState extends State<AuthGate> {
     if (mounted) setState(() {});
   }
 
+  Future<void> _backToAppStart() async {
+    await widget.apiClient.signOutToAppStart();
+    if (mounted) {
+      setState(() => _profileOnboardingDismissed = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     if (!_ready) {
@@ -159,6 +166,7 @@ class _AuthGateState extends State<AuthGate> {
       return GuardianLinkRequiredScreen(
         apiClient: widget.apiClient,
         onLinked: () => setState(() {}),
+        onBackToAppStart: _backToAppStart,
       );
     }
 

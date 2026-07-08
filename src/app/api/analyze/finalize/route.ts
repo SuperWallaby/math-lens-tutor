@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { parseAnalyzeQualityMode } from "@/lib/analyze-mode";
+import { stripProblemSetForClient } from "@/lib/client-problem";
 import { indexScannedSubmission } from "@/lib/problem-bank";
 import { authErrorResponse, resolveActorUserId } from "@/lib/request";
 import { withRequestDb } from "@/lib/db-variant";
@@ -98,7 +99,7 @@ export async function POST(request: Request) {
       problemSetId,
       qualityMode,
       submission,
-      problemSet,
+      problemSet: stripProblemSetForClient(problemSet),
     });
   } catch (error) {
     studyLog("analyze:finalize", "failed", {

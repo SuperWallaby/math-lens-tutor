@@ -133,8 +133,10 @@ class _SignupScreenState extends State<SignupScreen> {
       setState(() => _error = error.message);
     } on ApiException catch (error) {
       setState(() => _error = error.message);
-    } catch (_) {
-      setState(() => _error = '간편 가입에 실패했습니다. 잠시 후 다시 시도해 주세요.');
+    } catch (e) {
+      setState(() => _error = kDebugMode
+          ? '간편 가입에 실패했습니다. ($e)'
+          : '간편 가입에 실패했습니다. 잠시 후 다시 시도해 주세요.');
     } finally {
       if (mounted) {
         setState(() => _loading = false);
@@ -171,8 +173,10 @@ class _SignupScreenState extends State<SignupScreen> {
       });
     } on ApiException catch (error) {
       setState(() => _error = error.message);
-    } catch (_) {
-      setState(() => _error = '매직 링크 발송에 실패했습니다.');
+    } catch (e) {
+      setState(() => _error = kDebugMode
+          ? '매직 링크 발송에 실패했습니다. ($e)'
+          : '매직 링크 발송에 실패했습니다.');
     } finally {
       if (mounted) {
         setState(() => _loading = false);
@@ -326,7 +330,7 @@ class _SignupScreenState extends State<SignupScreen> {
               const SizedBox(height: 24),
               Center(
                 child: HeroIcon3d(
-                  asset: 'assets/icons/3d/practice_start.png',
+                  asset: 'assets/icons/3d/practice_start.webp',
                   tint: AppColors.primary,
                 ),
               ),

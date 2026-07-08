@@ -27,6 +27,7 @@ import {
   type TutorSolveAndExpandFromVision,
   type VisionSolutionExtraction,
 } from "./types";
+import { VISUALIZATION_DISABLED_PROMPT_RULES } from "./visualization-policy";
 
 /** 흐림·저자신감 배지: 이 값 미만이면 imageQualityWarning */
 const IMAGE_QUALITY_WARNING_THRESHOLD = 0.5;
@@ -949,21 +950,8 @@ ${options.preferHarder ? "- IMPORTANT: All problems must be medium or hard for t
 - free_response correctAnswer must be a single number or very short text (max ~12 chars). No LaTeX expressions, no ×, no parentheses products, no commas joining sentences.
 - Omit answerFormat for multiple_choice.
 - conceptTags: 1–2 tags only; first tag is the primary concept name.
-- chart: 필요할 때만. 통계형 **막대/선**(Chart.js, type/data/options). 과제 내 데이터 시각화.
-- jsxGraph: **좌표평면 기하 도형**이 필요할 때만. 없어도 풀 수 있으면 **전부 jsxGraph:null**.
-
-jsxGraph 규격 (미사용 문제는 "jsxGraph": null):
-{"diagramNeeded":true,"captionKo":"설명 한 줄","rationaleKo":"필요 이유","board":{"boundingbox":[-2,12,14,-4],"axis":true},"elements":[{"elType":"point","id":"P","coord":[1,3],"attrs":{"name":"P","fixed":true}},{"elType":"segment","parents":["P",[6,8]]}]}
-
-허용 elType: point, segment, line, polygon, circle, arc, angle, sector, text, midpoint, perpendicular, perpendicularsegment, bisector, glider 등 (문자열 eval·functiongraph 제외).
-point 는 coord 또는 parents 로 좌표 전달 가능. 다른 요소 parents 에는 참조 문자열(id) 또는 [x,y] 좌표.
-각 문제 객체에 반드시 키 jsxGraph 포함(chart 와 같은 레벨).
-- visualizationData: 그래프·도형 설명이 **필요할 때만** 생성. 불필요하면 null.
-  - 함수 그래프: {"type":"function_graph","engine":"desmos","data":{"expression":"y=x^2-4x+3","xRange":[-5,5],"yRange":[-5,10]}}
-  - 기하 도형: {"type":"geometry","engine":"jsxgraph","data":{"shape":"triangle","points":{"A":[0,0],"B":[4,0],"C":[2,3]},"showLabels":true}}
-  - 좌표/도형 복합: {"type":"coordinate","engine":"jsxgraph","data":{"board":{"boundingbox":[-2,12,14,-4],"axis":true},"elements":[...]}}
-- solutionVisualizationData: 풀이 설명에 **별도 그림이 도움될 때만** (없으면 null). prompt와 동일 그림 반복 금지.
-- 수학 문제 생성 시 그래프 또는 도형 설명이 필요한 경우 반드시 visualizationData JSON을 함께 생성한다.
+${VISUALIZATION_DISABLED_PROMPT_RULES}
+- 각 문제 객체에 chart, jsxGraph, visualizationData, solutionVisualizationData 키는 포함하되 값은 null.
 - 문제·선지·설명은 한국어.
 - 모든 수학 식은 LaTeX와 동일 규격: 인라인 $ ... $ , 블록 $$ ... $$. JSON 문자열에서 역슬래시(\\) 규칙을 지킨다. 원화 기호 때문에 단일 $만 쓰지 말 것(숫자만으로 표현).
 
@@ -1098,8 +1086,8 @@ ${options.preferHarder ? "- IMPORTANT: All problems must be medium or hard for t
 - For free_response, set answerFormat: short_numeric OR short_answer only (see similar-problems rules). NEVER long_solution or expression answers.
 - For factorization / 소인수분해 / 인수분해 / 식 작성 tasks: prefer **multiple_choice**, or ask one numeric result (e.g. largest prime factor).
 - conceptTags: 1–2 tags only; first tag is primary concept.
-- chart: only when a bar/line chart helps. jsxGraph: only for coordinate geometry; otherwise null.
-- visualizationData / solutionVisualizationData: same rules as Korean prompt — desmos for function graphs, jsxgraph for geometry; null when not needed.
+${VISUALIZATION_DISABLED_PROMPT_RULES}
+- Each problem must include chart, jsxGraph, visualizationData, solutionVisualizationData keys with null values.
 - Problems, choices, explanations in Korean. Difficulty appropriate for ${bandLabel}.
 - All math in LaTeX: inline $ ... $, block $$ ... $$.
 - conceptTags should include relevant keywords from the unit.

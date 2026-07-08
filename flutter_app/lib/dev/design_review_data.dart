@@ -491,7 +491,7 @@ GeneratedProblemSet designReviewProblemSetQuestion() {
   );
 }
 
-/// 삼각함수 Desmos 그래프 디버그용 (design_review=practice__trig_graph)
+/// 삼각함수 정적 그래프 디버그용 (design_review=practice__trig_graph)
 GeneratedProblemSet designReviewProblemSetTrigGraph() {
   return GeneratedProblemSet(
     id: 'review_trig_set',
@@ -518,13 +518,18 @@ GeneratedProblemSet designReviewProblemSetTrigGraph() {
         chart: null,
         visualizationData: const {
           'type': 'function_graph',
-          'engine': 'desmos',
+          'engine': 'static',
           'data': {
-            'expression': 'y=sin(3x)',
+            'expression': r'y=\sin\left(3x\right)',
             'xRange': [-2, 2],
             'yRange': [-1.5, 1.5],
+            'imageUrl': '/viz/7874d234e816f50b.png',
+            'width': 800,
+            'height': 400,
+            'contentHash': '7874d234e816f50b',
           },
         },
+        visualizationMigrationStatus: 'completed',
       ),
     ],
   );

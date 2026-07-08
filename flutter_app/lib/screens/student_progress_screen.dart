@@ -8,6 +8,7 @@ import '../widgets/learning_profile_widgets.dart';
 import '../widgets/parent_tab_scaffold.dart';
 import 'open_practice_flow.dart';
 import 'practice_screen.dart';
+import 'dashboard_screen.dart';
 import '../theme/app_design_system.dart';
 
 class StudentProgressScreen extends StatefulWidget {
@@ -149,19 +150,38 @@ class _ProgressContent extends StatelessWidget {
     final units = profile.unitsForGradeTab(gradeTab);
 
     final scrollChildren = [
-      Text(
-        viewAsGuardian ? '교육과정 진도' : '내 진도 현황',
-        style: TextStyle(
-          fontSize: TabletLayout.titleSection(context),
-          fontWeight: FontWeight.w900,
-        ),
-      ),
-      const SizedBox(height: 4),
-      Text(
-        viewAsGuardian
-            ? '단원을 눌러 자녀에게 어떻게 도와줄지 확인하세요'
-            : '2022 개정 교육과정 · ${gradeBandLabels[gradeTab]}',
-        style: const TextStyle(color: AppColors.textSub, fontSize: 12),
+      Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  viewAsGuardian ? '교육과정 진도' : '내 진도 현황',
+                  style: TextStyle(
+                    fontSize: TabletLayout.titleSection(context),
+                    fontWeight: FontWeight.w900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  viewAsGuardian
+                      ? '단원을 눌러 자녀에게 어떻게 도와줄지 확인하세요'
+                      : '2022 개정 교육과정 · ${gradeBandLabels[gradeTab]}',
+                  style: const TextStyle(color: AppColors.textSub, fontSize: 12),
+                ),
+              ],
+            ),
+          ),
+          IconButton(
+            onPressed: () =>
+                DashboardScreen.open(context, apiClient),
+            icon: const Icon(Icons.insights_outlined),
+            tooltip: viewAsGuardian ? '학생 학습 통계' : '학습 통계',
+            visualDensity: VisualDensity.compact,
+          ),
+        ],
       ),
       const SizedBox(height: 12),
       GradeBandTabBar(

@@ -5,7 +5,7 @@ import 'package:flutter/services.dart';
 
 const _productionUrl = 'https://study-hazel-six.vercel.app';
 /// `write-dev-port.sh` 가 갱신하는 `dev/local-defines.json` 의 기본값.
-const _localPort = 3100;
+const _localPort = 3737;
 
 int? _debugPortFromAsset;
 

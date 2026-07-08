@@ -56,6 +56,10 @@ export function buildQuizR2Key(quizId: string): string {
   return `system/quiz/${quizId}.webp`;
 }
 
+export function buildVizR2Key(contentHash: string): string {
+  return `system/viz/${contentHash}.png`;
+}
+
 export function publicUrlForR2Key(key: string): string | null {
   const base = process.env.R2_PUBLIC_BASE_URL?.trim().replace(/\/$/, "");
   if (!base) return null;

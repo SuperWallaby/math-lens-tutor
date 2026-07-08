@@ -17,6 +17,12 @@ import type {
   ProblemAttempt,
   SolutionSubmission,
 } from "./types";
+import { prepareGeneratedProblemSet } from "./visualization-bake";
+import { scheduleProblemSetVisualizationBakeIfNeeded } from "./visualization-async";
+import {
+  optimizeSolutionImageVariants,
+  solutionImageThumbR2KeyFromR2Key,
+} from "./solution-image";
 
 type MemoryDb = {
   submissions: SolutionSubmission[];
@@ -63,11 +69,21 @@ async function persistUploadedImage(options: {
   }
 
   const imageId = randomUUID();
-  const mimeType = options.file.type || "image/jpeg";
   const createdAt = new Date().toISOString();
   const imageName =
     options.file.name ||
     (options.kind === "profile" ? "profile.jpg" : "upload.jpg");
+
+  let body = options.buffer;
+  let thumbBody: Buffer | null = null;
+  let mimeType = options.file.type || "image/jpeg";
+
+  if (options.kind === "solution") {
+    const optimized = await optimizeSolutionImageVariants(options.buffer);
+    body = optimized.display;
+    thumbBody = optimized.thumb;
+    mimeType = "image/webp";
+  }
 
   if (isR2Configured()) {
     const r2Key = buildR2ObjectKey(
@@ -76,11 +92,27 @@ async function persistUploadedImage(options: {
       imageId,
       mimeType,
     );
-    await uploadToR2({
-      key: r2Key,
-      body: options.buffer,
-      contentType: mimeType,
-    });
+    const uploads = [
+      uploadToR2({
+        key: r2Key,
+        body,
+        contentType: mimeType,
+        cacheControl: "private, max-age=31536000",
+      }),
+    ];
+    const thumbR2Key =
+      thumbBody != null ? solutionImageThumbR2KeyFromR2Key(r2Key) : null;
+    if (thumbBody && thumbR2Key) {
+      uploads.push(
+        uploadToR2({
+          key: thumbR2Key,
+          body: thumbBody,
+          contentType: "image/webp",
+          cacheControl: "private, max-age=31536000",
+        }),
+      );
+    }
+    await Promise.all(uploads);
     await db.collection("solution_images").insertOne({
       id: imageId,
       userId: options.userId,
@@ -89,6 +121,7 @@ async function persistUploadedImage(options: {
       kind: options.kind,
       storage: "r2",
       r2Key,
+      ...(thumbR2Key ? { thumbR2Key } : {}),
       createdAt,
     });
     return publicUrlForR2Key(r2Key) ?? `/api/images/${imageId}`;
@@ -101,7 +134,10 @@ async function persistUploadedImage(options: {
     mimeType,
     kind: options.kind,
     storage: "mongo",
-    data: options.buffer.toString("base64"),
+    data: body.toString("base64"),
+    ...(thumbBody
+      ? { thumbMimeType: "image/webp", thumbData: thumbBody.toString("base64") }
+      : {}),
     createdAt,
   });
 
@@ -200,15 +236,18 @@ export async function saveSubmission(
 export async function saveProblemSet(
   problemSet: GeneratedProblemSet,
 ): Promise<GeneratedProblemSet> {
+  const prepared = prepareGeneratedProblemSet(problemSet);
   const db = await getMongoDb();
   if (!db) {
-    activeMemoryDb().problemSets.unshift(problemSet);
-    return problemSet;
+    activeMemoryDb().problemSets.unshift(prepared);
+    scheduleProblemSetVisualizationBakeIfNeeded(prepared);
+    return prepared;
   }
 
-  await db.collection<GeneratedProblemSet>("generated_problem_sets").insertOne(problemSet);
+  await db.collection<GeneratedProblemSet>("generated_problem_sets").insertOne(prepared);
+  scheduleProblemSetVisualizationBakeIfNeeded(prepared);
 
-  return problemSet;
+  return prepared;
 }
 
 export async function getSubmission(

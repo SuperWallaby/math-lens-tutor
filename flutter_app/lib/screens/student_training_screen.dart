@@ -40,8 +40,15 @@ class StudentTrainingScreen extends StatefulWidget {
 class StudentTrainingScreenState extends State<StudentTrainingScreen> {
   Future<_TrainingScreenData>? _screenFuture;
 
-  /// 하단 탭 전환 시 최신 훈련·피드를 다시 불러옵니다.
-  void refreshFromTab() => _reload(forceRefresh: true);
+  /// 하단 탭 전환 시 — TTL 내면 캐시 재사용.
+  void refreshFromTab({bool forceRefresh = false}) {
+    if (!forceRefresh &&
+        widget.apiClient.isTrainingTabDataFresh &&
+        _screenFuture != null) {
+      return;
+    }
+    _reload(forceRefresh: forceRefresh);
+  }
 
   @override
   void initState() {
@@ -63,8 +70,11 @@ class StudentTrainingScreenState extends State<StudentTrainingScreen> {
       );
     }
     final results = await Future.wait([
-      widget.apiClient.getLearningProfile(forceRefresh: forceRefresh),
-      widget.apiClient.getTrainingFeed(),
+      widget.apiClient.getLearningProfile(
+        forceRefresh: forceRefresh,
+        scope: LearningProfileScope.summary,
+      ),
+      widget.apiClient.getTrainingFeed(forceRefresh: forceRefresh),
     ]);
     return _TrainingScreenData(
       profile: results[0] as LearningProfile,
@@ -83,7 +93,7 @@ class StudentTrainingScreenState extends State<StudentTrainingScreen> {
           ? training.focusConcepts.take(2).join(' · ')
           : '복습 훈련',
       generatingTitle: 'AI 복습 문제 만드는 중…',
-      iconAsset: 'assets/icons/3d/training_active.png',
+      iconAsset: 'assets/icons/3d/training_active.webp',
     );
     if (!mounted) return;
     _reload(forceRefresh: true);
@@ -99,7 +109,7 @@ class StudentTrainingScreenState extends State<StudentTrainingScreen> {
       ),
       subtitle: item.reason,
       generatingTitle: '문제 불러오는 중…',
-      iconAsset: 'assets/icons/3d/training_active.png',
+      iconAsset: 'assets/icons/3d/training_active.webp',
     );
     if (!mounted) return;
     _reload(forceRefresh: true);

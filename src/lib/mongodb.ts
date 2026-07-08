@@ -18,7 +18,12 @@ export async function getMongoDb(): Promise<Db | null> {
   }
 
   if (!globalForMongo.mongoClientPromise) {
-    const client = new MongoClient(env.mongodbUri);
+    const client = new MongoClient(env.mongodbUri, {
+      serverSelectionTimeoutMS: 8_000,
+      maxIdleTimeMS: 60_000,
+      minPoolSize: 1,
+      maxPoolSize: 10,
+    });
     globalForMongo.mongoClientPromise = client.connect();
   }
 

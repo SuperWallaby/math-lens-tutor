@@ -17,6 +17,7 @@ import {
   publicUser,
   upsertMagicLinkUser,
 } from "@/lib/users";
+import { agentDebugLog } from "@/lib/debug-agent-log";
 
 const bodySchema = z.object({
   email: z.string().min(3).max(320),
@@ -24,6 +25,19 @@ const bodySchema = z.object({
 });
 
 export async function POST(request: Request) {
+  // #region agent log
+  agentDebugLog({
+    hypothesisId: "H2",
+    location: "magic-link/send/route.ts:POST",
+    message: "request received",
+    data: {
+      origin: request.headers.get("origin"),
+      userAgent: request.headers.get("user-agent")?.slice(0, 80),
+    },
+    runId: "run1",
+  });
+  // #endregion
+
   if (!hasMongoConfig() || !hasAuthConfig()) {
     return NextResponse.json(
       { error: "인증 설정이 완료되지 않았습니다." },
@@ -75,6 +89,18 @@ export async function POST(request: Request) {
         : {}),
     });
   } catch (error) {
+    // #region agent log
+    agentDebugLog({
+      hypothesisId: "H4",
+      location: "magic-link/send/route.ts:catch",
+      message: "handler error",
+      data: {
+        name: error instanceof Error ? error.name : "unknown",
+        message: error instanceof Error ? error.message.slice(0, 200) : String(error),
+      },
+      runId: "run1",
+    });
+    // #endregion
     if (error instanceof OAuthAccountExistsError) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }

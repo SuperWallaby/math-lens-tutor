@@ -5,6 +5,7 @@ import {
   resolveAzureDeploymentName,
   resolveVisionDeploymentName,
 } from "@/lib/azure";
+import { stripProblemSetForClient } from "@/lib/client-problem";
 import {
   buildTextDeploymentCandidateList,
   buildVisionDeploymentCandidateList,
@@ -226,7 +227,7 @@ export async function POST(request: Request) {
       problemSetId: result.problemSetId,
       qualityMode: result.qualityMode,
       submission: result.submission,
-      problemSet: result.problemSet,
+      problemSet: stripProblemSetForClient(result.problemSet),
     });
   } catch (error) {
     studyLog("analyze", "POST failed", { error: errText(error) });

@@ -65,7 +65,7 @@ class _ParentHomeScreenState extends State<ParentHomeScreen> {
           const SizedBox(height: 24),
           Center(
             child: HeroIcon3d(
-              asset: 'assets/icons/3d/link_empty.png',
+              asset: 'assets/icons/3d/link_empty.webp',
               tint: isParent ? AppColors.success : AppColors.teacher,
             ),
           ),

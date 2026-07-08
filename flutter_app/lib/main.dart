@@ -2,6 +2,7 @@ import 'dart:async';
 
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker_android/image_picker_android.dart';
 import 'package:image_picker_platform_interface/image_picker_platform_interface.dart';
 
@@ -18,8 +19,6 @@ import 'services/oauth_service.dart';
 import 'screens/auth_gate.dart';
 import 'screens/lite_gate.dart';
 import 'theme/app_design_system.dart';
-import 'webview_init_stub.dart'
-    if (dart.library.js_interop) 'webview_init_web.dart';
 
 String resolveDesignReviewKey() {
   const fromDefine = String.fromEnvironment('DESIGN_REVIEW', defaultValue: '');
@@ -59,14 +58,9 @@ void _configureAndroidPhotoPicker() {
   }
 }
 
-void _configureWebView() {
-  if (!kIsWeb) return;
-  configureWebViewPlatform();
-}
-
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  _configureWebView();
+  GoogleFonts.config.allowRuntimeFetching = false;
   _configureAndroidPhotoPicker();
   if (!isLiteApp) {
     unawaited(initializeOAuthSdk());
@@ -79,6 +73,9 @@ Future<void> main() async {
 
   final authSession = AuthSession();
   final apiClient = ApiClient(authSession: authSession);
+  if (kDebugMode) {
+    unawaited(apiClient.debugPingLocalApi());
+  }
   final oauthService = OAuthService();
   final designReviewKey = resolveDesignReviewKey();
   final storeScreenshotKey = resolveStoreScreenshotKey();

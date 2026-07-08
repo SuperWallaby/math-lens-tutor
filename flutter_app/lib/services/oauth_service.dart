@@ -44,9 +44,23 @@ class OAuthService {
       token = await UserApi.instance.loginWithKakaoAccount();
     }
 
+    String? displayName;
+    try {
+      final me = await UserApi.instance.me();
+      final nickname = me.kakaoAccount?.profile?.nickname?.trim();
+      if (nickname != null && nickname.isNotEmpty) {
+        displayName = nickname;
+      }
+    } catch (error) {
+      if (kDebugMode) {
+        debugPrint('[OAuth] Kakao profile fetch failed: $error');
+      }
+    }
+
     return OAuthCredentialBundle(
       provider: 'kakao',
       accessToken: token.accessToken,
+      displayName: displayName,
     );
   }
 

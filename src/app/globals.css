@@ -1,5 +1,4 @@
 @import "tailwindcss";
-@import "../../node_modules/jsxgraph/distrib/jsxgraph.css";
 
 :root {
   --background: #f5f5f5;

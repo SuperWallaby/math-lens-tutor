@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.1/dist/chart.umd.min.js"></script>
+  <style>
+    html, body { margin: 0; background: #fafafa; overflow: hidden; }
+  </style>
+</head>
+<body>
+  <div id="viz-root" style="width:800px;height:240px;padding:12px;box-sizing:border-box;">
+    <canvas id="chart-canvas"></canvas>
+  </div>
+  <script>
+    (function () {
+      function markReady() { window.__STUDY_VIZ_READY = true; }
+
+      function decodeHash() {
+        var raw = (location.hash || '').replace(/^#/, '');
+        if (!raw) return null;
+        try {
+          raw = decodeURIComponent(raw);
+          var bin = atob(raw);
+          var u = new Uint8Array(bin.length);
+          for (var i = 0; i < bin.length; i++) u[i] = bin.charCodeAt(i);
+          return JSON.parse(new TextDecoder('utf-8').decode(u));
+        } catch (e) {
+          return null;
+        }
+      }
+
+      var config = decodeHash();
+      if (!config || !config.type || !config.data) {
+        markReady();
+        return;
+      }
+
+      var canvas = document.getElementById('chart-canvas');
+      var type = config.type === 'scatter' ? 'line' : config.type;
+      var options = Object.assign({
+        responsive: true,
+        maintainAspectRatio: false,
+        animation: false,
+        plugins: { legend: { display: true } },
+      }, config.options || {});
+
+      try {
+        new Chart(canvas, { type: type, data: config.data, options: options });
+      } catch (e) {}
+
+      setTimeout(markReady, 500);
+    })();
+  </script>
+</body>
+</html>

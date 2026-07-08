@@ -79,7 +79,7 @@ class _LoopResultScreenState extends State<LoopResultScreen> {
     if (correct == total && total > 0) {
       return _ResultPresentation(
         tone: AppColors.success,
-        iconAsset: 'assets/icons/3d/loop_result_perfect.png',
+        iconAsset: 'assets/icons/3d/loop_result_perfect.webp',
         title: '완벽해요!',
         message: '이 개념은 충분히 이해했어요.',
       );
@@ -87,7 +87,7 @@ class _LoopResultScreenState extends State<LoopResultScreen> {
     if (ratio >= 0.8) {
       return _ResultPresentation(
         tone: AppColors.primary,
-        iconAsset: 'assets/icons/3d/loop_result_perfect.png',
+        iconAsset: 'assets/icons/3d/loop_result_perfect.webp',
         title: '거의 다 맞혔어요',
         message: wrong > 0
             ? '틀린 $wrong문제만 다시 보면 완벽해져요.'
@@ -97,7 +97,7 @@ class _LoopResultScreenState extends State<LoopResultScreen> {
     if (ratio >= 0.4) {
       return _ResultPresentation(
         tone: AppColors.warning,
-        iconAsset: 'assets/icons/3d/loop_result_partial.png',
+        iconAsset: 'assets/icons/3d/loop_result_partial.webp',
         title: '조금 더 연습해요',
         message: wrong > 0
             ? '틀린 $wrong문제를 확인하고 같은 유형으로 다시 도전해 보세요.'
@@ -106,7 +106,7 @@ class _LoopResultScreenState extends State<LoopResultScreen> {
     }
     return _ResultPresentation(
       tone: AppColors.accent,
-      iconAsset: 'assets/icons/3d/loop_result_partial.png',
+      iconAsset: 'assets/icons/3d/loop_result_partial.webp',
       title: '다시 도전해요',
       message: wrong > 0
           ? '틀린 $wrong문제 개념을 집중해서 복습해 보세요.'
@@ -427,7 +427,7 @@ class _AiFeedbackCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           HeroIcon3d(
-            asset: 'assets/icons/3d/weak_concept_alert.png',
+            asset: 'assets/icons/3d/weak_concept_alert.webp',
             size: 56,
             iconSize: 36,
             tint: AppColors.primary,

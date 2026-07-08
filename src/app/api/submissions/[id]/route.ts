@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 
+import { stripProblemSetForClient } from "@/lib/client-problem";
 import {
   authErrorResponse,
   resolveActorUserId,
@@ -58,6 +59,6 @@ export async function GET(
 
   return NextResponse.json({
     submission,
-    problemSet,
+    problemSet: problemSet ? stripProblemSetForClient(problemSet) : null,
   });
 }

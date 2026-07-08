@@ -19,10 +19,6 @@ function ProblemPrintBlock({
   problem: GeneratedProblem;
   index: number;
 }) {
-  const hasFigure =
-    problem.chart != null ||
-    (problem.jsxGraph?.diagramNeeded === true);
-
   return (
     <section className="break-inside-avoid border-b border-black/20 pb-4">
       <p className="text-sm text-black/70">
@@ -35,11 +31,6 @@ function ProblemPrintBlock({
       <div className="math-mixed-root mt-2 text-sm leading-relaxed text-black">
         <MathMixedRich text={problem.prompt} />
       </div>
-      {hasFigure ? (
-        <p className="mt-2 text-xs text-black/60">
-          (그래프·도형은 웹/앱 화면에서 확인하세요.)
-        </p>
-      ) : null}
       {problem.type === "multiple_choice" && problem.choices ? (
         <ul className="mt-3 space-y-1 text-sm text-black">
           {problem.choices.map((c) => (

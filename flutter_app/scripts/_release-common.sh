@@ -81,8 +81,14 @@ release_copy_artifacts() {
   mkdir -p "$out_dir"
 
   local ipa_src="${root}/build/ios/ipa/math_lens_tutor.ipa"
-  local aab_src="${root}/build/app/outputs/bundle/release/app-release.aab"
-  local apk_src="${root}/build/app/outputs/flutter-apk/app-release.apk"
+  local aab_src="${root}/build/app/outputs/bundle/fullRelease/app-full-release.aab"
+  local apk_src="${root}/build/app/outputs/flutter-apk/app-full-release.apk"
+  if [[ ! -f "$aab_src" ]]; then
+    aab_src="${root}/build/app/outputs/bundle/release/app-release.aab"
+  fi
+  if [[ ! -f "$apk_src" ]]; then
+    apk_src="${root}/build/app/outputs/flutter-apk/app-release.apk"
+  fi
   local base="wooyeol-${RELEASE_VERSION}-build${RELEASE_BUILD}"
 
   [[ -f "$ipa_src" ]] && cp "$ipa_src" "${out_dir}/${base}.ipa"

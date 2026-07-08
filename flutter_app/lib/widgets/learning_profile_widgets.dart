@@ -986,7 +986,11 @@ class ParentWrongExplainTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final imageUrl = ApiClient.resolveImageUrl(apiBaseUrl, item.imageUrl);
+    final imageUrl = ApiClient.resolveListThumbnailUrl(
+      apiBaseUrl,
+      imageThumbUrl: item.imageThumbUrl,
+      imageUrl: item.imageUrl,
+    );
     final content = Row(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [

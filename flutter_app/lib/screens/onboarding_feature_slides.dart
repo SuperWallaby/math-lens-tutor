@@ -29,10 +29,10 @@ List<OnboardingFeatureSlide> _slides(
   List<({String title, String body})> copy,
 ) {
   const files = [
-    '01.png',
-    '02.png',
-    '03.png',
-    '04.png',
+    '01.webp',
+    '02.webp',
+    '03.webp',
+    '04.webp',
   ];
   return List.generate(files.length, (i) {
     return OnboardingFeatureSlide(

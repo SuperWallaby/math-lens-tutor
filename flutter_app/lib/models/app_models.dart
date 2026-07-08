@@ -122,6 +122,7 @@ class GeneratedProblem {
     this.jsxGraph,
     this.visualizationData,
     this.solutionVisualizationData,
+    this.visualizationMigrationStatus,
     this.answerFormat,
     this.source = 'generated',
     this.bankItemId,
@@ -147,6 +148,8 @@ class GeneratedProblem {
           (json['visualizationData'] as Map?)?.cast<String, dynamic>(),
       solutionVisualizationData: (json['solutionVisualizationData'] as Map?)
           ?.cast<String, dynamic>(),
+      visualizationMigrationStatus:
+          json['visualizationMigrationStatus'] as String?,
       answerFormat: json['answerFormat'] as String?,
       source: json['source'] as String? ?? 'generated',
       bankItemId: json['bankItemId'] as String?,
@@ -166,6 +169,7 @@ class GeneratedProblem {
   final Map<String, dynamic>? jsxGraph;
   final Map<String, dynamic>? visualizationData;
   final Map<String, dynamic>? solutionVisualizationData;
+  final String? visualizationMigrationStatus;
   /// `short_numeric` | `short_answer` | `long_solution` (free_response only)
   final String? answerFormat;
   final String source;
@@ -540,6 +544,7 @@ class SubmissionSummary {
     required this.weakConcepts,
     this.listTitle,
     this.imageUrl,
+    this.imageThumbUrl,
     this.imageName = '',
   });
 
@@ -554,6 +559,7 @@ class SubmissionSummary {
       listTitle: listTitle.isNotEmpty ? listTitle : null,
       createdAt: json['createdAt'] as String? ?? '',
       imageUrl: json['imageUrl'] as String?,
+      imageThumbUrl: json['imageThumbUrl'] as String?,
       imageName: imageName,
       weakConcepts: _stringList(json['weakConcepts']),
     );
@@ -564,6 +570,7 @@ class SubmissionSummary {
   final String? listTitle;
   final String createdAt;
   final String? imageUrl;
+  final String? imageThumbUrl;
   final String imageName;
   final List<String> weakConcepts;
 
@@ -859,6 +866,41 @@ class LearningProfile {
     );
   }
 
+  /// `/api/learning/profile?scope=summary` — 허브·훈련 탭용 경량 payload
+  factory LearningProfile.fromSummaryJson(Map<String, dynamic> json) {
+    return LearningProfile(
+      grade: json['grade'] as String? ?? '중1',
+      insight: LearningInsight.fromJson(
+        (json['insight'] as Map?)?.cast<String, dynamic>() ?? {},
+      ),
+      stats: LearningStats.fromJson(
+        (json['stats'] as Map?)?.cast<String, dynamic>() ?? {},
+      ),
+      mission: json['mission'] == null
+          ? null
+          : TodayMission.fromJson(
+              (json['mission'] as Map).cast<String, dynamic>(),
+            ),
+      training: json['training'] == null
+          ? TrainingSnapshot.empty
+          : TrainingSnapshot.fromJson(
+              (json['training'] as Map).cast<String, dynamic>(),
+            ),
+      conceptStatus: const [],
+      strongConcepts: const [],
+      weeklyTrend: const [],
+      curriculumUnits: const [],
+      curriculumByBand: const {},
+      parentActions: const [],
+      weeklyReport: const WeeklyReport(
+        weekLabel: '',
+        period: '',
+        cycle: [],
+        unitMastery: [],
+      ),
+    );
+  }
+
   final String grade;
   final LearningInsight insight;
   final LearningStats stats;
@@ -1085,6 +1127,7 @@ class ParentWrongExplainItem {
     required this.parentScript,
     required this.problemSetId,
     this.imageUrl,
+    this.imageThumbUrl,
     required this.createdAt,
   });
 
@@ -1099,6 +1142,7 @@ class ParentWrongExplainItem {
       parentScript: json['parentScript'] as String? ?? '',
       problemSetId: json['problemSetId'] as String?,
       imageUrl: json['imageUrl'] as String?,
+      imageThumbUrl: json['imageThumbUrl'] as String?,
       createdAt: json['createdAt'] as String? ?? '',
     );
   }
@@ -1112,6 +1156,7 @@ class ParentWrongExplainItem {
   final String parentScript;
   final String? problemSetId;
   final String? imageUrl;
+  final String? imageThumbUrl;
   final String createdAt;
 }
 

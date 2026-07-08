@@ -171,47 +171,107 @@ class _DevMenuSheetState extends State<_DevMenuSheet> {
     });
   }
 
+  Future<void> _purgeDevOAuth(String accountId, String label) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: const Text('계정 탈퇴·데이터 삭제'),
+        content: Text(
+          '$label\n\n'
+          '서버에서 계정과 학습 데이터를 완전히 삭제합니다.\n'
+          'OAuth 재가입·온보딩 테스트용입니다.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(context).pop(false),
+            child: const Text('취소'),
+          ),
+          FilledButton(
+            style: FilledButton.styleFrom(backgroundColor: AppColors.accent),
+            onPressed: () => Navigator.of(context).pop(true),
+            child: const Text('삭제'),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !mounted) return;
+
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      final message = await widget.apiClient.devOAuthPurge(accountId);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(message)),
+      );
+    } catch (error) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('실패: $error')),
+      );
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  IconData _oauthProviderIcon(String provider) {
+    return switch (provider) {
+      'kakao' => Icons.chat_bubble_rounded,
+      'google' => Icons.g_mobiledata_rounded,
+      'apple' => Icons.apple_rounded,
+      _ => Icons.account_circle_outlined,
+    };
+  }
+
   @override
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.paddingOf(context).bottom;
+    final maxHeight = MediaQuery.sizeOf(context).height * 0.88;
     final sessionText = describeDevSession(widget.authSession);
     final apiUrl = resolveApiBaseUrl();
 
-    return Padding(
-      padding: EdgeInsets.fromLTRB(
-        AppSpacing.lg,
-        0,
-        AppSpacing.lg,
-        bottomInset + AppSpacing.lg,
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          Row(
-            children: [
-              const Icon(Icons.developer_mode_rounded, size: 20),
-              const SizedBox(width: AppSpacing.sm),
-              const Expanded(
-                child: Text(
-                  '개발자 메뉴',
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+    return ConstrainedBox(
+      constraints: BoxConstraints(maxHeight: maxHeight),
+      child: Padding(
+        padding: EdgeInsets.fromLTRB(
+          AppSpacing.lg,
+          0,
+          AppSpacing.lg,
+          bottomInset + AppSpacing.lg,
+        ),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            Row(
+              children: [
+                const Icon(Icons.developer_mode_rounded, size: 20),
+                const SizedBox(width: AppSpacing.sm),
+                const Expanded(
+                  child: Text(
+                    '개발자 메뉴',
+                    style: TextStyle(fontSize: 18, fontWeight: FontWeight.w900),
+                  ),
                 ),
-              ),
-              if (_busy)
-                const SizedBox(
-                  width: 18,
-                  height: 18,
-                  child: CircularProgressIndicator(strokeWidth: 2),
-                ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.md),
-          _InfoTile(label: '세션', value: sessionText),
-          const SizedBox(height: AppSpacing.sm),
-          _InfoTile(label: 'API', value: apiUrl),
-          const SizedBox(height: AppSpacing.lg),
-          const _SectionLabel('액션'),
+                if (_busy)
+                  const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+              ],
+            ),
+            const SizedBox(height: AppSpacing.md),
+            Flexible(
+              child: SingleChildScrollView(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    _InfoTile(label: '세션', value: sessionText),
+                    const SizedBox(height: AppSpacing.sm),
+                    _InfoTile(label: 'API', value: apiUrl),
+                    const SizedBox(height: AppSpacing.lg),
+                    const _SectionLabel('액션'),
           _ActionTile(
             icon: Icons.refresh_rounded,
             title: '앱 재시작',
@@ -255,15 +315,43 @@ class _DevMenuSheetState extends State<_DevMenuSheet> {
               for (final account in devOAuthLoginOptionsList)
                 ActionChip(
                   avatar: Icon(
-                    account.provider == 'kakao'
-                        ? Icons.chat_bubble_rounded
-                        : Icons.apple_rounded,
+                    _oauthProviderIcon(account.provider),
                     size: 18,
                   ),
                   label: Text(account.label),
                   onPressed: _busy
                       ? null
                       : () => _loginDevOAuth(account.id, account.label),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          const _SectionLabel('OAuth 계정 탈퇴·데이터 삭제'),
+          const SizedBox(height: AppSpacing.sm),
+          const Text(
+            '테스트 계정을 서버에서 완전히 삭제합니다. 재가입·온보딩 테스트 전에 사용하세요.',
+            style: TextStyle(
+              color: AppColors.textSub,
+              fontSize: 12,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              for (final account in devOAuthLoginOptionsList)
+                ActionChip(
+                  avatar: Icon(
+                    Icons.delete_forever_outlined,
+                    size: 18,
+                    color: AppColors.accent,
+                  ),
+                  label: Text('${account.label} 삭제'),
+                  onPressed: _busy
+                      ? null
+                      : () => _purgeDevOAuth(account.id, account.label),
                 ),
             ],
           ),
@@ -316,7 +404,12 @@ class _DevMenuSheetState extends State<_DevMenuSheet> {
                 ),
             ],
           ),
-        ],
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

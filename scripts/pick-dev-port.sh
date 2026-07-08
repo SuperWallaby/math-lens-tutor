@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
-# 사용 가능한 로컬 dev API 포트를 stdout 으로 출력 (기본: 3100–3999 랜덤 시도).
+# 로컬 dev API 포트를 stdout 으로 출력 (고정 기본값, 랜덤 없음).
 set -euo pipefail
 
-MIN_PORT="${DEV_PORT_MIN:-3100}"
-MAX_PORT="${DEV_PORT_MAX:-3999}"
+ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+# shellcheck source=dev-port-default.sh
+source "$ROOT/scripts/dev-port-default.sh"
 
 if [[ -n "${API_PORT:-}" ]]; then
   echo "$API_PORT"
@@ -15,26 +16,4 @@ if [[ -n "${DEV_API_PORT:-}" ]]; then
   exit 0
 fi
 
-port_in_use() {
-  nc -z 127.0.0.1 "$1" 2>/dev/null
-}
-
-# 랜덤 시도
-for _ in $(seq 1 40); do
-  port=$((MIN_PORT + RANDOM % (MAX_PORT - MIN_PORT + 1)))
-  if ! port_in_use "$port"; then
-    echo "$port"
-    exit 0
-  fi
-done
-
-# 순차 스캔
-for ((port = MIN_PORT; port <= MAX_PORT; port++)); do
-  if ! port_in_use "$port"; then
-    echo "$port"
-    exit 0
-  fi
-done
-
-echo "No free dev port in ${MIN_PORT}-${MAX_PORT}" >&2
-exit 1
+echo "$STUDY_DEV_DEFAULT_PORT"

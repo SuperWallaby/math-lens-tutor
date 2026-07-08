@@ -1,11 +1,24 @@
-import { AppShell } from "@/components/AppShell";
+import type { Metadata } from "next";
 import Link from "next/link";
+
+import { AppShell } from "@/components/AppShell";
 import {
+  ANDROID_PACKAGE_ID,
   APP_NAME,
+  APP_NAME_EN,
+  DEVELOPER_CONTACT,
+  DEVELOPER_LEGAL_NAME,
+  DEVELOPER_REPRESENTATIVE,
   accountDeletionUrl,
   deletedDataItems,
+  privacyPolicyUrl,
   supportEmail,
 } from "@/lib/account-deletion-content";
+
+export const metadata: Metadata = {
+  title: `개인정보 처리방침 | ${APP_NAME}`,
+  description: `${APP_NAME}(${APP_NAME_EN}) — ${DEVELOPER_LEGAL_NAME} 개인정보 처리방침 (Google Play / App Store)`,
+};
 
 const sections = [
   {
@@ -62,15 +75,72 @@ const sections = [
 ];
 
 export default function PrivacyPage() {
+  const email = supportEmail();
+  const policyUrl = privacyPolicyUrl();
+
   return (
     <AppShell>
       <article className="mx-auto max-w-3xl">
         <p className="text-sm font-medium text-wy-primary">Privacy Policy</p>
         <h1 className="mt-3 text-4xl font-black">개인정보 처리방침</h1>
-        <p className="mt-4 leading-8 text-wy-text-sub">
-          <strong className="text-foreground">{APP_NAME}</strong>는 간편 가입 후 풀이
-          사진을 분석하고 학습 기록을 제공하기 위해 아래와 같이 최소한의 정보를
-          처리합니다. 계정·데이터 삭제 방법은{" "}
+
+        <section className="mt-8 rounded-[var(--wy-radius-md)] border-2 border-wy-primary/25 bg-wy-primary-tint p-6">
+          <h2 className="text-lg font-bold">앱 및 운영자 정보 (Google Play / App Store 등록정보)</h2>
+          <dl className="mt-4 space-y-2 text-sm leading-7 text-wy-text-sub">
+            <div className="grid gap-1 sm:grid-cols-[9rem_1fr]">
+              <dt className="font-semibold text-foreground">앱 이름</dt>
+              <dd>
+                {APP_NAME} ({APP_NAME_EN})
+              </dd>
+            </div>
+            <div className="grid gap-1 sm:grid-cols-[9rem_1fr]">
+              <dt className="font-semibold text-foreground">Android 패키지</dt>
+              <dd>
+                <code className="text-xs">{ANDROID_PACKAGE_ID}</code>
+              </dd>
+            </div>
+            <div className="grid gap-1 sm:grid-cols-[9rem_1fr]">
+              <dt className="font-semibold text-foreground">운영 법인</dt>
+              <dd>{DEVELOPER_LEGAL_NAME}</dd>
+            </div>
+            <div className="grid gap-1 sm:grid-cols-[9rem_1fr]">
+              <dt className="font-semibold text-foreground">대표</dt>
+              <dd>{DEVELOPER_REPRESENTATIVE}</dd>
+            </div>
+            <div className="grid gap-1 sm:grid-cols-[9rem_1fr]">
+              <dt className="font-semibold text-foreground">개발·문의 담당</dt>
+              <dd>{DEVELOPER_CONTACT}</dd>
+            </div>
+            <div className="grid gap-1 sm:grid-cols-[9rem_1fr]">
+              <dt className="font-semibold text-foreground">고객 지원 이메일</dt>
+              <dd>
+                <a href={`mailto:${email}`} className="text-wy-primary underline">
+                  {email}
+                </a>
+              </dd>
+            </div>
+            <div className="grid gap-1 sm:grid-cols-[9rem_1fr]">
+              <dt className="font-semibold text-foreground">본 정책 URL</dt>
+              <dd>
+                <a href={policyUrl} className="break-all text-wy-primary underline">
+                  {policyUrl}
+                </a>
+              </dd>
+            </div>
+          </dl>
+          <p className="mt-4 text-sm leading-7 text-wy-text-muted">
+            본 페이지는 Google Play Console 및 App Store Connect에 등록된 앱{" "}
+            <strong className="text-foreground">{APP_NAME}</strong>의 공식 개인정보
+            처리방침입니다. 운영 주체는 <strong className="text-foreground">{DEVELOPER_LEGAL_NAME}</strong>
+            (대표 {DEVELOPER_REPRESENTATIVE})입니다.
+          </p>
+        </section>
+
+        <p className="mt-6 leading-8 text-wy-text-sub">
+          <strong className="text-foreground">{APP_NAME}</strong>({APP_NAME_EN})는{" "}
+          <strong className="text-foreground">{DEVELOPER_LEGAL_NAME}</strong>가 제공하는
+          수학 학습 앱으로, 간편 가입 후 풀이 사진을 분석하고 학습 기록을 제공하기 위해
+          아래와 같이 최소한의 정보를 처리합니다. 계정·데이터 삭제 방법은{" "}
           <Link href="/account-deletion" className="text-wy-primary underline">
             계정 및 데이터 삭제
           </Link>{" "}
@@ -102,8 +172,37 @@ export default function PrivacyPage() {
           ))}
         </div>
 
+        <section className="mt-10 rounded-[var(--wy-radius-md)] border border-dashed border-wy-border bg-wy-bg p-6">
+          <h2 className="text-xl font-bold">English (for app store review)</h2>
+          <div className="mt-4 space-y-3 leading-7 text-wy-text-sub">
+            <p>
+              This Privacy Policy applies to the mobile application{" "}
+              <strong className="text-foreground">{APP_NAME_EN}</strong> ({APP_NAME}),
+              Android package <code className="text-xs">{ANDROID_PACKAGE_ID}</code>,
+              published on Google Play and the Apple App Store.
+            </p>
+            <p>
+              <strong className="text-foreground">Developer / legal entity:</strong>{" "}
+              {DEVELOPER_LEGAL_NAME} (Representative: {DEVELOPER_REPRESENTATIVE}; Product
+              contact: {DEVELOPER_CONTACT})
+            </p>
+            <p>
+              <strong className="text-foreground">Support:</strong>{" "}
+              <a href={`mailto:${email}`} className="text-wy-primary underline">
+                {email}
+              </a>
+            </p>
+            <p>
+              <strong className="text-foreground">Policy URL:</strong>{" "}
+              <a href={policyUrl} className="break-all text-wy-primary underline">
+                {policyUrl}
+              </a>
+            </p>
+          </div>
+        </section>
+
         <p className="mt-10 text-sm leading-7 text-wy-text-muted">
-          시행일: 2026-06-22 · 내용 변경 시 본 페이지에 반영합니다.
+          시행일: 2026-06-26 · 내용 변경 시 본 페이지에 반영합니다.
         </p>
       </article>
     </AppShell>

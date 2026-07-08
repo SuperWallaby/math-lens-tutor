@@ -2,9 +2,21 @@
 
 export const APP_NAME = "우열";
 export const APP_NAME_EN = "Wooyeol";
+export const ANDROID_PACKAGE_ID = "com.neoproject.study";
+export const IOS_BUNDLE_ID = "com.neoproject.study";
+
+/** Google Play Console · 스토어 등록정보와 일치 */
+export const DEVELOPER_LEGAL_NAME = "TRBOX";
+export const DEVELOPER_REPRESENTATIVE = "김우철";
+export const DEVELOPER_CONTACT = "김민재";
+
 export const PUBLIC_SITE_URL =
   process.env.APP_PUBLIC_URL?.replace(/\/$/, "") ||
   "https://study-hazel-six.vercel.app";
+
+export function privacyPolicyUrl(): string {
+  return `${PUBLIC_SITE_URL}/privacy`;
+}
 
 export function supportEmail(): string {
   return (

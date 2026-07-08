@@ -12,11 +12,14 @@ import '../app_variant.dart';
 import 'api_base_url.dart';
 import 'app_prefs.dart';
 import 'auth_session.dart';
+import 'api_cache.dart';
 import 'image_prepare_for_upload.dart';
 import 'oauth_service.dart';
 
 /// iOS/Android: 긴 NDJSON 스트림 대신 짧은 HTTP 3회(vision→tutor→similar).
 bool get _usePhasedAnalyze => !kIsWeb;
+
+enum LearningProfileScope { summary, full }
 
 class ApiClient {
   ApiClient({
@@ -25,7 +28,7 @@ class ApiClient {
   }) : baseUrl = (baseUrl ?? resolveApiBaseUrl()).replaceAll(RegExp(r'/$'), ''),
        _deviceId = _loadOrCreateDeviceId() {
     if (kDebugMode) {
-      debugPrint('[ApiClient] baseUrl=$baseUrl (debug→local unless API_BASE_URL set)');
+      debugPrint('[ApiClient] baseUrl=${this.baseUrl}');
     }
   }
 
@@ -36,31 +39,53 @@ class ApiClient {
   final Future<String> _deviceId;
   VoidCallback? onUnauthorized;
 
-  LearningProfile? _cachedLearningProfile;
-  Future<LearningProfile>? _learningProfileInflight;
+  final _profileSummaryCache = TimedCache<LearningProfile>();
+  final _profileFullCache = TimedCache<LearningProfile>();
+  final _submissionsCache = TimedCache<List<SubmissionSummary>>();
+  final _trainingFeedCache = TimedCache<TrainingFeedResponse>();
+
+  TimedCache<LearningProfile> _profileCacheFor(LearningProfileScope scope) =>
+      scope == LearningProfileScope.summary
+          ? _profileSummaryCache
+          : _profileFullCache;
+
+  /// 홈 탭 — 프로필·제출 목록 캐시가 모두 유효할 때 탭 전환 재조회 생략.
+  bool get isStudentTabDataFresh =>
+      _profileSummaryCache.isFresh && _submissionsCache.isFresh;
+
+  /// 훈련 탭 — 프로필·피드 캐시가 모두 유효할 때 탭 전환 재조회 생략.
+  bool get isTrainingTabDataFresh =>
+      _profileSummaryCache.isFresh && _trainingFeedCache.isFresh;
 
   void invalidateLearningProfileCache() {
-    _cachedLearningProfile = null;
-    _learningProfileInflight = null;
+    _profileSummaryCache.invalidate();
+    _profileFullCache.invalidate();
+    _submissionsCache.invalidate();
+    _trainingFeedCache.invalidate();
   }
 
-  /// 학습 프로필 — 동시 요청 dedupe + 짧은 캐시로 탭 전환 지연을 줄입니다.
-  Future<LearningProfile> getLearningProfile({bool forceRefresh = false}) async {
+  /// 학습 프로필 — 동시 요청 dedupe + TTL 캐시로 탭 전환 지연을 줄입니다.
+  Future<LearningProfile> getLearningProfile({
+    bool forceRefresh = false,
+    LearningProfileScope scope = LearningProfileScope.full,
+  }) async {
+    final cache = _profileCacheFor(scope);
     if (forceRefresh) {
-      invalidateLearningProfileCache();
-    } else if (_cachedLearningProfile != null) {
-      return _cachedLearningProfile!;
-    } else if (_learningProfileInflight != null) {
-      return _learningProfileInflight!;
+      cache.invalidate();
+    } else if (cache.isFresh) {
+      return cache.value!;
+    } else if (cache.inflight != null) {
+      return cache.inflight!;
     }
 
-    _learningProfileInflight = _fetchLearningProfile();
+    final future = _fetchLearningProfile(scope: scope);
+    cache.inflight = future;
     try {
-      final profile = await _learningProfileInflight!;
-      _cachedLearningProfile = profile;
+      final profile = await future;
+      cache.store(profile);
       return profile;
     } finally {
-      _learningProfileInflight = null;
+      cache.inflight = null;
     }
   }
 
@@ -72,6 +97,19 @@ class ApiClient {
     }
     final normalizedBase = baseUrl.replaceAll(RegExp(r'/$'), '');
     return trimmed.startsWith('/') ? '$normalizedBase$trimmed' : '$normalizedBase/$trimmed';
+  }
+
+  /// 목록 썸네일 — `imageThumbUrl` 우선, 없으면 원본 URL
+  static String? resolveListThumbnailUrl(
+    String baseUrl, {
+    String? imageThumbUrl,
+    String? imageUrl,
+  }) {
+    final thumb = imageThumbUrl?.trim();
+    if (thumb != null && thumb.isNotEmpty) {
+      return resolveImageUrl(baseUrl, thumb);
+    }
+    return resolveImageUrl(baseUrl, imageUrl);
   }
 
   MediaType _guessImageMediaType(String filename) {
@@ -115,7 +153,7 @@ class ApiClient {
     void Function(String progressMessage)? onProgress,
     void Function(Map<String, dynamic> event)? onStreamEvent,
   }) async {
-    final prepared = prepareImageBytesForAnalyzeUpload(bytes, filename);
+    final prepared = await prepareImageBytesForAnalyzeUploadAsync(bytes, filename);
 
     void emitProgress(String step, String message) {
       onProgress?.call(message);
@@ -271,7 +309,7 @@ class ApiClient {
     void Function(String progressMessage)? onProgress,
     void Function(Map<String, dynamic> event)? onStreamEvent,
   }) async {
-    final prepared = prepareImageBytesForAnalyzeUpload(bytes, filename);
+    final prepared = await prepareImageBytesForAnalyzeUploadAsync(bytes, filename);
     final uri = Uri.parse('$baseUrl/api/analyze');
     final request = http.MultipartRequest('POST', uri);
     request.headers.addAll(await _authHeaders());
@@ -478,7 +516,27 @@ class ApiClient {
     return StartPracticeResult.fromJson(body.cast<String, dynamic>());
   }
 
-  Future<TrainingFeedResponse> getTrainingFeed() async {
+  Future<TrainingFeedResponse> getTrainingFeed({bool forceRefresh = false}) async {
+    if (forceRefresh) {
+      _trainingFeedCache.invalidate();
+    } else if (_trainingFeedCache.isFresh) {
+      return _trainingFeedCache.value!;
+    } else if (_trainingFeedCache.inflight != null) {
+      return _trainingFeedCache.inflight!;
+    }
+
+    final future = _fetchTrainingFeed();
+    _trainingFeedCache.inflight = future;
+    try {
+      final feed = await future;
+      _trainingFeedCache.store(feed);
+      return feed;
+    } finally {
+      _trainingFeedCache.inflight = null;
+    }
+  }
+
+  Future<TrainingFeedResponse> _fetchTrainingFeed() async {
     final response = await http.get(
       Uri.parse('$baseUrl/api/practice/feed'),
       headers: await _deviceHeaders(),
@@ -623,57 +681,139 @@ class ApiClient {
       payload['displayName'] = credential.displayName;
     }
 
-    final response = await http.post(
-      Uri.parse('$baseUrl/api/auth/oauth'),
-      headers: await _jsonHeaders(),
-      body: jsonEncode(payload),
+    // #region agent log
+    await _agentLog(
+      'H1',
+      'api_client.dart:signInWithOAuth',
+      'request',
+      {
+        'baseUrl': baseUrl,
+        'provider': credential.provider,
+        'hasIdToken': credential.idToken != null,
+        'hasAccessToken': credential.accessToken != null,
+      },
     );
-    final body = _decode(response);
-    if (response.statusCode >= 400) {
-      throw ApiException(body['error'] as String? ?? '간편 가입에 실패했습니다.');
-    }
+    // #endregion
 
-    final token = body['token'] as String? ?? '';
-    final user = AppUser.fromJson(
-      (body['user'] as Map).cast<String, dynamic>(),
-    );
-    await authSession.setSession(token: token, user: user);
-    return user;
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/auth/oauth'),
+        headers: await _jsonHeaders(),
+        body: jsonEncode(payload),
+      );
+      // #region agent log
+      await _agentLog(
+        'H4',
+        'api_client.dart:signInWithOAuth',
+        'response',
+        {
+          'status': response.statusCode,
+          'bodyLen': response.body.length,
+        },
+      );
+      // #endregion
+      final body = _decode(response);
+      if (response.statusCode >= 400) {
+        throw ApiException(body['error'] as String? ?? '간편 가입에 실패했습니다.');
+      }
+
+      final token = body['token'] as String? ?? '';
+      final user = AppUser.fromJson(
+        (body['user'] as Map).cast<String, dynamic>(),
+      );
+      await authSession.setSession(token: token, user: user);
+      return user;
+    } catch (e) {
+      // #region agent log
+      await _agentLog(
+        'H3',
+        'api_client.dart:signInWithOAuth',
+        'error',
+        {
+          'errorType': e.runtimeType.toString(),
+          'error': e.toString().length > 280
+              ? e.toString().substring(0, 280)
+              : e.toString(),
+        },
+      );
+      // #endregion
+      rethrow;
+    }
   }
 
   Future<MagicLinkSendResponse> sendMagicLink(
     String email, {
     bool signupOnly = false,
   }) async {
-    final response = await http.post(
-      Uri.parse('$baseUrl/api/auth/magic-link/send'),
-      headers: await _jsonHeaders(),
-      body: jsonEncode({
-        'email': email.trim(),
-        'intent': signupOnly ? 'signup' : 'login',
-      }),
+    // #region agent log
+    await _agentLog(
+      'H1',
+      'api_client.dart:sendMagicLink',
+      'request',
+      {
+        'baseUrl': baseUrl,
+        'signupOnly': signupOnly,
+      },
     );
-    final body = _decode(response);
-    if (response.statusCode >= 400) {
-      throw ApiException(body['error'] as String? ?? '매직 링크 발송에 실패했습니다.');
-    }
+    // #endregion
 
-    AppUser? bypassUser;
-    if (body['bypass'] == true &&
-        body['token'] is String &&
-        body['user'] is Map) {
-      final token = body['token'] as String;
-      bypassUser = AppUser.fromJson(
-        (body['user'] as Map).cast<String, dynamic>(),
+    try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/auth/magic-link/send'),
+        headers: await _jsonHeaders(),
+        body: jsonEncode({
+          'email': email.trim(),
+          'intent': signupOnly ? 'signup' : 'login',
+        }),
       );
-      await authSession.setSession(token: token, user: bypassUser);
-    }
+      // #region agent log
+      await _agentLog(
+        'H4',
+        'api_client.dart:sendMagicLink',
+        'response',
+        {
+          'status': response.statusCode,
+          'bodyLen': response.body.length,
+        },
+      );
+      // #endregion
+      final body = _decode(response);
+      if (response.statusCode >= 400) {
+        throw ApiException(body['error'] as String? ?? '매직 링크 발송에 실패했습니다.');
+      }
 
-    return MagicLinkSendResponse(
-      message: body['message'] as String? ?? '메일함을 확인해 주세요.',
-      devLink: body['devLink'] as String?,
-      bypassUser: bypassUser,
-    );
+      AppUser? bypassUser;
+      if (body['bypass'] == true &&
+          body['token'] is String &&
+          body['user'] is Map) {
+        final token = body['token'] as String;
+        bypassUser = AppUser.fromJson(
+          (body['user'] as Map).cast<String, dynamic>(),
+        );
+        await authSession.setSession(token: token, user: bypassUser);
+      }
+
+      return MagicLinkSendResponse(
+        message: body['message'] as String? ?? '메일함을 확인해 주세요.',
+        devLink: body['devLink'] as String?,
+        bypassUser: bypassUser,
+      );
+    } catch (e) {
+      // #region agent log
+      await _agentLog(
+        'H3',
+        'api_client.dart:sendMagicLink',
+        'error',
+        {
+          'errorType': e.runtimeType.toString(),
+          'error': e.toString().length > 280
+              ? e.toString().substring(0, 280)
+              : e.toString(),
+        },
+      );
+      // #endregion
+      rethrow;
+    }
   }
 
   Future<AppUser> verifyMagicLink(String token) async {
@@ -764,10 +904,49 @@ class ApiClient {
     }
   }
 
-  Future<LearningProfile> _fetchLearningProfile() async {
+  /// 로컬 개발 전용 — OAuth 테스트 계정 탈퇴·데이터 삭제 (프로덕션 API는 404)
+  Future<String> devOAuthPurge(String accountId) async {
     try {
+      final response = await http.post(
+        Uri.parse('$baseUrl/api/auth/dev-oauth-purge'),
+        headers: await _jsonHeaders(),
+        body: jsonEncode({'accountId': accountId}),
+      );
+      final body = _decode(response);
+      if (response.statusCode >= 400) {
+        final error = body['error'] as String? ?? '계정 삭제에 실패했습니다.';
+        if (response.statusCode == 404 && body['alreadyDeleted'] == true) {
+          return error;
+        }
+        if (response.statusCode == 404 && error == 'Not found') {
+          throw ApiException(
+            '개발용 OAuth 삭제는 로컬 API에서만 동작합니다.\n'
+            'npm run dev:next 실행 후 yarn app 으로 앱을 띄워 주세요.\n'
+            '(현재 API: $baseUrl)',
+          );
+        }
+        throw ApiException(error);
+      }
+
+      final label = body['label'] as String? ?? accountId;
+      if (body['alreadyDeleted'] == true) {
+        return '$label — 이미 삭제됨';
+      }
+      return '$label — 탈퇴·데이터 삭제 완료';
+    } on ApiException {
+      rethrow;
+    } catch (error) {
+      throw ApiException(_friendlyNetworkMessage(error));
+    }
+  }
+
+  Future<LearningProfile> _fetchLearningProfile({
+    LearningProfileScope scope = LearningProfileScope.full,
+  }) async {
+    try {
+      final query = scope == LearningProfileScope.summary ? '?scope=summary' : '';
       final response = await http.get(
-        Uri.parse('$baseUrl/api/learning/profile'),
+        Uri.parse('$baseUrl/api/learning/profile$query'),
         headers: await _authHeaders(),
       );
       final body = _decode(response);
@@ -776,9 +955,10 @@ class ApiClient {
         throw ApiException(body['error'] as String? ?? '학습 프로필을 불러오지 못했습니다.');
       }
 
-      return LearningProfile.fromJson(
-        (body['profile'] as Map).cast<String, dynamic>(),
-      );
+      final profileJson = (body['profile'] as Map).cast<String, dynamic>();
+      return scope == LearningProfileScope.summary
+          ? LearningProfile.fromSummaryJson(profileJson)
+          : LearningProfile.fromJson(profileJson);
     } catch (e) {
       if (e is ApiException) rethrow;
       throw ApiException(_friendlyNetworkMessage(e));
@@ -836,6 +1016,36 @@ class ApiClient {
     return user;
   }
 
+  Future<AppUser> resetProfileRole() async {
+    final response = await http.post(
+      Uri.parse('$baseUrl/api/auth/reset-profile'),
+      headers: await _jsonHeaders(),
+    );
+    final body = _decode(response);
+    if (response.statusCode >= 400) {
+      _handleAuthStatus(response.statusCode);
+      throw ApiException(body['error'] as String? ?? '역할 초기화에 실패했습니다.');
+    }
+
+    final user = AppUser.fromJson(
+      (body['user'] as Map).cast<String, dynamic>(),
+    );
+    await authSession.updateUser(user, linkedStudents: const []);
+    return user;
+  }
+
+  /// 역할·연결 초기화 후 로그아웃 — 시작(가입) 화면으로.
+  Future<void> signOutToAppStart() async {
+    if (authSession.isSignedIn) {
+      try {
+        await resetProfileRole();
+      } catch (_) {
+        // 서버 초기화 실패해도 로컬 세션은 정리
+      }
+    }
+    await authSession.clear();
+  }
+
   Future<AppUser> updateProfile({
     required String displayName,
     String? grade,
@@ -871,7 +1081,7 @@ class ApiClient {
     required Uint8List bytes,
     required String filename,
   }) async {
-    final prepared = prepareImageBytesForProfileUpload(bytes, filename);
+    final prepared = await prepareImageBytesForProfileUploadAsync(bytes, filename);
     final request = http.MultipartRequest(
       'POST',
       Uri.parse('$baseUrl/api/auth/profile/avatar'),
@@ -1027,7 +1237,29 @@ class ApiClient {
     return students;
   }
 
-  Future<List<SubmissionSummary>> getSubmissionSummaries() async {
+  Future<List<SubmissionSummary>> getSubmissionSummaries({
+    bool forceRefresh = false,
+  }) async {
+    if (forceRefresh) {
+      _submissionsCache.invalidate();
+    } else if (_submissionsCache.isFresh) {
+      return _submissionsCache.value!;
+    } else if (_submissionsCache.inflight != null) {
+      return _submissionsCache.inflight!;
+    }
+
+    final future = _fetchSubmissionSummaries();
+    _submissionsCache.inflight = future;
+    try {
+      final list = await future;
+      _submissionsCache.store(list);
+      return list;
+    } finally {
+      _submissionsCache.inflight = null;
+    }
+  }
+
+  Future<List<SubmissionSummary>> _fetchSubmissionSummaries() async {
     final response = await http.get(
       Uri.parse('$baseUrl/api/submissions'),
       headers: await _authHeaders(),
@@ -1084,6 +1316,42 @@ class ApiClient {
   Future<String> get deviceId => _deviceId;
 
   Future<String> get deviceScopedUserId async => 'device:${await _deviceId}';
+
+  /// 디버그: 앱 시작 시 서버 연결 가능 여부 로그 (실기기 dev 전용).
+  Future<void> debugPingLocalApi() async {
+    await _agentLog(
+      'H2',
+      'api_client.dart:debugPingLocalApi',
+      'startup',
+      {'baseUrl': baseUrl},
+    );
+  }
+
+  Future<void> _agentLog(
+    String hypothesisId,
+    String location,
+    String message,
+    Map<String, dynamic> data,
+  ) async {
+    if (kReleaseMode) return;
+    // #region agent log
+    try {
+      await http
+          .post(
+            Uri.parse('$baseUrl/api/dev/client-log'),
+            headers: {'Content-Type': 'application/json'},
+            body: jsonEncode({
+              'hypothesisId': hypothesisId,
+              'location': location,
+              'message': message,
+              'data': data,
+              'runId': 'run1',
+            }),
+          )
+          .timeout(const Duration(seconds: 3));
+    } catch (_) {}
+    // #endregion
+  }
 
   Map<String, dynamic> _decode(http.Response response) {
     try {

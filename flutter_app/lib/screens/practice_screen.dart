@@ -1,3 +1,5 @@
+import 'dart:async';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
@@ -11,10 +13,7 @@ import '../widgets/app_card.dart';
 import '../widgets/bouncing_ellipsis_text.dart';
 import '../widgets/problem_answer_input.dart';
 import '../widgets/question_view.dart';
-import '../widgets/visualization_view.dart';
 import '../widgets/mixed_math_text.dart';
-import 'dashboard_screen.dart';
-
 import 'loop_result_screen.dart';
 import '../theme/app_design_system.dart';
 
@@ -63,6 +62,11 @@ class _PracticeScreenState extends State<PracticeScreen> {
     if (widget.demoFeedback != null) {
       _feedback.addAll(widget.demoFeedback!);
     }
+  }
+
+  @override
+  void dispose() {
+    super.dispose();
   }
 
   Future<void> _exportPdf() async {
@@ -196,6 +200,57 @@ class _PracticeScreenState extends State<PracticeScreen> {
     }
   }
 
+  List<PopupMenuEntry<String>> _practiceMenuEntries() {
+    return [
+      _practiceMenuItem(
+        value: 'new_set',
+        icon: Icons.refresh_rounded,
+        iconColor: AppColors.primary,
+        iconBackground: AppColors.primary.withValues(alpha: 0.1),
+        title: '새로운 문제받기',
+        subtitle: '같은 유형 문제 5개 새로',
+      ),
+      _practiceMenuItem(
+        value: 'harder_problem',
+        icon: Icons.trending_up_rounded,
+        iconColor: AppColors.accent,
+        iconBackground: AppColors.accent.withValues(alpha: 0.12),
+        title: '더 어려운 문제로 교체',
+        subtitle: '지금 보는 문제만 상향',
+      ),
+      _practiceMenuItem(
+        value: 'save_pdf',
+        icon: Icons.picture_as_pdf_outlined,
+        iconColor: AppColors.textSub,
+        iconBackground: AppColors.surfaceMuted,
+        title: '저장하기',
+        subtitle: 'PDF로 저장 · 공유',
+      ),
+    ];
+  }
+
+  PopupMenuItem<String> _practiceMenuItem({
+    required String value,
+    required IconData icon,
+    required Color iconColor,
+    required Color iconBackground,
+    required String title,
+    required String subtitle,
+  }) {
+    return PopupMenuItem<String>(
+      value: value,
+      height: 56,
+      padding: const EdgeInsets.symmetric(horizontal: 14),
+      child: _PracticeMenuRow(
+        icon: icon,
+        iconColor: iconColor,
+        iconBackground: iconBackground,
+        title: title,
+        subtitle: subtitle,
+      ),
+    );
+  }
+
   Future<void> _submit(GeneratedProblem problem) async {
     final answer = _answers[problem.id];
     if (answer == null || answer.trim().isEmpty) {
@@ -327,64 +382,18 @@ class _PracticeScreenState extends State<PracticeScreen> {
                   PopupMenuButton<String>(
                     tooltip: '문제 메뉴',
                     icon: const Icon(Icons.more_vert_rounded),
+                    position: PopupMenuPosition.under,
+                    offset: const Offset(0, 12),
+                    constraints: const BoxConstraints(minWidth: 272),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(AppRadii.md),
+                      side: const BorderSide(color: AppColors.border),
+                    ),
+                    color: AppColors.surface,
+                    elevation: 6,
                     onSelected: _onMenuAction,
-                    itemBuilder: (context) => const [
-                      PopupMenuItem(
-                        value: 'new_set',
-                        child: ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(Icons.refresh_rounded, size: 20),
-                          title: Text('새로운 문제받기'),
-                          subtitle: Text(
-                            '같은 유형 문제 5개 새로',
-                            style: TextStyle(fontSize: 11),
-                          ),
-                          isThreeLine: true,
-                        ),
-                      ),
-                      PopupMenuItem(
-                        value: 'harder_problem',
-                        child: ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(Icons.trending_up_rounded, size: 20),
-                          title: Text('더 어려운 문제로 교체'),
-                          subtitle: Text(
-                            '지금 보는 문제만 상향',
-                            style: TextStyle(fontSize: 11),
-                          ),
-                          isThreeLine: true,
-                        ),
-                      ),
-                      PopupMenuDivider(),
-                      PopupMenuItem(
-                        value: 'save_pdf',
-                        child: ListTile(
-                          contentPadding: EdgeInsets.zero,
-                          leading: Icon(Icons.picture_as_pdf_outlined, size: 20),
-                          title: Text('저장하기'),
-                          subtitle: Text(
-                            'PDF로 저장·공유',
-                            style: TextStyle(fontSize: 11),
-                          ),
-                          isThreeLine: true,
-                        ),
-                      ),
-                    ],
+                    itemBuilder: (context) => _practiceMenuEntries(),
                   ),
-                const SizedBox(width: 4),
-                IconButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) =>
-                            DashboardScreen(apiClient: widget.apiClient),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.insights_outlined),
-                  tooltip: '대시보드',
-                  visualDensity: VisualDensity.standard,
-                ),
                 ],
               ],
       ),
@@ -722,14 +731,7 @@ class _ProblemCard extends StatelessWidget {
           if (kDebugMode) ...[
             const SizedBox(height: 10),
             Text(
-              describeProblemRender(
-              problem,
-              hasJsx: visualizationShows(
-                visualizationData: problem.visualizationData,
-                chart: problem.chart,
-                jsxGraph: problem.jsxGraph,
-              ),
-            ),
+              describeProblemRender(problem),
               style: const TextStyle(
                 fontSize: 10,
                 color: AppColors.textMuted,
@@ -904,6 +906,70 @@ class _SubmittedBanner extends StatelessWidget {
             ),
           ),
         ],
+      ],
+    );
+  }
+}
+
+class _PracticeMenuRow extends StatelessWidget {
+  const _PracticeMenuRow({
+    required this.icon,
+    required this.iconColor,
+    required this.iconBackground,
+    required this.title,
+    required this.subtitle,
+  });
+
+  final IconData icon;
+  final Color iconColor;
+  final Color iconBackground;
+  final String title;
+  final String subtitle;
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Container(
+          width: 36,
+          height: 36,
+          alignment: Alignment.center,
+          decoration: BoxDecoration(
+            color: iconBackground,
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(icon, size: 20, color: iconColor),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Text(
+                title,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.text,
+                  height: 1.25,
+                ),
+              ),
+              Text(
+                subtitle,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: AppColors.textMuted,
+                  height: 1.25,
+                ),
+              ),
+            ],
+          ),
+        ),
       ],
     );
   }

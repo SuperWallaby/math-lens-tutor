@@ -50,12 +50,7 @@ read_lock_port() {
 
 stop_listeners_on_port() {
   local port="$1"
-  [[ "$port" =~ ^[0-9]+$ ]] || return 0
-
-  local pid
-  while IFS= read -r pid; do
-    [[ -n "$pid" ]] && kill_pid_gracefully "$pid"
-  done < <(lsof -tiTCP:"$port" -sTCP:LISTEN 2>/dev/null || true)
+  bash "$ROOT/scripts/stop-listeners-on-port.sh" "$port"
 }
 
 main() {

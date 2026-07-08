@@ -10,6 +10,7 @@ import {
   publicUser,
   upsertOAuthUser,
 } from "@/lib/users";
+import { agentDebugLog } from "@/lib/debug-agent-log";
 
 const oauthBodySchema = z.object({
   provider: z.enum(["kakao", "google", "apple"]),
@@ -20,6 +21,19 @@ const oauthBodySchema = z.object({
 });
 
 export async function POST(request: Request) {
+  // #region agent log
+  agentDebugLog({
+    hypothesisId: "H2",
+    location: "oauth/route.ts:POST",
+    message: "request received",
+    data: {
+      origin: request.headers.get("origin"),
+      userAgent: request.headers.get("user-agent")?.slice(0, 80),
+    },
+    runId: "run1",
+  });
+  // #endregion
+
   if (!hasMongoConfig()) {
     return NextResponse.json(
       { error: "계정 저장소가 설정되지 않았습니다. MongoDB 연결이 필요합니다." },
@@ -48,6 +62,18 @@ export async function POST(request: Request) {
       user: publicUser(user),
     });
   } catch (error) {
+    // #region agent log
+    agentDebugLog({
+      hypothesisId: "H4",
+      location: "oauth/route.ts:catch",
+      message: "handler error",
+      data: {
+        name: error instanceof Error ? error.name : "unknown",
+        message: error instanceof Error ? error.message.slice(0, 200) : String(error),
+      },
+      runId: "run1",
+    });
+    // #endregion
     if (error instanceof OAuthAccountExistsError) {
       return NextResponse.json({ error: error.message }, { status: 409 });
     }

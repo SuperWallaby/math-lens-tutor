@@ -2,10 +2,6 @@
 
 import { useState } from "react";
 import { MathMixedRich } from "./MathMixedRich";
-import {
-  SolutionVisualizationRenderer,
-  VisualizationRenderer,
-} from "./VisualizationRenderer";
 import { ProblemSetPrintPdfButton } from "./ProblemSetPrintPdfButton";
 import type { GeneratedProblemSet, ProblemAttempt } from "@/lib/types";
 import { formatChoiceDisplayLabel } from "@/lib/choice-label-format";
@@ -74,7 +70,6 @@ export function PracticeRunner({ problemSet }: { problemSet: GeneratedProblemSet
             text={problem.prompt}
             className="mt-3 leading-8 text-foreground"
           />
-          <VisualizationRenderer problem={problem} />
 
           {problem.type === "multiple_choice" && problem.choices ? (
             <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -139,7 +134,6 @@ export function PracticeRunner({ problemSet }: { problemSet: GeneratedProblemSet
                     풀이 설명
                   </p>
                   <MathMixedRich text={problem.explanation} />
-                  <SolutionVisualizationRenderer problem={problem} />
                 </div>
               ) : null}
             </div>

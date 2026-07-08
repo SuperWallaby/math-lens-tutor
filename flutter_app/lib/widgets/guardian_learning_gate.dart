@@ -42,7 +42,7 @@ class GuardianLearningGate extends StatelessWidget {
               const SizedBox(height: AppSpacing.xxl),
               Center(
                 child: HeroIcon3d(
-                  asset: 'assets/icons/3d/link_empty.png',
+                  asset: 'assets/icons/3d/link_empty.webp',
                   tint: AppColors.success,
                   size: 96,
                   iconSize: 60,

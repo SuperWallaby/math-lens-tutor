@@ -27,15 +27,7 @@ cleanup() {
 trap cleanup EXIT INT TERM
 
 get_lan_ip() {
-  local iface ip
-  for iface in en0 en1 en2; do
-    ip="$(ipconfig getifaddr "$iface" 2>/dev/null || true)"
-    if [[ -n "$ip" ]]; then
-      echo "$ip"
-      return 0
-    fi
-  done
-  echo "127.0.0.1"
+  bash "$ROOT/scripts/get-lan-ip.sh"
 }
 
 wait_for_study_api() {
@@ -45,11 +37,6 @@ wait_for_study_api() {
   local i
   for ((i = 1; i <= tries; i++)); do
     if [[ -n "$pid" ]] && ! kill -0 "$pid" 2>/dev/null; then
-      if existing="$(bash "$ROOT/scripts/find-study-api-port.sh" 2>/dev/null)"; then
-        echo "Next.js exited; reusing Study API on port ${existing}." >&2
-        echo "$existing"
-        return 0
-      fi
       echo "Next.js exited before Study API was ready on port ${port}." >&2
       wait "$pid" 2>/dev/null || true
       return 1
@@ -59,11 +46,6 @@ wait_for_study_api() {
     fi
     sleep 1
   done
-  if existing="$(bash "$ROOT/scripts/find-study-api-port.sh" 2>/dev/null)"; then
-    echo "Port ${port} not ready; reusing Study API on port ${existing}." >&2
-    echo "$existing"
-    return 0
-  fi
   echo "Study API did not respond on port ${port} within ${tries}s." >&2
   return 1
 }
@@ -102,7 +84,7 @@ NODE
 
 flutter_dart_defines() {
   local api_base="$1"
-  FLUTTER_DEFINE_ARGS=(--dart-define=API_BASE_URL="$api_base")
+  FLUTTER_DEFINE_ARGS=()
 
   # shellcheck source=flutter-oauth-defines.sh
   source "$ROOT/scripts/flutter-oauth-defines.sh"
@@ -110,6 +92,8 @@ flutter_dart_defines() {
   # shellcheck source=flutter-local-defines.sh
   source "$ROOT/scripts/flutter-local-defines.sh"
   flutter_append_local_defines FLUTTER_DEFINE_ARGS
+  # local-defines.json 보다 나중 — 실기기 LAN IP 가 127.0.0.1 을 덮어쓰지 않도록
+  FLUTTER_DEFINE_ARGS+=(--dart-define=API_BASE_URL="$api_base")
 }
 
 start_flutter_auto_reload() {
@@ -126,8 +110,15 @@ start_flutter_auto_reload() {
 run_flutter() {
   local device="$1"
   shift
+  local web_port
+  web_port="$(bash "$ROOT/scripts/ensure-flutter-web-port.sh")"
   start_flutter_auto_reload
-  flutter run -d "$device" --pid-file="$FLUTTER_PID_FILE" "${FLUTTER_DEFINE_ARGS[@]}" "$@"
+  echo "=== Flutter web http://localhost:${web_port} ===" >&2
+  flutter run -d "$device" \
+    --web-port="$web_port" \
+    --pid-file="$FLUTTER_PID_FILE" \
+    "${FLUTTER_DEFINE_ARGS[@]}" \
+    "$@"
 }
 
 if ! command -v flutter >/dev/null 2>&1; then
@@ -142,24 +133,22 @@ if [[ "${STUDY_DEV_KEEP_RUNNING:-0}" != "1" ]]; then
   bash "$ROOT/scripts/stop-study-dev-server.sh"
 fi
 
-API_PORT="${API_PORT:-$(bash "$ROOT/scripts/pick-dev-port.sh")}"
+API_PORT="$(bash "$ROOT/scripts/ensure-dev-port-free.sh" "${API_PORT:-}")"
 export PORT="$API_PORT"
 bash "$ROOT/scripts/write-dev-port.sh" "$API_PORT"
 API_LOCAL="http://127.0.0.1:${API_PORT}"
-API_LAN="http://${LAN_IP}:${API_PORT}"
+LAN_IP="$(bash "$ROOT/scripts/get-lan-ip.sh")"
+API_LAN="$(bash "$ROOT/scripts/get-flutter-api-url.sh" "$API_PORT")"
 
-echo "=== Starting Next.js (${API_LOCAL}, LAN ${API_LAN}) ==="
+echo "=== Starting Next.js (${API_LOCAL}, LAN ${API_LAN}, ip ${LAN_IP}) ==="
 bash "$ROOT/scripts/next-dev.sh" &
 NEXT_PID=$!
 
-resolved_port="$(wait_for_study_api "$API_PORT" "$NEXT_PID")" || exit 1
-if [[ -n "$resolved_port" && "$resolved_port" != "$API_PORT" ]]; then
-  API_PORT="$resolved_port"
-  bash "$ROOT/scripts/write-dev-port.sh" "$API_PORT"
-fi
+wait_for_study_api "$API_PORT" "$NEXT_PID" || exit 1
 
 API_LOCAL="http://127.0.0.1:${API_PORT}"
-API_LAN="http://${LAN_IP}:${API_PORT}"
+LAN_IP="$(bash "$ROOT/scripts/get-lan-ip.sh")"
+API_LAN="$(bash "$ROOT/scripts/get-flutter-api-url.sh" "$API_PORT")"
 
 FLUTTER_DEVICE="${FLUTTER_DEVICE:-}"
 FLUTTER_DEVICE_NAME=""
@@ -175,7 +164,20 @@ fi
 cd "$ROOT/flutter_app"
 
 if [[ -n "$FLUTTER_DEVICE" ]]; then
-  API_BASE="${FLUTTER_API_BASE_URL:-$API_LAN}"
+  API_BASE="$(bash "$ROOT/scripts/get-flutter-api-url.sh" "$API_PORT")"
+  user_api="${FLUTTER_API_BASE_URL:-}"
+  if [[ -n "$user_api" && "$user_api" != "$API_BASE" ]]; then
+    if [[ "$user_api" == *192.0.0.* ]]; then
+      echo "=== NOTE: FLUTTER_API_BASE_URL=${user_api} 무시 (iPhone에서 192.0.0.x 접속 불가) ===" >&2
+      echo "===       → ${API_BASE} 사용 ===" >&2
+    else
+      API_BASE="$user_api"
+    fi
+  fi
+  if [[ "$API_BASE" == *127.0.0.1* || "$API_BASE" == *192.0.0.* ]]; then
+    echo "=== WARNING: iPhone은 ${API_BASE} 로 API 접속이 막힐 수 있습니다 ===" >&2
+    echo "===          yarn app 만 실행하고 Hot Restart 말고 전체 재시작하세요 ===" >&2
+  fi
   echo "=== Flutter → ${FLUTTER_DEVICE_NAME:-$FLUTTER_DEVICE} (API ${API_BASE}) ==="
   flutter_dart_defines "$API_BASE"
   run_flutter "$FLUTTER_DEVICE" "$@"

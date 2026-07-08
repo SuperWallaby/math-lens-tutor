@@ -14,6 +14,8 @@ if [[ -f "$ROOT/.dev-local-port" ]]; then
   candidates+=("$(tr -d '[:space:]' < "$ROOT/.dev-local-port")")
 fi
 
+candidates+=("$(bash "$ROOT/scripts/pick-dev-port.sh")")
+
 candidates+=(3001 3000)
 
 while IFS= read -r port; do

@@ -9,26 +9,49 @@ import '../widgets/linked_children_panel.dart';
 import '../widgets/student_link_guide.dart';
 
 /// 학부모·교사는 자녀/학생 연결 전까지 앱 진입 불가.
-class GuardianLinkRequiredScreen extends StatelessWidget {
+class GuardianLinkRequiredScreen extends StatefulWidget {
   const GuardianLinkRequiredScreen({
     super.key,
     required this.apiClient,
     required this.onLinked,
+    required this.onBackToAppStart,
   });
 
   final ApiClient apiClient;
   final VoidCallback onLinked;
+  final Future<void> Function() onBackToAppStart;
+
+  @override
+  State<GuardianLinkRequiredScreen> createState() =>
+      _GuardianLinkRequiredScreenState();
+}
+
+class _GuardianLinkRequiredScreenState extends State<GuardianLinkRequiredScreen> {
+  bool _busy = false;
+
+  Future<void> _handleBack() async {
+    if (_busy) return;
+    setState(() => _busy = true);
+    try {
+      await widget.onBackToAppStart();
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
-    final user = apiClient.authSession.user;
+    final user = widget.apiClient.authSession.user;
     final isParent = user?.role == AppUserRole.parent;
     final accent = isParent ? AppColors.success : AppColors.teacher;
 
     return Scaffold(
       appBar: AppBar(
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: _busy ? null : _handleBack,
+        ),
         title: Text(isParent ? '자녀 연결' : '학생 연결'),
-        automaticallyImplyLeading: false,
       ),
       body: SafeArea(
         child: TabletBody(
@@ -38,7 +61,7 @@ class GuardianLinkRequiredScreen extends StatelessWidget {
               const SizedBox(height: 16),
               Center(
                 child: HeroIcon3d(
-                  asset: 'assets/icons/3d/link_empty.png',
+                  asset: 'assets/icons/3d/link_empty.webp',
                   tint: accent,
                 ),
               ),
@@ -59,14 +82,14 @@ class GuardianLinkRequiredScreen extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.section),
               ListenableBuilder(
-                listenable: apiClient.authSession,
+                listenable: widget.apiClient.authSession,
                 builder: (context, _) {
                   return LinkedChildrenPanel(
-                    apiClient: apiClient,
-                    linkedStudents: apiClient.authSession.linkedStudents,
+                    apiClient: widget.apiClient,
+                    linkedStudents: widget.apiClient.authSession.linkedStudents,
                     compact: true,
-                    onChanged: onLinked,
-                    onAutoLinked: onLinked,
+                    onChanged: widget.onLinked,
+                    onAutoLinked: widget.onLinked,
                   );
                 },
               ),

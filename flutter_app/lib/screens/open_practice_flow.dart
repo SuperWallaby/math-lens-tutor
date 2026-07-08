@@ -17,7 +17,7 @@ Future<void> openPracticeWithSingleRequest(
   required Future<StartPracticeResult> Function() start,
   required String subtitle,
   String generatingTitle = 'AI 맞춤 문제 만드는 중…',
-  String iconAsset = 'assets/icons/3d/practice_start.png',
+  String iconAsset = 'assets/icons/3d/practice_start.webp',
 }) async {
   final request = start();
 
@@ -72,7 +72,7 @@ Future<void> openPracticeWithAvailabilityCheck(
   required Future<GeneratedProblemSet> Function() generate,
   required String subtitle,
   String generatingTitle = 'AI 맞춤 문제 만드는 중…',
-  String iconAsset = 'assets/icons/3d/practice_start.png',
+  String iconAsset = 'assets/icons/3d/practice_start.webp',
 }) async {
   await openPracticeWithSingleRequest(
     context,

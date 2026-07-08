@@ -44,6 +44,8 @@ import {
 } from "./types";
 import { sanitizeGeneratedProblem } from "./problem-answer-sanitize";
 import { calibrateProblemDifficulties, bumpDifficulty } from "./problem-difficulty";
+import { prepareGeneratedProblems } from "./visualization-bake";
+import { scheduleBankItemVisualizationBakeIfNeeded } from "./visualization-async";
 import { trainingSubmissionId } from "./concept-training";
 
 export type PracticeDifficultyBias = "same" | "harder";
@@ -375,8 +377,9 @@ export async function ingestGeneratedProblems(params: {
     params.problems.map((raw) => sanitizeGeneratedProblem(raw)),
     { gradeBand: band, unitId: params.unitId },
   );
+  const prepared = prepareGeneratedProblems(calibrated);
 
-  for (const problem of calibrated) {
+  for (const problem of prepared) {
     const conceptTags = normalizeConceptTags(problem.conceptTags);
     const contentHash = hashProblemContent({
       prompt: problem.prompt,
@@ -416,6 +419,7 @@ export async function ingestGeneratedProblems(params: {
 
     const saved = await insertBankItem(item);
     stored.push(saved);
+    scheduleBankItemVisualizationBakeIfNeeded(saved);
   }
 
   return stored;

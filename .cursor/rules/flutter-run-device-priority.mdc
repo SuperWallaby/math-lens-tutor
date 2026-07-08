@@ -9,7 +9,7 @@ When the user asks to start/run the app in local development:
 
 1. Prefer a physically connected iPhone first.
    - Check devices with `flutter devices` from `flutter_app/`.
-   - Start API with `yarn app` or `npm run dev:next` (picks a free random port 3100–3999, saved in `.dev-local-port`).
+   - Start API with `yarn app` or `npm run dev:next` (fixed port **3737** by default; frees the port if occupied).
    - If an iPhone is available, run Flutter on that device with local API:
      `flutter run -d <iphone-device-id> --dart-define=API_BASE_URL=http://<mac-lan-ip>:<port>`
      where `<port>` is from `.dev-local-port` (or use `yarn app`, which wires this automatically).

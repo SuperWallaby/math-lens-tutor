@@ -1,0 +1,414 @@
+{
+  "capturedAt": "2026-06-22T17:40:36.176Z",
+  "flutterAppUrl": "http://127.0.0.1:5050",
+  "devices": {
+    "iphone-6.5": [
+      {
+        "file": "01-hub-first.png",
+        "mode": "hub-first",
+        "url": "http://127.0.0.1:5050/?store_screenshot=hub-first",
+        "path": "artifacts/store-screenshots/iphone-6.5/01-hub-first.png"
+      },
+      {
+        "file": "02-hub-returning.png",
+        "mode": "hub-returning",
+        "url": "http://127.0.0.1:5050/?store_screenshot=hub-returning",
+        "path": "artifacts/store-screenshots/iphone-6.5/02-hub-returning.png"
+      },
+      {
+        "file": "03-tab-upload.png",
+        "mode": "tab-upload",
+        "url": "http://127.0.0.1:5050/?store_screenshot=tab-upload",
+        "path": "artifacts/store-screenshots/iphone-6.5/03-tab-upload.png"
+      },
+      {
+        "file": "04-analysis-analyzing.png",
+        "mode": "analysis-analyzing",
+        "url": "http://127.0.0.1:5050/?store_screenshot=analysis-analyzing",
+        "path": "artifacts/store-screenshots/iphone-6.5/04-analysis-analyzing.png"
+      },
+      {
+        "file": "05-analysis-weak.png",
+        "mode": "analysis-weak",
+        "url": "http://127.0.0.1:5050/?store_screenshot=analysis-weak",
+        "path": "artifacts/store-screenshots/iphone-6.5/05-analysis-weak.png"
+      },
+      {
+        "file": "06-practice-question.png",
+        "mode": "practice-question",
+        "url": "http://127.0.0.1:5050/?store_screenshot=practice-question",
+        "path": "artifacts/store-screenshots/iphone-6.5/06-practice-question.png"
+      },
+      {
+        "file": "07-practice-correct.png",
+        "mode": "practice-correct",
+        "url": "http://127.0.0.1:5050/?store_screenshot=practice-correct",
+        "path": "artifacts/store-screenshots/iphone-6.5/07-practice-correct.png"
+      },
+      {
+        "file": "08-practice-wrong.png",
+        "mode": "practice-wrong",
+        "url": "http://127.0.0.1:5050/?store_screenshot=practice-wrong",
+        "path": "artifacts/store-screenshots/iphone-6.5/08-practice-wrong.png"
+      },
+      {
+        "file": "09-tab-training.png",
+        "mode": "tab-training",
+        "url": "http://127.0.0.1:5050/?store_screenshot=tab-training",
+        "path": "artifacts/store-screenshots/iphone-6.5/09-tab-training.png"
+      },
+      {
+        "file": "10-tab-progress.png",
+        "mode": "tab-progress",
+        "url": "http://127.0.0.1:5050/?store_screenshot=tab-progress",
+        "path": "artifacts/store-screenshots/iphone-6.5/10-tab-progress.png"
+      },
+      {
+        "file": "11-tab-progress-warning.png",
+        "mode": "tab-progress-warning",
+        "url": "http://127.0.0.1:5050/?store_screenshot=tab-progress-warning",
+        "path": "artifacts/store-screenshots/iphone-6.5/11-tab-progress-warning.png"
+      }
+    ],
+    "iphone-6.7": [
+      {
+        "file": "01-hub-first.png",
+        "mode": "hub-first",
+        "url": "http://127.0.0.1:5050/?store_screenshot=hub-first",
+        "path": "artifacts/store-screenshots/iphone-6.7/01-hub-first.png"
+      },
+      {
+        "file": "02-hub-returning.png",
+        "mode": "hub-returning",
+        "url": "http://127.0.0.1:5050/?store_screenshot=hub-returning",
+        "path": "artifacts/store-screenshots/iphone-6.7/02-hub-returning.png"
+      },
+      {
+        "file": "03-tab-upload.png",
+        "mode": "tab-upload",
+        "url": "http://127.0.0.1:5050/?store_screenshot=tab-upload",
+        "path": "artifacts/store-screenshots/iphone-6.7/03-tab-upload.png"
+      },
+      {
+        "file": "04-analysis-analyzing.png",
+        "mode": "analysis-analyzing",
+        "url": "http://127.0.0.1:5050/?store_screenshot=analysis-analyzing",
+        "path": "artifacts/store-screenshots/iphone-6.7/04-analysis-analyzing.png"
+      },
+      {
+        "file": "05-analysis-weak.png",
+        "mode": "analysis-weak",
+        "url": "http://127.0.0.1:5050/?store_screenshot=analysis-weak",
+        "path": "artifacts/store-screenshots/iphone-6.7/05-analysis-weak.png"
+      },
+      {
+        "file": "06-practice-question.png",
+        "mode": "practice-question",
+        "url": "http://127.0.0.1:5050/?store_screenshot=practice-question",
+        "path": "artifacts/store-screenshots/iphone-6.7/06-practice-question.png"
+      },
+      {
+        "file": "07-practice-correct.png",
+        "mode": "practice-correct",
+        "url": "http://127.0.0.1:5050/?store_screenshot=practice-correct",
+        "path": "artifacts/store-screenshots/iphone-6.7/07-practice-correct.png"
+      },
+      {
+        "file": "08-practice-wrong.png",
+        "mode": "practice-wrong",
+        "url": "http://127.0.0.1:5050/?store_screenshot=practice-wrong",
+        "path": "artifacts/store-screenshots/iphone-6.7/08-practice-wrong.png"
+      },
+      {
+        "file": "09-tab-training.png",
+        "mode": "tab-training",
+        "url": "http://127.0.0.1:5050/?store_screenshot=tab-training",
+        "path": "artifacts/store-screenshots/iphone-6.7/09-tab-training.png"
+      },
+      {
+        "file": "10-tab-progress.png",
+        "mode": "tab-progress",
+        "url": "http://127.0.0.1:5050/?store_screenshot=tab-progress",
+        "path": "artifacts/store-screenshots/iphone-6.7/10-tab-progress.png"
+      },
+      {
+        "file": "11-tab-progress-warning.png",
+        "mode": "tab-progress-warning",
+        "url": "http://127.0.0.1:5050/?store_screenshot=tab-progress-warning",
+        "path": "artifacts/store-screenshots/iphone-6.7/11-tab-progress-warning.png"
+      }
+    ],
+    "ipad-12.9": [
+      {
+        "file": "01-hub-first.png",
+        "mode": "hub-first",
+        "url": "http://127.0.0.1:5050/?store_screenshot=hub-first",
+        "path": "artifacts/store-screenshots/ipad-12.9/01-hub-first.png"
+      },
+      {
+        "file": "02-hub-returning.png",
+        "mode": "hub-returning",
+        "url": "http://127.0.0.1:5050/?store_screenshot=hub-returning",
+        "path": "artifacts/store-screenshots/ipad-12.9/02-hub-returning.png"
+      },
+      {
+        "file": "03-tab-upload.png",
+        "mode": "tab-upload",
+        "url": "http://127.0.0.1:5050/?store_screenshot=tab-upload",
+        "path": "artifacts/store-screenshots/ipad-12.9/03-tab-upload.png"
+      },
+      {
+        "file": "04-analysis-analyzing.png",
+        "mode": "analysis-analyzing",
+        "url": "http://127.0.0.1:5050/?store_screenshot=analysis-analyzing",
+        "path": "artifacts/store-screenshots/ipad-12.9/04-analysis-analyzing.png"
+      },
+      {
+        "file": "05-analysis-weak.png",
+        "mode": "analysis-weak",
+        "url": "http://127.0.0.1:5050/?store_screenshot=analysis-weak",
+        "path": "artifacts/store-screenshots/ipad-12.9/05-analysis-weak.png"
+      },
+      {
+        "file": "06-practice-question.png",
+        "mode": "practice-question",
+        "url": "http://127.0.0.1:5050/?store_screenshot=practice-question",
+        "path": "artifacts/store-screenshots/ipad-12.9/06-practice-question.png"
+      },
+      {
+        "file": "07-practice-correct.png",
+        "mode": "practice-correct",
+        "url": "http://127.0.0.1:5050/?store_screenshot=practice-correct",
+        "path": "artifacts/store-screenshots/ipad-12.9/07-practice-correct.png"
+      },
+      {
+        "file": "08-practice-wrong.png",
+        "mode": "practice-wrong",
+        "url": "http://127.0.0.1:5050/?store_screenshot=practice-wrong",
+        "path": "artifacts/store-screenshots/ipad-12.9/08-practice-wrong.png"
+      },
+      {
+        "file": "09-tab-training.png",
+        "mode": "tab-training",
+        "url": "http://127.0.0.1:5050/?store_screenshot=tab-training",
+        "path": "artifacts/store-screenshots/ipad-12.9/09-tab-training.png"
+      },
+      {
+        "file": "10-tab-progress.png",
+        "mode": "tab-progress",
+        "url": "http://127.0.0.1:5050/?store_screenshot=tab-progress",
+        "path": "artifacts/store-screenshots/ipad-12.9/10-tab-progress.png"
+      },
+      {
+        "file": "11-tab-progress-warning.png",
+        "mode": "tab-progress-warning",
+        "url": "http://127.0.0.1:5050/?store_screenshot=tab-progress-warning",
+        "path": "artifacts/store-screenshots/ipad-12.9/11-tab-progress-warning.png"
+      }
+    ],
+    "ipad-13": [
+      {
+        "file": "01-hub-first.png",
+        "mode": "hub-first",
+        "url": "http://127.0.0.1:5050/?store_screenshot=hub-first",
+        "path": "artifacts/store-screenshots/ipad-13/01-hub-first.png"
+      },
+      {
+        "file": "02-hub-returning.png",
+        "mode": "hub-returning",
+        "url": "http://127.0.0.1:5050/?store_screenshot=hub-returning",
+        "path": "artifacts/store-screenshots/ipad-13/02-hub-returning.png"
+      },
+      {
+        "file": "03-tab-upload.png",
+        "mode": "tab-upload",
+        "url": "http://127.0.0.1:5050/?store_screenshot=tab-upload",
+        "path": "artifacts/store-screenshots/ipad-13/03-tab-upload.png"
+      },
+      {
+        "file": "04-analysis-analyzing.png",
+        "mode": "analysis-analyzing",
+        "url": "http://127.0.0.1:5050/?store_screenshot=analysis-analyzing",
+        "path": "artifacts/store-screenshots/ipad-13/04-analysis-analyzing.png"
+      },
+      {
+        "file": "05-analysis-weak.png",
+        "mode": "analysis-weak",
+        "url": "http://127.0.0.1:5050/?store_screenshot=analysis-weak",
+        "path": "artifacts/store-screenshots/ipad-13/05-analysis-weak.png"
+      },
+      {
+        "file": "06-practice-question.png",
+        "mode": "practice-question",
+        "url": "http://127.0.0.1:5050/?store_screenshot=practice-question",
+        "path": "artifacts/store-screenshots/ipad-13/06-practice-question.png"
+      },
+      {
+        "file": "07-practice-correct.png",
+        "mode": "practice-correct",
+        "url": "http://127.0.0.1:5050/?store_screenshot=practice-correct",
+        "path": "artifacts/store-screenshots/ipad-13/07-practice-correct.png"
+      },
+      {
+        "file": "08-practice-wrong.png",
+        "mode": "practice-wrong",
+        "url": "http://127.0.0.1:5050/?store_screenshot=practice-wrong",
+        "path": "artifacts/store-screenshots/ipad-13/08-practice-wrong.png"
+      },
+      {
+        "file": "09-tab-training.png",
+        "mode": "tab-training",
+        "url": "http://127.0.0.1:5050/?store_screenshot=tab-training",
+        "path": "artifacts/store-screenshots/ipad-13/09-tab-training.png"
+      },
+      {
+        "file": "10-tab-progress.png",
+        "mode": "tab-progress",
+        "url": "http://127.0.0.1:5050/?store_screenshot=tab-progress",
+        "path": "artifacts/store-screenshots/ipad-13/10-tab-progress.png"
+      },
+      {
+        "file": "11-tab-progress-warning.png",
+        "mode": "tab-progress-warning",
+        "url": "http://127.0.0.1:5050/?store_screenshot=tab-progress-warning",
+        "path": "artifacts/store-screenshots/ipad-13/11-tab-progress-warning.png"
+      }
+    ],
+    "android-phone": [
+      {
+        "file": "01-hub-first.png",
+        "mode": "hub-first",
+        "url": "http://127.0.0.1:5050/?store_screenshot=hub-first",
+        "path": "artifacts/store-screenshots/android-phone/01-hub-first.png"
+      },
+      {
+        "file": "02-hub-returning.png",
+        "mode": "hub-returning",
+        "url": "http://127.0.0.1:5050/?store_screenshot=hub-returning",
+        "path": "artifacts/store-screenshots/android-phone/02-hub-returning.png"
+      },
+      {
+        "file": "03-tab-upload.png",
+        "mode": "tab-upload",
+        "url": "http://127.0.0.1:5050/?store_screenshot=tab-upload",
+        "path": "artifacts/store-screenshots/android-phone/03-tab-upload.png"
+      },
+      {
+        "file": "04-analysis-analyzing.png",
+        "mode": "analysis-analyzing",
+        "url": "http://127.0.0.1:5050/?store_screenshot=analysis-analyzing",
+        "path": "artifacts/store-screenshots/android-phone/04-analysis-analyzing.png"
+      },
+      {
+        "file": "05-analysis-weak.png",
+        "mode": "analysis-weak",
+        "url": "http://127.0.0.1:5050/?store_screenshot=analysis-weak",
+        "path": "artifacts/store-screenshots/android-phone/05-analysis-weak.png"
+      },
+      {
+        "file": "06-practice-question.png",
+        "mode": "practice-question",
+        "url": "http://127.0.0.1:5050/?store_screenshot=practice-question",
+        "path": "artifacts/store-screenshots/android-phone/06-practice-question.png"
+      },
+      {
+        "file": "07-practice-correct.png",
+        "mode": "practice-correct",
+        "url": "http://127.0.0.1:5050/?store_screenshot=practice-correct",
+        "path": "artifacts/store-screenshots/android-phone/07-practice-correct.png"
+      },
+      {
+        "file": "08-practice-wrong.png",
+        "mode": "practice-wrong",
+        "url": "http://127.0.0.1:5050/?store_screenshot=practice-wrong",
+        "path": "artifacts/store-screenshots/android-phone/08-practice-wrong.png"
+      },
+      {
+        "file": "09-tab-training.png",
+        "mode": "tab-training",
+        "url": "http://127.0.0.1:5050/?store_screenshot=tab-training",
+        "path": "artifacts/store-screenshots/android-phone/09-tab-training.png"
+      },
+      {
+        "file": "10-tab-progress.png",
+        "mode": "tab-progress",
+        "url": "http://127.0.0.1:5050/?store_screenshot=tab-progress",
+        "path": "artifacts/store-screenshots/android-phone/10-tab-progress.png"
+      },
+      {
+        "file": "11-tab-progress-warning.png",
+        "mode": "tab-progress-warning",
+        "url": "http://127.0.0.1:5050/?store_screenshot=tab-progress-warning",
+        "path": "artifacts/store-screenshots/android-phone/11-tab-progress-warning.png"
+      }
+    ],
+    "android-phone-hd": [
+      {
+        "file": "01-hub-first.png",
+        "mode": "hub-first",
+        "url": "http://127.0.0.1:5050/?store_screenshot=hub-first",
+        "path": "artifacts/store-screenshots/android-phone-hd/01-hub-first.png"
+      },
+      {
+        "file": "02-hub-returning.png",
+        "mode": "hub-returning",
+        "url": "http://127.0.0.1:5050/?store_screenshot=hub-returning",
+        "path": "artifacts/store-screenshots/android-phone-hd/02-hub-returning.png"
+      },
+      {
+        "file": "03-tab-upload.png",
+        "mode": "tab-upload",
+        "url": "http://127.0.0.1:5050/?store_screenshot=tab-upload",
+        "path": "artifacts/store-screenshots/android-phone-hd/03-tab-upload.png"
+      },
+      {
+        "file": "04-analysis-analyzing.png",
+        "mode": "analysis-analyzing",
+        "url": "http://127.0.0.1:5050/?store_screenshot=analysis-analyzing",
+        "path": "artifacts/store-screenshots/android-phone-hd/04-analysis-analyzing.png"
+      },
+      {
+        "file": "05-analysis-weak.png",
+        "mode": "analysis-weak",
+        "url": "http://127.0.0.1:5050/?store_screenshot=analysis-weak",
+        "path": "artifacts/store-screenshots/android-phone-hd/05-analysis-weak.png"
+      },
+      {
+        "file": "06-practice-question.png",
+        "mode": "practice-question",
+        "url": "http://127.0.0.1:5050/?store_screenshot=practice-question",
+        "path": "artifacts/store-screenshots/android-phone-hd/06-practice-question.png"
+      },
+      {
+        "file": "07-practice-correct.png",
+        "mode": "practice-correct",
+        "url": "http://127.0.0.1:5050/?store_screenshot=practice-correct",
+        "path": "artifacts/store-screenshots/android-phone-hd/07-practice-correct.png"
+      },
+      {
+        "file": "08-practice-wrong.png",
+        "mode": "practice-wrong",
+        "url": "http://127.0.0.1:5050/?store_screenshot=practice-wrong",
+        "path": "artifacts/store-screenshots/android-phone-hd/08-practice-wrong.png"
+      },
+      {
+        "file": "09-tab-training.png",
+        "mode": "tab-training",
+        "url": "http://127.0.0.1:5050/?store_screenshot=tab-training",
+        "path": "artifacts/store-screenshots/android-phone-hd/09-tab-training.png"
+      },
+      {
+        "file": "10-tab-progress.png",
+        "mode": "tab-progress",
+        "url": "http://127.0.0.1:5050/?store_screenshot=tab-progress",
+        "path": "artifacts/store-screenshots/android-phone-hd/10-tab-progress.png"
+      },
+      {
+        "file": "11-tab-progress-warning.png",
+        "mode": "tab-progress-warning",
+        "url": "http://127.0.0.1:5050/?store_screenshot=tab-progress-warning",
+        "path": "artifacts/store-screenshots/android-phone-hd/11-tab-progress-warning.png"
+      }
+    ]
+  }
+}

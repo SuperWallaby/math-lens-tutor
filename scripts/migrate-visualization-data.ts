@@ -17,6 +17,7 @@ import { getMongoDb } from "../src/lib/mongodb";
 import {
   migrateBankItemVisualization,
   migrateGeneratedProblemSet,
+  withVisualizationBaker,
 } from "../src/lib/visualization-generator";
 import type {
   GeneratedProblemSet,
@@ -32,6 +33,8 @@ type CliOptions = {
   only: VisualizationMigrationStatus | "all";
   id?: string;
   target: MigrationTarget;
+  rebake: boolean;
+  skipBake: boolean;
 };
 
 function parseArgs(argv: string[]): CliOptions {
@@ -66,11 +69,24 @@ function parseArgs(argv: string[]): CliOptions {
     only,
     id: idFlag >= 0 ? argv[idFlag + 1] : undefined,
     target,
+    rebake: argv.includes("--rebake"),
+    skipBake: argv.includes("--skip-bake"),
   };
 }
 
 function buildBankFilter(options: CliOptions): Document {
   if (options.id) return { id: options.id, active: true };
+  if (options.rebake) {
+    return {
+      active: true,
+      $or: [
+        { visualizationData: { $ne: null } },
+        { solutionVisualizationData: { $ne: null } },
+        { "chart.type": { $exists: true } },
+        { "jsxGraph.diagramNeeded": true },
+      ],
+    };
+  }
   if (options.only === "all") {
     return {
       active: true,
@@ -79,6 +95,28 @@ function buildBankFilter(options: CliOptions): Document {
         { visualizationMigrationStatus: "pending" },
         { visualizationMigrationStatus: "processing" },
         { visualizationMigrationStatus: "failed" },
+        {
+          visualizationMigrationStatus: "completed",
+          visualizationData: { $ne: null },
+          $or: [
+            { "visualizationData.engine": { $ne: "static" } },
+            { "visualizationData.data.imageUrl": { $exists: false } },
+            { "visualizationData.data.imageUrl": null },
+            { "visualizationData.data.imageUrl": "" },
+          ],
+        },
+        {
+          visualizationMigrationStatus: "completed",
+          solutionVisualizationData: { $ne: null },
+          $or: [
+            { "solutionVisualizationData.engine": { $ne: "static" } },
+            { "solutionVisualizationData.data.imageUrl": { $exists: false } },
+            { "solutionVisualizationData.data.imageUrl": null },
+            { "solutionVisualizationData.data.imageUrl": "" },
+          ],
+        },
+        { "chart.type": { $exists: true } },
+        { "jsxGraph.diagramNeeded": true },
       ],
     };
   }
@@ -87,6 +125,20 @@ function buildBankFilter(options: CliOptions): Document {
 
 function buildSetFilter(options: CliOptions): Document {
   if (options.id) return { id: options.id };
+  if (options.rebake) {
+    return {
+      problems: {
+        $elemMatch: {
+          $or: [
+            { visualizationData: { $ne: null } },
+            { solutionVisualizationData: { $ne: null } },
+            { "chart.type": { $exists: true } },
+            { "jsxGraph.diagramNeeded": true },
+          ],
+        },
+      },
+    };
+  }
   if (options.only === "all") {
     return {
       $or: [
@@ -101,6 +153,32 @@ function buildSetFilter(options: CliOptions): Document {
               $or: [
                 { "chart.type": { $exists: true } },
                 { "jsxGraph.diagramNeeded": true },
+              ],
+            },
+          },
+        },
+        {
+          problems: {
+            $elemMatch: {
+              visualizationData: { $ne: null },
+              $or: [
+                { "visualizationData.engine": { $ne: "static" } },
+                { "visualizationData.data.imageUrl": { $exists: false } },
+                { "visualizationData.data.imageUrl": null },
+                { "visualizationData.data.imageUrl": "" },
+              ],
+            },
+          },
+        },
+        {
+          problems: {
+            $elemMatch: {
+              solutionVisualizationData: { $ne: null },
+              $or: [
+                { "solutionVisualizationData.engine": { $ne: "static" } },
+                { "solutionVisualizationData.data.imageUrl": { $exists: false } },
+                { "solutionVisualizationData.data.imageUrl": null },
+                { "solutionVisualizationData.data.imageUrl": "" },
               ],
             },
           },
@@ -162,7 +240,10 @@ async function migrateBankItems(options: CliOptions) {
       );
     }
 
-    const next = await migrateBankItemVisualization(item);
+    const next = await migrateBankItemVisualization(item, {
+      rebake: options.rebake,
+      skipBake: options.skipBake,
+    });
 
     if (next.visualizationMigrationStatus === "completed") {
       completed += 1;
@@ -218,7 +299,10 @@ async function migrateProblemSets(options: CliOptions) {
     if (!doc) continue;
     const set = doc as unknown as GeneratedProblemSet;
 
-    const problems = await migrateGeneratedProblemSet(set);
+    const problems = await migrateGeneratedProblemSet(set, {
+      rebake: options.rebake,
+      skipBake: options.skipBake,
+    });
 
     for (const problem of problems) {
       if (problem.visualizationMigrationStatus === "completed") {
@@ -249,34 +333,36 @@ async function migrateProblemSets(options: CliOptions) {
 async function main() {
   const options = parseArgs(process.argv.slice(2));
   console.log(
-    `visualization migration (target=${options.target}, dryRun=${options.dryRun}, batch=${Number.isFinite(options.batchSize) ? options.batchSize : "all"}, only=${options.only})`,
+    `visualization migration (target=${options.target}, dryRun=${options.dryRun}, batch=${Number.isFinite(options.batchSize) ? options.batchSize : "all"}, only=${options.only}, rebake=${options.rebake}, skipBake=${options.skipBake})`,
   );
 
-  let totalScanned = 0;
-  let totalCompleted = 0;
-  let totalFailed = 0;
+  await withVisualizationBaker(async () => {
+    let totalScanned = 0;
+    let totalCompleted = 0;
+    let totalFailed = 0;
 
-  if (options.target === "bank" || options.target === "all") {
-    const bank = await migrateBankItems(options);
-    totalScanned += bank.scanned;
-    totalCompleted += bank.completed;
-    totalFailed += bank.failed;
-  }
+    if (options.target === "bank" || options.target === "all") {
+      const bank = await migrateBankItems(options);
+      totalScanned += bank.scanned;
+      totalCompleted += bank.completed;
+      totalFailed += bank.failed;
+    }
 
-  if (options.target === "sets" || options.target === "all") {
-    const sets = await migrateProblemSets(options);
-    totalScanned += sets.scanned;
-    totalCompleted += sets.completed;
-    totalFailed += sets.failed;
-  }
+    if (options.target === "sets" || options.target === "all") {
+      const sets = await migrateProblemSets(options);
+      totalScanned += sets.scanned;
+      totalCompleted += sets.completed;
+      totalFailed += sets.failed;
+    }
 
-  console.log(
-    `done: scanned=${totalScanned} completed=${totalCompleted} failed=${totalFailed}`,
-  );
+    console.log(
+      `done: scanned=${totalScanned} completed=${totalCompleted} failed=${totalFailed}`,
+    );
 
-  if (options.dryRun) {
-    console.log("\nApply: npm run migrate:visualization");
-  }
+    if (options.dryRun) {
+      console.log("\nApply: npm run migrate:visualization");
+    }
+  });
 }
 
 main().catch((error) => {

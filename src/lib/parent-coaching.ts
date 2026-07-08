@@ -1,4 +1,5 @@
 import { formatSubmissionListTitle } from "./submission-list";
+import { resolveSolutionImageThumbUrl } from "./solution-image";
 import { truncateMathSafe } from "./truncate-math-safe";
 import type {
   ParentCoachingCard,
@@ -145,6 +146,7 @@ export function buildParentWrongExplains(params: {
       parentScript: buildParentScript(gradingPoint, concept),
       problemSetId: null,
       imageUrl: submission.imageUrl,
+      imageThumbUrl: resolveSolutionImageThumbUrl(submission.imageUrl),
       createdAt: submission.createdAt,
     });
     if (items.length >= limit) return items;

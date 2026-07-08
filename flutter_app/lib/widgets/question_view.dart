@@ -3,9 +3,8 @@ import 'package:flutter/material.dart';
 import '../models/app_models.dart';
 import '../theme/app_design_system.dart';
 import 'mixed_math_text.dart';
-import 'visualization_view.dart';
 
-/// 문제 본문 + 수식 + 시각화 (재사용)
+/// 문제 본문 + 수식 (그래프·도표 렌더링 없음)
 class QuestionView extends StatelessWidget {
   const QuestionView({
     super.key,
@@ -32,32 +31,14 @@ class QuestionView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final hasPromptViz = visualizationShows(
-      visualizationData: problem.visualizationData,
-      chart: problem.chart,
-      jsxGraph: problem.jsxGraph,
-    );
-    final hasSolutionViz = visualizationShows(
-      visualizationData: problem.solutionVisualizationData,
-    );
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (showPrompt) ...[
+        if (showPrompt)
           MixedMathText(
             problem.prompt,
             style: promptStyle,
           ),
-          if (hasPromptViz) ...[
-            const SizedBox(height: 12),
-            VisualizationView(
-              visualizationData: problem.visualizationData,
-              chart: problem.chart,
-              jsxGraph: problem.jsxGraph,
-            ),
-          ],
-        ],
         if (showSolution && problem.explanation.trim().isNotEmpty) ...[
           if (showPrompt) const SizedBox(height: 16),
           const Text(
@@ -74,12 +55,6 @@ class QuestionView extends StatelessWidget {
             readableSolutionStep: true,
             style: explanationStyle,
           ),
-          if (hasSolutionViz) ...[
-            const SizedBox(height: 12),
-            VisualizationView(
-              visualizationData: problem.solutionVisualizationData,
-            ),
-          ],
         ],
       ],
     );

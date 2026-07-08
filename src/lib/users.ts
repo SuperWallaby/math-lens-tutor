@@ -134,6 +134,26 @@ export class OAuthAccountExistsError extends Error {
   }
 }
 
+const OAUTH_DISPLAY_NAME_PLACEHOLDERS = new Set([
+  "카카오 사용자",
+  "Google 사용자",
+  "Apple 사용자",
+]);
+
+function maybeRefreshOAuthDisplayName(
+  current: string,
+  next: string,
+): string | null {
+  const trimmedNext = next.trim();
+  if (!trimmedNext || OAUTH_DISPLAY_NAME_PLACEHOLDERS.has(trimmedNext)) {
+    return null;
+  }
+  if (OAUTH_DISPLAY_NAME_PLACEHOLDERS.has(current.trim())) {
+    return trimmedNext;
+  }
+  return null;
+}
+
 export async function upsertOAuthUser(
   identity: VerifiedOAuthIdentity,
   deviceUserId?: string | null,
@@ -148,9 +168,25 @@ export async function upsertOAuthUser(
     if (options?.intent === "signup") {
       throw new OAuthAccountExistsError();
     }
+    let dirty = false;
+    const refreshedName = maybeRefreshOAuthDisplayName(
+      existing.displayName,
+      identity.displayName,
+    );
+    if (refreshedName) {
+      existing.displayName = refreshedName;
+      dirty = true;
+    }
+    let mergeDevice = false;
     if (deviceUserId && !existing.linkedDeviceIds.includes(deviceUserId)) {
       existing.linkedDeviceIds.push(deviceUserId);
+      dirty = true;
+      mergeDevice = true;
+    }
+    if (dirty) {
       await saveUser(existing);
+    }
+    if (mergeDevice && deviceUserId) {
       await mergeDeviceData(deviceUserId, existing.id);
     }
     return existing;
@@ -253,6 +289,24 @@ export async function completeUserProfile(
   if (role === "teacher" && options?.organizationName?.trim()) {
     user.organizationName = options.organizationName.trim();
   }
+
+  return saveUser(user);
+}
+
+export async function resetUserProfileRole(userId: string): Promise<User> {
+  const user = await findUserById(userId);
+  if (!user) {
+    throw new Error("사용자를 찾을 수 없습니다.");
+  }
+
+  if (user.role !== "parent" && user.role !== "teacher") {
+    throw new Error("역할을 다시 선택할 수 없는 계정입니다.");
+  }
+
+  await clearAllLinksForUser(userId);
+  user.role = null;
+  user.profileComplete = false;
+  user.organizationName = undefined;
 
   return saveUser(user);
 }

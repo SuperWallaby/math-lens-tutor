@@ -7,11 +7,12 @@ import '../services/api_client.dart';
 import '../services/oauth_service.dart';
 import '../theme/app_design_system.dart';
 import 'signup_screen.dart';
+import '../utils/default_display_name.dart';
 import '../widgets/hero_icon_3d.dart';
 import '../widgets/linked_children_panel.dart';
 import '../widgets/student_link_guide.dart';
 
-enum _OnboardingStep { role, grade, details, linkChildren, studentCode }
+enum _OnboardingStep { displayName, role, grade, details, linkChildren, studentCode }
 
 class ProfileOnboardingScreen extends StatefulWidget {
   const ProfileOnboardingScreen({
@@ -31,7 +32,9 @@ class ProfileOnboardingScreen extends StatefulWidget {
 }
 
 class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
-  _OnboardingStep _step = _OnboardingStep.role;
+  late final bool _needsDisplayName;
+  late final TextEditingController _nameController;
+  late _OnboardingStep _step;
   int _gradeIndex = 6;
   AppUserRole? _role;
   AppUserRole? _highlightedRole;
@@ -84,6 +87,14 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
   void initState() {
     super.initState();
     final user = widget.apiClient.authSession.user;
+    _needsDisplayName = needsDisplayNamePrompt(user?.displayName);
+    _nameController = TextEditingController(
+      text: _needsDisplayName
+          ? generateDefaultDisplayName()
+          : (user?.displayName ?? ''),
+    );
+    _step =
+        _needsDisplayName ? _OnboardingStep.displayName : _OnboardingStep.role;
     if (user?.profileComplete == true && user?.role != null) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) widget.onComplete();
@@ -93,6 +104,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
 
   @override
   void dispose() {
+    _nameController.dispose();
     _orgController.dispose();
     super.dispose();
   }
@@ -111,12 +123,24 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
   }
 
   void _goBack() {
+    if (_loading) return;
+
+    if (_step == _OnboardingStep.linkChildren &&
+        (_role == AppUserRole.parent || _role == AppUserRole.teacher)) {
+      _backToAppStart();
+      return;
+    }
+
     setState(() {
       _error = null;
       _slideDirection = -1;
       switch (_step) {
-        case _OnboardingStep.role:
+        case _OnboardingStep.displayName:
           break;
+        case _OnboardingStep.role:
+          if (_needsDisplayName) {
+            _step = _OnboardingStep.displayName;
+          }
         case _OnboardingStep.grade:
           _step = _OnboardingStep.role;
         case _OnboardingStep.details:
@@ -129,6 +153,59 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
           _step = _OnboardingStep.grade;
       }
     });
+  }
+
+  Future<void> _backToAppStart() async {
+    if (_loading) return;
+
+    setState(() => _loading = true);
+    try {
+      await widget.apiClient.signOutToAppStart();
+    } finally {
+      if (mounted) setState(() => _loading = false);
+    }
+  }
+
+  _OnboardingStep get _firstStep =>
+      _needsDisplayName ? _OnboardingStep.displayName : _OnboardingStep.role;
+
+  Future<void> _submitDisplayName() async {
+    if (_loading) return;
+
+    final name = _nameController.text.trim();
+    if (name.isEmpty) {
+      setState(() => _error = '이름을 입력해 주세요.');
+      return;
+    }
+    if (name.length > 40) {
+      setState(() => _error = '이름은 40자 이내로 입력해 주세요.');
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      if (_isGuest) {
+        await widget.apiClient.authSession.updateGuestDisplayName(name);
+      } else {
+        await widget.apiClient.updateProfile(displayName: name);
+      }
+      if (!mounted) return;
+      _goToStep(
+        _OnboardingStep.role,
+        forward: true,
+        apply: () => _loading = false,
+      );
+    } on ApiException catch (error) {
+      if (!mounted) return;
+      setState(() {
+        _error = error.message;
+        _loading = false;
+      });
+    }
   }
 
   Future<void> _selectRole(AppUserRole role) async {
@@ -294,6 +371,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
 
   Widget _buildStepContent(BuildContext context) {
     return switch (_step) {
+      _OnboardingStep.displayName => _buildDisplayNameStep(context),
       _OnboardingStep.grade => _buildGradeStep(context),
       _OnboardingStep.role => _buildRoleStep(context),
       _OnboardingStep.details => _buildDetailsStep(context),
@@ -304,7 +382,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final canGoBack = _step != _OnboardingStep.role;
+    final canGoBack = _step != _firstStep;
     final stepTitle = _stepTitle;
 
     return Scaffold(
@@ -340,7 +418,10 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
               TabletLayout.pageHorizontalPadding(context),
               AppSpacing.sm,
             ),
-            child: _StepIndicator(current: _step),
+            child: _StepIndicator(
+              current: _step,
+              includesDisplayName: _needsDisplayName,
+            ),
           ),
         ),
       ),
@@ -442,6 +523,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
 
   String get _stepTitle {
     return switch (_step) {
+      _OnboardingStep.displayName => '이름 설정',
       _OnboardingStep.role => '시작하기',
       _OnboardingStep.grade => '학년 선택',
       _OnboardingStep.details => '프로필 설정',
@@ -449,6 +531,68 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
         _role == AppUserRole.parent ? '자녀 연결' : '학생 연결',
       _OnboardingStep.studentCode => '내 학생 고유번호',
     };
+  }
+
+  Widget _buildDisplayNameStep(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Center(
+          child: HeroIcon3d(
+            asset: 'assets/icons/3d/onboarding_camera.webp',
+            tint: AppColors.primary,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.xxl),
+        Text(
+          '어떻게 불러드릴까요?',
+          textAlign: TextAlign.center,
+          style: TextStyle(
+            fontSize: TabletLayout.titleSection(context),
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        const Text(
+          '앱에서 사용할 이름이에요. 마음에 들면 그대로 다음을 눌러도 됩니다.',
+          textAlign: TextAlign.center,
+          style: TextStyle(color: AppColors.textSub, height: 1.55),
+        ),
+        const SizedBox(height: AppSpacing.section),
+        TextField(
+          controller: _nameController,
+          enabled: !_loading,
+          maxLength: 40,
+          textInputAction: TextInputAction.done,
+          onSubmitted: (_) => _submitDisplayName(),
+          decoration: InputDecoration(
+            hintText: '예) 열정적인 수학자01',
+            filled: true,
+            fillColor: AppColors.surface,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(AppRadii.lg),
+              borderSide: BorderSide.none,
+            ),
+          ),
+        ),
+        if (_error != null) ...[
+          const SizedBox(height: AppSpacing.lg),
+          Text(_error!, style: const TextStyle(color: AppColors.accent)),
+        ],
+        const SizedBox(height: AppSpacing.section),
+        FilledButton(
+          onPressed: _loading ? null : _submitDisplayName,
+          style: AppButtonStyles.filledKeyAction(),
+          child: _loading
+              ? const SizedBox(
+                  width: 22,
+                  height: 22,
+                  child: CircularProgressIndicator(strokeWidth: 2),
+                )
+              : const Text('다음'),
+        ),
+      ],
+    );
   }
 
   Widget _buildGradeStep(BuildContext context) {
@@ -549,7 +693,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
       children: [
         Center(
           child: HeroIcon3d(
-            asset: 'assets/icons/3d/onboarding_camera.png',
+            asset: 'assets/icons/3d/onboarding_camera.webp',
             tint: AppColors.primary,
           ),
         ),
@@ -572,7 +716,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
         _RoleCard(
           title: '학생',
           body: '풀이 사진 분석, 유사 문제 연습, 내 학습 대시보드',
-          asset: 'assets/icons/3d/role_student.png',
+          asset: 'assets/icons/3d/role_student.webp',
           accent: AppColors.primary,
           selected: _highlightedRole == AppUserRole.student,
           dimmed: _highlightedRole != null &&
@@ -585,7 +729,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
         _RoleCard(
           title: '학부모',
           body: '오늘의 코칭 질문·틀린 문제 설명으로 자녀 학습 돕기',
-          asset: 'assets/icons/3d/role_parent.png',
+          asset: 'assets/icons/3d/role_parent.webp',
           accent: AppColors.success,
           selected: _highlightedRole == AppUserRole.parent,
           dimmed:
@@ -714,7 +858,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
       children: [
         Center(
           child: HeroIcon3d(
-            asset: 'assets/icons/3d/parent_report.png',
+            asset: 'assets/icons/3d/parent_report.webp',
             tint: AppColors.success,
           ),
         ),
@@ -763,7 +907,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
       children: [
         Center(
           child: HeroIcon3d(
-            asset: 'assets/icons/3d/link_student.png',
+            asset: 'assets/icons/3d/link_student.webp',
             tint: AppColors.primary,
           ),
         ),
@@ -887,20 +1031,37 @@ class _GradeSliderThumbShape extends SliderComponentShape {
 }
 
 class _StepIndicator extends StatelessWidget {
-  const _StepIndicator({required this.current});
+  const _StepIndicator({
+    required this.current,
+    required this.includesDisplayName,
+  });
 
   final _OnboardingStep current;
+  final bool includesDisplayName;
 
-  /// Always 3 segments: 역할 → (학년 | 프로필) → (학생번호 | 연결)
-  int get _activeIndex => switch (current) {
-        _OnboardingStep.role => 0,
-        _OnboardingStep.grade => 1,
-        _OnboardingStep.details => 1,
-        _OnboardingStep.studentCode => 2,
-        _OnboardingStep.linkChildren => 2,
+  int get _stepCount => includesDisplayName ? 4 : 3;
+
+  /// 역할 → (학년 | 프로필) → (학생번호 | 연결), optionally preceded by 이름
+  int get _activeIndex {
+    if (includesDisplayName) {
+      return switch (current) {
+        _OnboardingStep.displayName => 0,
+        _OnboardingStep.role => 1,
+        _OnboardingStep.grade => 2,
+        _OnboardingStep.details => 2,
+        _OnboardingStep.studentCode => 3,
+        _OnboardingStep.linkChildren => 3,
       };
-
-  static const _stepCount = 3;
+    }
+    return switch (current) {
+      _OnboardingStep.displayName => 0,
+      _OnboardingStep.role => 0,
+      _OnboardingStep.grade => 1,
+      _OnboardingStep.details => 1,
+      _OnboardingStep.studentCode => 2,
+      _OnboardingStep.linkChildren => 2,
+    };
+  }
 
   @override
   Widget build(BuildContext context) {
