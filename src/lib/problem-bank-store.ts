@@ -401,18 +401,25 @@ export type UnitPracticeAggregate = {
   correctCount: number;
 };
 
-/** 단원별 누적 연습 — 배송·채점 이력 기준 (현재 세트만이 아님) */
+const UNIT_PRACTICE_SUBMISSION_PREFIX = "unit:";
+
+/** 진도탭 단원 학습 submissionId(`unit:<id>`)에서 단원 ID 추출. 그 외 소스는 제외. */
+function unitIdFromUnitSubmission(submissionId?: string): string | null {
+  if (!submissionId || !submissionId.startsWith(UNIT_PRACTICE_SUBMISSION_PREFIX)) {
+    return null;
+  }
+  const unitId = submissionId.slice(UNIT_PRACTICE_SUBMISSION_PREFIX.length).trim();
+  return unitId || null;
+}
+
+/**
+ * 단원별 누적 연습 — 진도탭 단원 학습(`submissionId = "unit:<id>"`)에서 푼 것만 집계.
+ * 훈련 피드·홈 유사문제 등 다른 경로의 풀이는 진도율에 반영하지 않는다.
+ */
 export async function aggregateUnitPracticeForUser(
   userId: string,
 ): Promise<Map<string, UnitPracticeAggregate>> {
   const store = await requireProblemBankStore();
-  const empty = () =>
-    ({
-      attemptedUnique: 0,
-      correctUnique: 0,
-      gradedCount: 0,
-      correctCount: 0,
-    }) satisfies UnitPracticeAggregate;
 
   type Mutable = {
     attempted: Set<string>;
@@ -443,44 +450,26 @@ export async function aggregateUnitPracticeForUser(
   };
 
   if ("deliveries" in store) {
-    const bankUnit = new Map(
-      store.bankItems
-        .filter((item) => item.active && item.unitId?.trim())
-        .map((item) => [item.id, item.unitId!.trim()] as const),
-    );
     for (const delivery of store.deliveries) {
       if (delivery.userId !== userId) continue;
-      const unitId = bankUnit.get(delivery.bankItemId);
+      const unitId = unitIdFromUnitSubmission(delivery.submissionId);
       if (!unitId) continue;
       bump(unitId, delivery.bankItemId, delivery.outcome);
     }
   } else {
     const deliveries = await store
       .collection<UserProblemDelivery>("user_problem_deliveries")
-      .find({ userId }, { projection: { bankItemId: 1, outcome: 1, _id: 0 } })
-      .toArray();
-    if (deliveries.length === 0) return new Map();
-
-    const bankIds = [...new Set(deliveries.map((d) => d.bankItemId))];
-    const items = await store
-      .collection<ProblemBankItem>("problem_bank_items")
       .find(
         {
-          id: { $in: bankIds },
-          active: true,
-          unitId: { $type: "string", $ne: "" },
+          userId,
+          submissionId: { $regex: `^${UNIT_PRACTICE_SUBMISSION_PREFIX}` },
         },
-        { projection: { id: 1, unitId: 1, _id: 0 } },
+        { projection: { bankItemId: 1, outcome: 1, submissionId: 1, _id: 0 } },
       )
       .toArray();
-    const bankUnit = new Map(
-      items
-        .filter((item) => Boolean(item.unitId?.trim()))
-        .map((item) => [item.id, item.unitId!.trim()] as const),
-    );
 
     for (const delivery of deliveries) {
-      const unitId = bankUnit.get(delivery.bankItemId);
+      const unitId = unitIdFromUnitSubmission(delivery.submissionId);
       if (!unitId) continue;
       bump(unitId, delivery.bankItemId, delivery.outcome);
     }

@@ -312,7 +312,9 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                 ),
               ),
               const SizedBox(height: 14),
-              if (_running)
+              // 유사 문제 생성 단계('similar')는 AI 풀이가 끝난 뒤이므로
+              // 상단이 아니라 화면 맨 아래에 표시한다.
+              if (_running && _progressStep != 'similar')
                 Padding(
                   padding: const EdgeInsets.only(bottom: 12),
                   child: Text(
@@ -587,6 +589,28 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                   icon: const Icon(Icons.quiz_rounded),
                   label: const Text('유사 문제 5개 풀기'),
                 ),
+              ] else if (_running && _progressStep == 'similar') ...[
+                Center(
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      const SizedBox(
+                        width: 16,
+                        height: 16,
+                        child: CircularProgressIndicator(strokeWidth: 2),
+                      ),
+                      const SizedBox(width: 10),
+                      Text(
+                        _progressMessage,
+                        style: const TextStyle(
+                          color: AppColors.primary,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
               ] else ...[
                 const SkeletonLines(widthFactors: SkeletonLines.button),
                 const SizedBox(height: 12),

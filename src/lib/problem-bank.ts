@@ -987,6 +987,28 @@ async function pickReplacementBankItem(params: {
   return candidates.find((item) => !exclude.has(item.id)) ?? null;
 }
 
+/**
+ * 실제 제출(submission)이 없는 문항(예: 맞춤 피드)에서 유사 문제를 생성할 때
+ * 사용할 최소 분석 객체를 현재 문항으로부터 합성한다.
+ */
+function buildSyntheticAnalysisFromProblem(
+  problem: GeneratedProblem,
+  conceptTags: string[],
+): SolutionAnalysis {
+  return {
+    problemText: problem.prompt,
+    extractedStudentAnswer: "",
+    inferredCorrectAnswer: problem.correctAnswer ?? "",
+    confidence: 0.5,
+    solutionSteps: [],
+    referenceSolutionSteps: [],
+    errorSummary: "",
+    weakConcepts: conceptTags,
+    recommendedFocus: conceptTags,
+    imageQualityWarning: false,
+  };
+}
+
 export async function replacePracticeProblem(params: {
   userId: string;
   problemSet: GeneratedProblemSet;
@@ -1038,6 +1060,29 @@ export async function replacePracticeProblem(params: {
       problems: generated.problems,
       gradeBand: located.gradeBand,
       unitId: located.unit.id,
+      originSubmissionId: params.problemSet.submissionId,
+    });
+    if (ingested[0]) {
+      replacement = bankItemToProblem(ingested[0]!, randomUUID());
+    }
+  } else if (params.problemSet.submissionId.startsWith("feed:")) {
+    // 맞춤 피드 문제는 실제 제출(submission) 레코드가 없으므로 원본 분석을 조회할 수 없다.
+    // 현재 문항의 개념으로 합성 분석을 만들어 유사 문제를 새로 생성한다.
+    const conceptTags = normalizeConceptTags(current.conceptTags);
+    const generated = await generateSimilarProblems(
+      buildSyntheticAnalysisFromProblem(current, conceptTags),
+      params.problemSet.submissionId,
+      {
+        deploymentName: params.generateOptions.deploymentName,
+        mode: params.generateOptions.mode,
+        problemCount: 1,
+        gradeBand,
+        preferHarder: params.harder,
+      },
+    );
+    const ingested = await ingestGeneratedProblems({
+      problems: generated.problems,
+      gradeBand,
       originSubmissionId: params.problemSet.submissionId,
     });
     if (ingested[0]) {

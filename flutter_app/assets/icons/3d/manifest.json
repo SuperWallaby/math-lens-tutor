@@ -1,10 +1,10 @@
 {
   "version": 2,
   "style": "ultra-minimal-clay-3d",
-  "deployment": "kaja-gpt-image-15",
-  "model": "gpt-image-1.5",
+  "deployment": "gpt-image-2",
+  "model": "gpt-image-2",
   "size": "1024x1024",
-  "quality": "low",
+  "quality": "medium",
   "masterPrompt": "Ultra-minimal 3D icon for Korean math app \"우열\". Exactly ONE chunky object centered on canvas (~70% size). Soft matte clay, smooth surfaces, big rounded shapes, toy-like simplicity. Use at most 2 flat brand colors plus white. Bold silhouette readable at 48px. Transparent background. NO second object, NO scene, NO props, NO text, NO faces, NO sparkles, NO particles, NO badges, NO stacks, NO orbit rings, NO tiny details, NO ground shadow plate. Negative: busy illustration, realistic render, emoji, flat 2D vector, neon, dark background, watermark, confetti.",
   "icons": [
     {
@@ -93,7 +93,7 @@
       "color": "#FF8C00",
       "usage": "일부 오답",
       "priority": 2,
-      "prompt": "Single clay pie chart wedge, one slice highlighted, orange #FF8C00."
+      "prompt": "Single chunky clay circular refresh/retry arrow (one smooth loop ending in a bold arrowhead), thick rounded tube, orange #FF8C00."
     },
     {
       "id": "training_empty_new",
@@ -117,7 +117,7 @@
       "color": "#FF8C00",
       "usage": "복습 훈련 진행",
       "priority": 2,
-      "prompt": "Single clay target circle, bullseye rings simplified to 2 rings, orange #FF8C00."
+      "prompt": "Single clay bullseye target (2 simplified rings) with one chunky arrow stuck dead-center, read as one composite object, orange #FF8C00 target, white arrow shaft with bright RED fletching (tail feathers)."
     },
     {
       "id": "relearn_success",

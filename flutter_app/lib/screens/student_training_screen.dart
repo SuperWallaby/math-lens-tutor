@@ -6,6 +6,7 @@ import '../models/app_models.dart';
 import '../services/api_client.dart';
 import '../widgets/app_card.dart';
 import '../widgets/learning_profile_widgets.dart';
+import '../widgets/mixed_math_text.dart';
 import '../widgets/skeleton_box.dart';
 import '../widgets/skeleton_lines.dart';
 import 'open_practice_flow.dart';
@@ -159,18 +160,16 @@ class StudentTrainingScreenState extends State<StudentTrainingScreen> {
                 padding: TabletLayout.pagePadding(context),
                 children: [
                   Text(
-                    '복습 훈련',
+                    '맞춤 훈련',
                     style: TextStyle(
                       fontSize: TabletLayout.titleSection(context),
                       fontWeight: FontWeight.w900,
                     ),
                   ),
                   const SizedBox(height: 8),
-                  Text(
-                    hasFeed
-                        ? '맞춤 문제 피드 — 풀수록 더 잘 맞춰져요'
-                        : '틀렸던 문제·개념 위주로 계속 연습합니다',
-                    style: const TextStyle(
+                  const Text(
+                    '당신을 위한 문제를 추천합니다.',
+                    style: TextStyle(
                       color: AppColors.textSub,
                       height: 1.45,
                       fontSize: 14,
@@ -205,7 +204,7 @@ class StudentTrainingScreenState extends State<StudentTrainingScreen> {
                     const SizedBox(height: 24),
                   ],
                   if (hasFeed) ...[
-                    const SectionLabel('맞춤 피드'),
+                    const SectionLabel('맞춤 문제'),
                     const SizedBox(height: 10),
                     ...feed.items.map(
                       (item) => Padding(
@@ -304,10 +303,8 @@ class _TrainingFeedCard extends StatelessWidget {
                   ),
                   if (primaryLine != null) ...[
                     const SizedBox(height: 10),
-                    Text(
+                    MixedMathText(
                       primaryLine,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
                       style: const TextStyle(
                         fontWeight: FontWeight.w800,
                         fontSize: 15,

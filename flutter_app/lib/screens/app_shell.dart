@@ -31,21 +31,42 @@ class _AppShellState extends State<AppShell> {
   int _index = 0;
   final _studentHubKey = GlobalKey<StudentHubScreenState>();
   final _studentTrainingKey = GlobalKey<StudentTrainingScreenState>();
+  final _studentProgressKey = GlobalKey<StudentProgressScreenState>();
 
   static const _studentHomeTabIndex = 0;
   static const _studentTrainingTabIndex = 2;
+  static const _studentProgressTabIndex = 3;
+
+  /// 하단 네비 맞춤훈련 탭 배지 — 준비된 맞춤 문제 수. 탭을 한 번 열면 사라진다.
+  int _trainingBadgeCount = 0;
+  bool _trainingTabSeen = false;
 
   @override
   void initState() {
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       if (!mounted) return;
-      if (widget.apiClient.authSession.user != null) {
+      final user = widget.apiClient.authSession.user;
+      if (user != null) {
         widget.apiClient.getLearningProfile(
           scope: LearningProfileScope.summary,
         );
+        if (user.role == AppUserRole.student) {
+          _loadTrainingBadge();
+        }
       }
     });
+  }
+
+  Future<void> _loadTrainingBadge() async {
+    if (_trainingTabSeen) return;
+    try {
+      final feed = await widget.apiClient.getTrainingFeed();
+      if (!mounted || _trainingTabSeen) return;
+      setState(() => _trainingBadgeCount = feed.items.length);
+    } catch (_) {
+      // 배지는 부가 정보이므로 실패는 조용히 무시한다.
+    }
   }
 
   @override
@@ -82,21 +103,41 @@ class _AppShellState extends State<AppShell> {
                   _studentHubKey.currentState?.refreshFromTab();
                 } else if (value == _studentTrainingTabIndex) {
                   _studentTrainingKey.currentState?.refreshFromTab();
+                  if (_trainingBadgeCount > 0 || !_trainingTabSeen) {
+                    setState(() {
+                      _trainingBadgeCount = 0;
+                      _trainingTabSeen = true;
+                    });
+                  }
+                } else if (value == _studentProgressTabIndex) {
+                  _studentProgressKey.currentState?.refreshFromTab();
                 }
               }
             },
             destinations: [
-              for (final tab in tabs)
+              for (var i = 0; i < tabs.length; i++)
                 NavigationDestination(
-                  icon: Icon(tab.icon),
-                  selectedIcon: Icon(tab.selectedIcon),
-                  label: tab.label,
+                  icon: _showTrainingBadge(user.role, i)
+                      ? Badge.count(
+                          count: _trainingBadgeCount,
+                          child: Icon(tabs[i].icon),
+                        )
+                      : Icon(tabs[i].icon),
+                  selectedIcon: Icon(tabs[i].selectedIcon),
+                  label: tabs[i].label,
                 ),
             ],
           ),
         );
       },
     );
+  }
+
+  bool _showTrainingBadge(AppUserRole? role, int tabIndex) {
+    return role == AppUserRole.student &&
+        tabIndex == _studentTrainingTabIndex &&
+        !_trainingTabSeen &&
+        _trainingBadgeCount > 0;
   }
 
   List<_ShellTab> _tabsFor(AppUserRole? role) {
@@ -193,7 +234,7 @@ class _AppShellState extends State<AppShell> {
             ),
           ),
           _ShellTab(
-            label: '훈련',
+            label: '맞춤훈련',
             icon: Icons.edit_note_outlined,
             selectedIcon: Icons.edit_note_rounded,
             screen: StudentTrainingScreen(
@@ -205,7 +246,10 @@ class _AppShellState extends State<AppShell> {
             label: '진도',
             icon: Icons.menu_book_outlined,
             selectedIcon: Icons.menu_book_rounded,
-            screen: StudentProgressScreen(apiClient: widget.apiClient),
+            screen: StudentProgressScreen(
+              key: _studentProgressKey,
+              apiClient: widget.apiClient,
+            ),
           ),
           _ShellTab(
             label: '설정',

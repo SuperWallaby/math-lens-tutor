@@ -57,6 +57,9 @@ class ApiClient {
   bool get isTrainingTabDataFresh =>
       _profileSummaryCache.isFresh && _trainingFeedCache.isFresh;
 
+  /// 진도 탭 — 전체(full) 프로필 캐시가 유효할 때 탭 전환 재조회 생략.
+  bool get isProgressTabDataFresh => _profileFullCache.isFresh;
+
   void invalidateLearningProfileCache() {
     _profileSummaryCache.invalidate();
     _profileFullCache.invalidate();
@@ -642,6 +645,10 @@ class ApiClient {
     if (response.statusCode >= 400) {
       throw ApiException(body['error'] as String? ?? '답안을 제출하지 못했습니다.');
     }
+
+    // 답안 제출로 진도·통계가 바뀌므로 프로필 캐시를 무효화해
+    // 진도 현황이 다음 조회 때 최신값을 반영하도록 한다.
+    invalidateLearningProfileCache();
 
     return ProblemAttempt.fromJson(body);
   }

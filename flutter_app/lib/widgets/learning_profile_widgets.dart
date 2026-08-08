@@ -5,6 +5,7 @@ import '../layout/tablet_layout.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
 import '../theme/app_design_system.dart';
+import '../utils/network_thumbnail_cache.dart';
 import 'app_card.dart';
 import 'mixed_math_text.dart';
 import 'parent_tab_scaffold.dart';
@@ -955,6 +956,8 @@ class _ParentSubmissionThumbnail extends StatelessWidget {
             : Image.network(
                 imageUrl!,
                 fit: BoxFit.cover,
+                cacheWidth: networkImageCacheExtent(size, context),
+                cacheHeight: networkImageCacheExtent(size, context),
                 errorBuilder: (context, error, stackTrace) => Container(
                   color: AppColors.primary.withValues(alpha: 0.08),
                   alignment: Alignment.center,

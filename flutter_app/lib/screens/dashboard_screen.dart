@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../layout/tablet_layout.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
+import '../utils/network_thumbnail_cache.dart';
 import '../widgets/app_card.dart';
 import '../widgets/learning_profile_widgets.dart';
 import '../widgets/mixed_math_text.dart';
@@ -363,6 +364,8 @@ class _DashboardSubmissionThumbnail extends StatelessWidget {
             : Image.network(
                 imageUrl!,
                 fit: BoxFit.cover,
+                cacheWidth: networkImageCacheExtent(size, context),
+                cacheHeight: networkImageCacheExtent(size, context),
                 errorBuilder: (_, __, ___) => Container(
                   color: AppColors.primary.withValues(alpha: 0.08),
                   alignment: Alignment.center,

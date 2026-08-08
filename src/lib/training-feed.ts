@@ -42,6 +42,8 @@ import {
 
 export const FEED_QUEUE_SIZE = 10;
 export const FEED_QUEUE_MAX_AGE_MS = 6 * 60 * 60 * 1000;
+/** 맞춤 피드 한 카드에 묶어 서빙하는 유사문제 수(1~3) */
+export const FEED_ITEM_SET_SIZE = 3;
 
 function defaultReason(params: {
   concept: string;
@@ -118,6 +120,7 @@ export async function buildFallbackFeedItems(params: {
   const deliveredIds = new Set<string>();
   const items: TrainingFeedItem[] = [];
 
+  // 1) 약점 개념별로 최대 FEED_ITEM_SET_SIZE개를 묶어 하나의 세트(유사문제)로 서빙한다.
   for (const concept of ctx.focusConcepts) {
     if (items.length >= limit) break;
     const targetDifficulty = await resolveTargetDifficulty(params.userId, concept);
@@ -125,50 +128,48 @@ export async function buildFallbackFeedItems(params: {
       userId: params.userId,
       gradeBand: ctx.gradeBand,
       conceptTags: [concept],
-      limit: 2,
+      limit: FEED_ITEM_SET_SIZE,
       minDifficulty: targetDifficulty,
       deliveredIds,
       excludeDelivered: true,
     });
 
-    for (const bankItem of bankItems) {
-      if (items.length >= limit) break;
-      deliveredIds.add(bankItem.id);
-      items.push(
-        buildFeedItemFromBank({
-          item: bankItem,
-          reason: defaultReason({
-            concept,
-            difficulty: bankItem.difficulty,
-            missScore: missScoreForConcept(ctx.focusItems, concept),
-          }),
+    if (bankItems.length === 0) continue;
+    for (const bankItem of bankItems) deliveredIds.add(bankItem.id);
+    items.push(
+      buildFeedItemFromBank({
+        items: bankItems,
+        reason: defaultReason({
+          concept,
+          difficulty: bankItems[0]!.difficulty,
+          missScore: missScoreForConcept(ctx.focusItems, concept),
         }),
-      );
-    }
+      }),
+    );
   }
 
-  if (items.length < limit) {
+  // 2) 슬롯이 남으면 개념 무관하게 추가 문항을 묶어 채운다.
+  while (items.length < limit) {
     const bankItems = await findAvailableBankItems({
       userId: params.userId,
       gradeBand: ctx.gradeBand,
       conceptTags: ctx.focusConcepts,
-      limit: limit - items.length,
+      limit: FEED_ITEM_SET_SIZE,
       deliveredIds,
       excludeDelivered: true,
     });
-    for (const bankItem of bankItems) {
-      if (items.some((item) => item.bankItemId === bankItem.id)) continue;
-      items.push(
-        buildFeedItemFromBank({
-          item: bankItem,
-          reason: defaultReason({
-            concept: bankItem.conceptPrimary,
-            difficulty: bankItem.difficulty,
-            missScore: missScoreForConcept(ctx.focusItems, bankItem.conceptPrimary),
-          }),
+    if (bankItems.length === 0) break;
+    for (const bankItem of bankItems) deliveredIds.add(bankItem.id);
+    items.push(
+      buildFeedItemFromBank({
+        items: bankItems,
+        reason: defaultReason({
+          concept: bankItems[0]!.conceptPrimary,
+          difficulty: bankItems[0]!.difficulty,
+          missScore: missScoreForConcept(ctx.focusItems, bankItems[0]!.conceptPrimary),
         }),
-      );
-    }
+      }),
+    );
   }
 
   return items.slice(0, limit);
@@ -284,40 +285,59 @@ export async function startFeedItemPractice(params: {
 
   let feedItem =
     fallback.find((item) => item.id === params.feedItemId) ??
-    fallback.find((item) => item.bankItemId === params.bankItemId) ??
+    fallback.find((item) =>
+      item.bankItemId === params.bankItemId ||
+      (item.bankItemIds ?? []).includes(params.bankItemId ?? ""),
+    ) ??
     null;
 
-  const bankItemId = params.bankItemId ?? feedItem?.bankItemId;
-  if (!bankItemId) {
+  // 서빙할 은행 문항 id 목록 (번들 1~3). 구버전 큐(bankItemIds 없음)와 단일 요청도 지원.
+  const rawIds = feedItem?.bankItemIds?.length
+    ? feedItem.bankItemIds
+    : feedItem
+      ? [feedItem.bankItemId]
+      : params.bankItemId
+        ? [params.bankItemId]
+        : [];
+  const bankItemIds = rawIds.filter(
+    (id, index, arr) => Boolean(id) && arr.indexOf(id) === index,
+  );
+  if (bankItemIds.length === 0) {
     throw new Error("피드 문제를 찾을 수 없습니다.");
   }
 
-  const bankItem = await findBankItemById(bankItemId);
-  if (!bankItem) {
+  const resolved = await Promise.all(
+    bankItemIds.map((id) => findBankItemById(id)),
+  );
+  const bankItems = resolved.filter(
+    (item): item is ProblemBankItem => Boolean(item),
+  );
+  if (bankItems.length === 0) {
     throw new Error("문제 은행에서 문항을 찾을 수 없습니다.");
   }
 
   if (!feedItem) {
     feedItem = buildFeedItemFromBank({
-      item: bankItem,
+      items: bankItems,
       reason: defaultReason({
-        concept: bankItem.conceptPrimary,
-        difficulty: bankItem.difficulty,
+        concept: bankItems[0]!.conceptPrimary,
+        difficulty: bankItems[0]!.difficulty,
       }),
     });
   }
 
   const problemSetId = randomUUID();
-  const problemId = randomUUID();
-  const problem = bankItemToGeneratedProblem(bankItem, problemId);
+  const problems = bankItems.map((item) =>
+    bankItemToGeneratedProblem(item, randomUUID()),
+  );
   const submissionId = feedSubmissionId(params.userId);
 
   const problemSet = {
     id: problemSetId,
     submissionId,
-    title: feedItem.title || `${bankItem.conceptPrimary} 맞춤 훈련`,
+    title: feedItem.title || `${bankItems[0]!.conceptPrimary} 맞춤 훈련`,
     learningGoal: feedItem.reason,
-    problems: [problem],
+    problems,
   } as GeneratedProblemSet;
 
   await saveProblemSet(problemSet);
@@ -326,7 +346,7 @@ export async function startFeedItemPractice(params: {
     userId: params.userId,
     submissionId,
     problemSetId,
-    problems: [problem],
+    problems,
   });
 
   return { problemSet, feedItem };

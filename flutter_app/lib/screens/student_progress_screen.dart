@@ -26,10 +26,10 @@ class StudentProgressScreen extends StatefulWidget {
   final int? demoInitialGradeTab;
 
   @override
-  State<StudentProgressScreen> createState() => _StudentProgressScreenState();
+  State<StudentProgressScreen> createState() => StudentProgressScreenState();
 }
 
-class _StudentProgressScreenState extends State<StudentProgressScreen> {
+class StudentProgressScreenState extends State<StudentProgressScreen> {
   Future<LearningProfile>? _profileFuture;
   late int _gradeTab;
   bool _gradeTabTouched = false;
@@ -40,6 +40,17 @@ class _StudentProgressScreenState extends State<StudentProgressScreen> {
     _gradeTab = widget.demoInitialGradeTab ??
         gradeBandTabIndex(widget.apiClient.authSession.user?.grade);
     _reload();
+  }
+
+  /// 탭 전환 진입 시 호출 — 캐시가 신선하면 재조회를 생략합니다.
+  void refreshFromTab({bool forceRefresh = false}) {
+    if (widget.demoProfile != null) return;
+    if (!forceRefresh &&
+        widget.apiClient.isProgressTabDataFresh &&
+        _profileFuture != null) {
+      return;
+    }
+    _reload(forceRefresh: forceRefresh);
   }
 
   void _reload({bool forceRefresh = false}) {

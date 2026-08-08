@@ -13,7 +13,11 @@
  *   GPU_LLM_MODEL=qwen2.5:7b
  */
 import { hasMongoConfig } from "../src/lib/env";
-import { getMongoDb } from "../src/lib/mongodb";
+import {
+  closeMongoClient,
+  getMongoDb,
+  registerMongoShutdownHooks,
+} from "../src/lib/mongodb";
 import { processNextAnalysisJob } from "../src/lib/training-feed";
 
 type CliOptions = {
@@ -44,6 +48,14 @@ async function main() {
     process.exit(1);
   }
 
+  let stopRequested = false;
+  registerMongoShutdownHooks({
+    exitAfterClose: true,
+    onBeforeClose: () => {
+      stopRequested = true;
+    },
+  });
+
   const db = await getMongoDb();
   if (!db) {
     console.error("MongoDB 에 연결하지 못했습니다.");
@@ -54,23 +66,34 @@ async function main() {
     `[training-feed-worker] started interval=${opts.intervalSec}s once=${opts.once}`,
   );
 
-  do {
-    let processed = 0;
-    while (await processNextAnalysisJob()) {
-      processed += 1;
-    }
-    if (processed > 0) {
-      console.log(`[training-feed-worker] processed ${processed} job(s)`);
-    } else if (opts.once) {
-      console.log("[training-feed-worker] no pending jobs");
-    }
+  try {
+    do {
+      if (stopRequested) break;
 
-    if (opts.once) break;
-    await sleep(opts.intervalSec * 1000);
-  } while (true);
+      let processed = 0;
+      while (!stopRequested && (await processNextAnalysisJob())) {
+        processed += 1;
+      }
+      if (processed > 0) {
+        console.log(`[training-feed-worker] processed ${processed} job(s)`);
+      } else if (opts.once) {
+        console.log("[training-feed-worker] no pending jobs");
+      }
+
+      if (opts.once || stopRequested) break;
+      await sleep(opts.intervalSec * 1000);
+    } while (!stopRequested);
+  } finally {
+    await closeMongoClient();
+  }
 }
 
-main().catch((error) => {
+main().catch(async (error) => {
   console.error("[training-feed-worker] fatal", error);
+  try {
+    await closeMongoClient();
+  } catch {
+    // ignore
+  }
   process.exit(1);
 });

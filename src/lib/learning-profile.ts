@@ -2,7 +2,6 @@ import {
   GRADE_BAND_ORDER,
   GRADE_BAND_REPRESENTATIVE,
   gradeToBand,
-  matchUnitForConcept,
   unitsForGrade,
   type GradeBand,
 } from "./curriculum";
@@ -210,53 +209,6 @@ function buildConceptStatus(
       ];
 }
 
-function legacyUnitKeywordSignal(
-  unit: { id: string },
-  grade: string | undefined,
-  misses: Map<string, number>,
-  submissions: SolutionSubmission[],
-  mistakes: PracticeMistakeRecord[],
-  scanned: ScannedProblemRecord[],
-): { hitCount: number; missCount: number } {
-  let missCount = 0;
-  let hitCount = 0;
-
-  for (const [concept, count] of misses) {
-    if (matchUnitForConcept(concept, grade)?.id === unit.id) {
-      missCount += count;
-    }
-  }
-
-  const textSources = [
-    ...submissions.map((submission) =>
-      [
-        ...submission.analysis.weakConcepts,
-        submission.analysis.errorSummary,
-        submission.analysis.problemText,
-      ].join(" "),
-    ),
-    ...scanned.map((record) =>
-      [
-        ...record.weakConcepts,
-        ...record.conceptTags,
-        record.errorSummary,
-        record.problemText,
-      ].join(" "),
-    ),
-    ...mistakes.map((record) =>
-      [...record.conceptTags, record.conceptPrimary, record.feedback].join(" "),
-    ),
-  ];
-
-  for (const text of textSources) {
-    if (matchUnitForConcept(text, grade)?.id === unit.id) {
-      hitCount += 1;
-    }
-  }
-
-  return { hitCount, missCount };
-}
-
 function computeUnitPercent(params: {
   poolSize: number;
   practice: {
@@ -265,10 +217,11 @@ function computeUnitPercent(params: {
     gradedCount: number;
     correctCount: number;
   };
-  legacy: { hitCount: number; missCount: number };
 }): { percent: number; status: CurriculumUnitProgress["status"] } {
-  const { poolSize, practice, legacy } = params;
+  const { poolSize, practice } = params;
 
+  // 진도율은 오직 진도탭 단원 학습에서 실제로 푼 문제만 반영한다.
+  // 개념 텍스트 매칭(홈 업로드·오답·스캔)으로는 진도를 채우지 않는다.
   if (practice.attemptedUnique > 0) {
     const targetPool = Math.max(poolSize, practice.attemptedUnique, 10);
     const coverage = (practice.attemptedUnique / targetPool) * 100;
@@ -291,23 +244,11 @@ function computeUnitPercent(params: {
     return { percent, status };
   }
 
-  if (legacy.hitCount > 0 || legacy.missCount > 0) {
-    const percent = Math.max(
-      5,
-      Math.min(35, 28 - legacy.missCount * 4 + Math.min(legacy.hitCount, 3) * 2),
-    );
-    return { percent, status: "learning" };
-  }
-
   return { percent: 0, status: "none" };
 }
 
 function buildCurriculumUnits(
   grade: string | undefined,
-  misses: Map<string, number>,
-  submissions: SolutionSubmission[],
-  mistakes: PracticeMistakeRecord[],
-  scanned: ScannedProblemRecord[],
   unitPractice: Map<string, UnitPracticeAggregate>,
   poolByUnit: Map<string, number>,
 ): CurriculumUnitProgress[] {
@@ -322,15 +263,7 @@ function buildCurriculumUnits(
       correctCount: 0,
     };
     const poolSize = poolByUnit.get(unit.id) ?? 0;
-    const legacy = legacyUnitKeywordSignal(
-      unit,
-      grade,
-      misses,
-      submissions,
-      mistakes,
-      scanned,
-    );
-    const { percent, status } = computeUnitPercent({ poolSize, practice, legacy });
+    const { percent, status } = computeUnitPercent({ poolSize, practice });
 
     return {
       id: unit.id,
@@ -344,10 +277,6 @@ function buildCurriculumUnits(
 }
 
 function buildCurriculumByBand(
-  misses: Map<string, number>,
-  submissions: SolutionSubmission[],
-  mistakes: PracticeMistakeRecord[],
-  scanned: ScannedProblemRecord[],
   unitPractice: Map<string, UnitPracticeAggregate>,
   poolByUnit: Map<string, number>,
 ): Record<GradeBand, CurriculumUnitProgress[]> {
@@ -355,10 +284,6 @@ function buildCurriculumByBand(
   for (const band of GRADE_BAND_ORDER) {
     byBand[band] = buildCurriculumUnits(
       GRADE_BAND_REPRESENTATIVE[band],
-      misses,
-      submissions,
-      mistakes,
-      scanned,
       unitPractice,
       poolByUnit,
     );
@@ -469,14 +394,7 @@ export async function buildLearningProfile(
   const lastAcc = accuracyOf(lastWeek);
   const misses = collectConceptMisses(attempts, submissions, mistakes, scanned);
   const conceptStatus = buildConceptStatus(misses);
-  const curriculumByBand = buildCurriculumByBand(
-    misses,
-    submissions,
-    mistakes,
-    scanned,
-    unitPractice,
-    poolByUnit,
-  );
+  const curriculumByBand = buildCurriculumByBand(unitPractice, poolByUnit);
   const band = gradeToBand(grade);
   const curriculumUnits = curriculumByBand[band];
 

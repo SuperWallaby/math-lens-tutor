@@ -28,11 +28,14 @@ npm run generate:icons -- --id training_empty_new
 
 # Overwrite existing
 npm run generate:icons -- --force
+
+# PNG → WebP (앱은 .webp 사용)
+npm run optimize:flutter-assets
 ```
 
-Uses deployment `kaja-gpt-image-15` (`gpt-image-1.5`) by default. Override with `AZURE_OPENAI_IMAGE_DEPLOYMENT`.
+Uses deployment `gpt-image-2` by default. Override with `AZURE_OPENAI_IMAGE_DEPLOYMENT`.
 
-Generated PNGs request `background: transparent` from the API. If the model still returns a solid backdrop, the script runs `scripts/fix-icon-transparency.py` as a fallback.
+Generated PNGs request `background: transparent` when the deployment supports it (`gpt-image-1.5`). For `gpt-image-2`, the script omits that flag and runs `scripts/fix-icon-transparency.py` after generation.
 
 Fix existing icons without regenerating:
 
@@ -43,7 +46,7 @@ npm run fix:icon-transparency
 ## Flutter usage
 
 ```dart
-Image.asset('assets/icons/3d/training_empty_new.png', width: 72)
+Image.asset('assets/icons/3d/training_empty_new.webp', width: 72)
 ```
 
 Registered in `pubspec.yaml` under `assets/icons/3d/`.

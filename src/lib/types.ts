@@ -610,6 +610,8 @@ export type UserConceptMastery = {
 export type TrainingFeedItem = {
   id: string;
   bankItemId: string;
+  /** 번들 서빙 — 이 피드 항목이 담고 있는 은행 문항들(1~3). 없으면 [bankItemId]. */
+  bankItemIds?: string[];
   concept: string;
   difficulty: GeneratedProblem["difficulty"];
   reason: string;

@@ -50,11 +50,66 @@ wait_for_study_api() {
   return 1
 }
 
-find_ios_device() {
+# 실기기 선택: 유선(USB)만 대상. 무선(wireless) 기기는 절대 고르지 않는다.
+# 같은 유선끼리는 iPhone → Android 순. 유선 실기기가 없으면 아무것도 출력하지
+# 않아 Chrome 폴백으로 넘어간다. 결과는 "id\tname\tplatform".
+# (flutter devices 사람용 출력의 (wireless) 태그로 판별 — --machine JSON 엔 없음)
+find_target_device() {
   cd "$ROOT/flutter_app"
   node <<'NODE'
 const { execFileSync } = require("node:child_process");
 
+let text = "";
+try {
+  text = execFileSync("flutter", ["devices"], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+  });
+} catch {
+  process.exit(0);
+}
+
+const candidates = [];
+for (const line of text.split("\n")) {
+  if (!line.includes(" • ")) continue;
+  const parts = line.split(" • ").map((s) => s.trim());
+  if (parts.length < 3) continue;
+  const meta = parts[0];
+  const id = parts[1];
+  const platformField = parts[2];
+
+  // 무선 기기 제외 — 유선(USB)만 사용
+  if (/\(wireless\)/i.test(meta)) continue;
+  // 에뮬레이터/시뮬레이터 제외
+  if (id.startsWith("emulator-")) continue;
+  if (/\((emulator|simulator)\)/i.test(line)) continue;
+
+  let plat = "";
+  if (platformField.startsWith("android")) plat = "android";
+  else if (platformField === "ios") plat = "ios";
+  else continue; // desktop/web 제외
+
+  const name = meta.replace(/\s*\((wireless|mobile)\)/gi, "").trim();
+  candidates.push({ id, name, plat });
+}
+
+// 유선끼리 우선순위: iPhone(0) < Android(1)
+const rank = (c) => (c.plat === "ios" ? 0 : 1);
+candidates.sort((a, b) => rank(a) - rank(b));
+
+const phone = candidates[0];
+if (phone) {
+  process.stdout.write(`${phone.id}\t${phone.name}\t${phone.plat}`);
+}
+NODE
+}
+
+# 주어진 device id 의 플랫폼("ios"/"android"/"") 을 출력.
+device_platform() {
+  local target_id="$1"
+  cd "$ROOT/flutter_app"
+  TARGET_ID="$target_id" node <<'NODE'
+const { execFileSync } = require("node:child_process");
 let raw = "";
 try {
   raw = execFileSync("flutter", ["devices", "--machine"], {
@@ -64,20 +119,16 @@ try {
 } catch {
   process.exit(0);
 }
-
 let devices;
 try {
   devices = JSON.parse(raw);
 } catch {
   process.exit(0);
 }
-
-const phone = devices.find(
-  (d) => d.targetPlatform === "ios" && !d.emulator && d.isSupported,
-);
-
-if (phone) {
-  process.stdout.write(`${phone.id}\t${phone.name}`);
+const d = devices.find((x) => x.id === process.env.TARGET_ID);
+if (d) {
+  const p = String(d.targetPlatform || "");
+  process.stdout.write(p.startsWith("android") ? "android" : (p === "ios" ? "ios" : ""));
 }
 NODE
 }
@@ -152,40 +203,53 @@ API_LAN="$(bash "$ROOT/scripts/get-flutter-api-url.sh" "$API_PORT")"
 
 FLUTTER_DEVICE="${FLUTTER_DEVICE:-}"
 FLUTTER_DEVICE_NAME=""
+FLUTTER_DEVICE_PLATFORM="${FLUTTER_DEVICE_PLATFORM:-}"
 
 if [[ -z "$FLUTTER_DEVICE" ]]; then
-  ios_info="$(find_ios_device || true)"
-  if [[ -n "$ios_info" ]]; then
-    FLUTTER_DEVICE="${ios_info%%$'\t'*}"
-    FLUTTER_DEVICE_NAME="${ios_info#*$'\t'}"
+  dev_info="$(find_target_device || true)"
+  if [[ -n "$dev_info" ]]; then
+    IFS=$'\t' read -r FLUTTER_DEVICE FLUTTER_DEVICE_NAME FLUTTER_DEVICE_PLATFORM <<<"$dev_info"
   fi
+elif [[ -z "$FLUTTER_DEVICE_PLATFORM" ]]; then
+  # 사용자가 FLUTTER_DEVICE 를 직접 지정한 경우 플랫폼을 조회해 flavor 판단.
+  FLUTTER_DEVICE_PLATFORM="$(device_platform "$FLUTTER_DEVICE" || true)"
 fi
 
 cd "$ROOT/flutter_app"
 
 if [[ -n "$FLUTTER_DEVICE" ]]; then
-  API_BASE="$(bash "$ROOT/scripts/get-flutter-api-url.sh" "$API_PORT")"
+  # Android 실기기는 .local(mDNS)을 해석하지 못하므로 LAN IP를 직접 사용.
+  if [[ "$FLUTTER_DEVICE_PLATFORM" == "android" ]]; then
+    API_BASE="http://${LAN_IP}:${API_PORT}"
+  else
+    API_BASE="$(bash "$ROOT/scripts/get-flutter-api-url.sh" "$API_PORT")"
+  fi
   user_api="${FLUTTER_API_BASE_URL:-}"
   if [[ -n "$user_api" && "$user_api" != "$API_BASE" ]]; then
     if [[ "$user_api" == *192.0.0.* ]]; then
-      echo "=== NOTE: FLUTTER_API_BASE_URL=${user_api} 무시 (iPhone에서 192.0.0.x 접속 불가) ===" >&2
+      echo "=== NOTE: FLUTTER_API_BASE_URL=${user_api} 무시 (실기기에서 192.0.0.x 접속 불가) ===" >&2
       echo "===       → ${API_BASE} 사용 ===" >&2
     else
       API_BASE="$user_api"
     fi
   fi
   if [[ "$API_BASE" == *127.0.0.1* || "$API_BASE" == *192.0.0.* ]]; then
-    echo "=== WARNING: iPhone은 ${API_BASE} 로 API 접속이 막힐 수 있습니다 ===" >&2
+    echo "=== WARNING: 실기기는 ${API_BASE} 로 API 접속이 막힐 수 있습니다 ===" >&2
     echo "===          yarn app 만 실행하고 Hot Restart 말고 전체 재시작하세요 ===" >&2
   fi
-  echo "=== Flutter → ${FLUTTER_DEVICE_NAME:-$FLUTTER_DEVICE} (API ${API_BASE}) ==="
+  # Android 는 product flavor(full/lite)가 필수 — full 로 실행.
+  FLUTTER_RUN_EXTRA=()
+  if [[ "$FLUTTER_DEVICE_PLATFORM" == "android" ]]; then
+    FLUTTER_RUN_EXTRA+=(--flavor full)
+  fi
+  echo "=== Flutter → ${FLUTTER_DEVICE_NAME:-$FLUTTER_DEVICE} [${FLUTTER_DEVICE_PLATFORM:-ios}] (API ${API_BASE}) ==="
   flutter_dart_defines "$API_BASE"
-  run_flutter "$FLUTTER_DEVICE" "$@"
+  run_flutter "$FLUTTER_DEVICE" ${FLUTTER_RUN_EXTRA[@]+"${FLUTTER_RUN_EXTRA[@]}"} "$@"
   exit $?
 fi
 
 API_BASE="${FLUTTER_API_BASE_URL:-$API_LOCAL}"
-echo "=== No iPhone found. Flutter → Chrome (API ${API_BASE}) ==="
+echo "=== No phone found (iPhone/Android). Flutter → Chrome (API ${API_BASE}) ==="
 flutter_dart_defines "$API_BASE"
 run_flutter chrome "$@"
 exit $?

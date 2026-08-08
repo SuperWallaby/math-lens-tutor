@@ -1,8 +1,26 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 
 /// 우열 design tokens — see `/DESIGN.md` (Flat Design Educacional Vibrante).
+abstract final class AppFonts {
+  /// [pubspec.yaml]에 번들된 Noto Sans KR Variable.
+  static const family = 'Noto Sans KR';
+}
+
+TextStyle _appTextStyle({
+  Color? color,
+  FontWeight? fontWeight,
+  double? fontSize,
+  double? height,
+}) {
+  return TextStyle(
+    fontFamily: AppFonts.family,
+    color: color,
+    fontWeight: fontWeight,
+    fontSize: fontSize,
+    height: height,
+  );
+}
 abstract final class AppColors {
   static const background = Color(0xFFF5F5F5);
   static const surface = Color(0xFFFFFFFF);
@@ -75,7 +93,7 @@ abstract final class AppButtonStyles {
       elevation: 0,
       minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-      textStyle: GoogleFonts.notoSansKr(
+      textStyle: _appTextStyle(
         fontSize: AppTypography.button,
         fontWeight: AppTypography.buttonWeight,
       ),
@@ -95,7 +113,7 @@ abstract final class AppButtonStyles {
       elevation: 0,
       minimumSize: const Size.fromHeight(AppSizes.buttonHeightKeyAction),
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xxl),
-      textStyle: GoogleFonts.notoSansKr(
+      textStyle: _appTextStyle(
         fontSize: AppTypography.buttonKeyAction,
         fontWeight: AppTypography.buttonKeyActionWeight,
       ),
@@ -211,26 +229,30 @@ ThemeData buildAppTheme() {
     outline: AppColors.borderStrong,
   );
 
-  final textTheme = GoogleFonts.notoSansKrTextTheme().copyWith(
-    headlineLarge: GoogleFonts.notoSansKr(
+  final textTheme = Typography.material2021().black.apply(
+    fontFamily: AppFonts.family,
+    bodyColor: AppColors.text,
+    displayColor: AppColors.text,
+  ).copyWith(
+    headlineLarge: _appTextStyle(
       color: AppColors.text,
       fontWeight: FontWeight.w800,
     ),
-    titleLarge: GoogleFonts.notoSansKr(
+    titleLarge: _appTextStyle(
       color: AppColors.text,
       fontWeight: FontWeight.w700,
     ),
-    bodyLarge: GoogleFonts.notoSansKr(
+    bodyLarge: _appTextStyle(
       color: AppColors.text,
       fontWeight: FontWeight.w400,
       height: 1.6,
     ),
-    bodyMedium: GoogleFonts.notoSansKr(
+    bodyMedium: _appTextStyle(
       color: AppColors.textSub,
       fontWeight: FontWeight.w400,
       height: 1.6,
     ),
-    labelLarge: GoogleFonts.notoSansKr(
+    labelLarge: _appTextStyle(
       color: AppColors.text,
       fontWeight: FontWeight.w600,
     ),
@@ -238,6 +260,7 @@ ThemeData buildAppTheme() {
 
   return ThemeData(
     useMaterial3: true,
+    fontFamily: AppFonts.family,
     brightness: Brightness.light,
     colorScheme: colorScheme,
     scaffoldBackgroundColor: AppColors.background,
@@ -254,12 +277,12 @@ ThemeData buildAppTheme() {
       systemOverlayStyle: SystemUiOverlayStyle.dark,
       iconTheme: const IconThemeData(color: AppColors.text),
       actionsIconTheme: const IconThemeData(color: AppColors.text),
-      titleTextStyle: GoogleFonts.notoSansKr(
+      titleTextStyle: _appTextStyle(
         color: AppColors.text,
         fontWeight: FontWeight.w700,
         fontSize: 18,
       ),
-      toolbarTextStyle: GoogleFonts.notoSansKr(
+      toolbarTextStyle: _appTextStyle(
         color: AppColors.text,
         fontWeight: FontWeight.w600,
         fontSize: 16,
@@ -287,7 +310,7 @@ ThemeData buildAppTheme() {
         elevation: 0,
         minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
-        textStyle: GoogleFonts.notoSansKr(
+        textStyle: _appTextStyle(
           fontSize: AppTypography.button,
           fontWeight: AppTypography.buttonWeight,
         ),
@@ -315,7 +338,7 @@ ThemeData buildAppTheme() {
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.md,
       ),
-      hintStyle: GoogleFonts.notoSansKr(
+      hintStyle: _appTextStyle(
         color: AppColors.textMuted,
         fontWeight: FontWeight.w400,
         fontSize: 16,
@@ -324,7 +347,7 @@ ThemeData buildAppTheme() {
     textTheme: textTheme,
     snackBarTheme: SnackBarThemeData(
       backgroundColor: AppColors.text,
-      contentTextStyle: GoogleFonts.notoSansKr(color: Colors.white),
+      contentTextStyle: _appTextStyle(color: Colors.white),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadii.md),
@@ -342,6 +365,7 @@ ThemeData buildAppTheme() {
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
         return TextStyle(
+          fontFamily: AppFonts.family,
           fontSize: 11,
           fontWeight: FontWeight.w700,
           color: selected ? AppColors.primary : AppColors.textMuted,

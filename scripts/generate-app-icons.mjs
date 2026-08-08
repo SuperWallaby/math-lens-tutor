@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * 우열 3D hero icon set — Azure OpenAI gpt-image-1.5 (kaja-gpt-image-15)
+ * 우열 3D hero icon set — Azure OpenAI gpt-image-2
  *
  *   node --env-file=.env.local scripts/generate-app-icons.mjs
  *   node --env-file=.env.local scripts/generate-app-icons.mjs --priority 1
@@ -64,21 +64,28 @@ async function generateIcon(manifest, icon) {
 
   const prompt = `${manifest.masterPrompt}\n\nSubject: ${icon.prompt}\nBrand accent color: ${icon.color}.`;
 
+  const useTransparentApi =
+    !deployment.includes("gpt-image-2") && !String(manifest.model).includes("gpt-image-2");
+
+  const body = {
+    prompt,
+    model: manifest.model,
+    size: manifest.size,
+    n: 1,
+    quality: manifest.quality,
+    output_format: "png",
+  };
+  if (useTransparentApi) {
+    body.background = "transparent";
+  }
+
   const res = await fetch(url, {
     method: "POST",
     headers: {
       "Content-Type": "application/json",
       "api-key": key,
     },
-    body: JSON.stringify({
-      prompt,
-      model: manifest.model,
-      size: manifest.size,
-      n: 1,
-      quality: manifest.quality,
-      output_format: "png",
-      background: "transparent",
-    }),
+    body: JSON.stringify(body),
   });
 
   const text = await res.text();
@@ -115,7 +122,10 @@ async function main() {
 
   const log = {
     generatedAt: new Date().toISOString(),
-    deployment: manifest.deployment,
+    deployment:
+      process.env.AZURE_OPENAI_IMAGE_DEPLOYMENT?.trim() || manifest.deployment,
+    model: manifest.model,
+    quality: manifest.quality,
     results: [],
   };
 

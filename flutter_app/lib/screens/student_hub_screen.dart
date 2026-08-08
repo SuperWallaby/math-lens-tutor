@@ -7,8 +7,10 @@ import '../services/api_client.dart';
 import '../services/oauth_service.dart';
 import '../theme/app_design_system.dart';
 import '../utils/problem_image_picker.dart';
+import '../utils/network_thumbnail_cache.dart';
 import '../widgets/app_card.dart';
 import '../widgets/learning_profile_widgets.dart';
+import '../widgets/mixed_math_text.dart';
 import '../widgets/skeleton_box.dart';
 import '../widgets/skeleton_lines.dart';
 import 'analysis_screen.dart';
@@ -367,11 +369,12 @@ class _ReturningHome extends StatelessWidget {
         _TodayLearningCard(
           profile: data.profile,
           mission: mission,
-          onPrimaryAction: supportsProblemImageCamera
-              ? onCapture
-              : onPickGallery,
-          onSecondaryAction: supportsProblemImageCamera ? onPickGallery : null,
           onOpenMission: mission == null ? null : () => onOpenMission(mission),
+        ),
+        const SizedBox(height: AppSpacing.lg),
+        _NewProblemCard(
+          onCapture: onCapture,
+          onPickGallery: onPickGallery,
         ),
         if (isGuest) ...[
           const SizedBox(height: AppSpacing.lg),
@@ -400,15 +403,11 @@ class _TodayLearningCard extends StatelessWidget {
   const _TodayLearningCard({
     required this.profile,
     required this.mission,
-    required this.onPrimaryAction,
     required this.onOpenMission,
-    this.onSecondaryAction,
   });
 
   final LearningProfile profile;
   final TodayMission? mission;
-  final VoidCallback onPrimaryAction;
-  final VoidCallback? onSecondaryAction;
   final VoidCallback? onOpenMission;
 
   @override
@@ -446,7 +445,7 @@ class _TodayLearningCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
-                    Text(
+                    MixedMathText(
                       body,
                       style: const TextStyle(
                         color: AppColors.textSub,
@@ -469,7 +468,7 @@ class _TodayLearningCard extends StatelessWidget {
           Row(
             children: [
               _StatPill(
-                label: '정답률',
+                label: '유형 정답률',
                 value: accuracy > 0 ? '$accuracy%' : '시작 전',
                 color: AppColors.success,
               ),
@@ -496,29 +495,69 @@ class _TodayLearningCard extends StatelessWidget {
               ),
             ),
           ],
-          const SizedBox(height: AppSpacing.md),
-          FilledButton.icon(
-            onPressed: onPrimaryAction,
-            icon: Icon(
-              supportsProblemImageCamera
-                  ? Icons.camera_alt_rounded
-                  : problemImageGalleryIcon,
-            ),
-            label: Text(supportsProblemImageCamera ? '새 문제 찍기' : '새 문제 등록'),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
+        ],
+      ),
+    );
+  }
+}
+
+class _NewProblemCard extends StatelessWidget {
+  const _NewProblemCard({
+    required this.onCapture,
+    required this.onPickGallery,
+  });
+
+  final VoidCallback onCapture;
+  final VoidCallback onPickGallery;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: const EdgeInsets.all(AppSpacing.lg + 2),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            '새 문제',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              height: 1.2,
             ),
           ),
-          if (onSecondaryAction != null) ...[
-            const SizedBox(height: AppSpacing.sm),
-            Center(
-              child: TextButton.icon(
-                onPressed: onSecondaryAction,
-                icon: Icon(problemImageGalleryIcon, size: 20),
-                label: Text(problemImageGalleryLabel),
+          const SizedBox(height: AppSpacing.xs),
+          const Text(
+            '새 문제를 올리면 AI가 오답 원인을 분석하고 비슷한 문제로 훈련해요.',
+            style: TextStyle(color: AppColors.textSub, height: 1.5),
+          ),
+          const SizedBox(height: AppSpacing.lg),
+          if (supportsProblemImageCamera) ...[
+            FilledButton.icon(
+              onPressed: onCapture,
+              icon: const Icon(Icons.camera_alt_rounded),
+              label: const Text('촬영하기'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
               ),
             ),
-          ],
+            const SizedBox(height: AppSpacing.sm),
+            OutlinedButton.icon(
+              onPressed: onPickGallery,
+              icon: Icon(problemImageGalleryIcon),
+              label: Text(problemImageGalleryLabel),
+              style: OutlinedButton.styleFrom(
+                minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
+              ),
+            ),
+          ] else
+            FilledButton.icon(
+              onPressed: onPickGallery,
+              icon: Icon(problemImageGalleryIcon),
+              label: const Text('새 문제 등록'),
+              style: FilledButton.styleFrom(
+                minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
+              ),
+            ),
         ],
       ),
     );
@@ -771,6 +810,8 @@ class _SubmissionThumbnail extends StatelessWidget {
             : Image.network(
                 imageUrl!,
                 fit: BoxFit.cover,
+                cacheWidth: networkImageCacheExtent(size, context),
+                cacheHeight: networkImageCacheExtent(size, context),
                 errorBuilder: (_, __, ___) => Container(
                   color: AppColors.primary.withValues(alpha: 0.08),
                   alignment: Alignment.center,

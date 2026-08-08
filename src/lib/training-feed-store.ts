@@ -344,23 +344,26 @@ export async function hasPendingFeedRefresh(userId: string): Promise<boolean> {
 }
 
 export function buildFeedItemFromBank(params: {
-  item: {
+  /** 번들 문항(1~3). 첫 항목이 대표(제목·개념·난이도). */
+  items: Array<{
     id: string;
     title: string;
     prompt: string;
     difficulty: GeneratedProblem["difficulty"];
     conceptPrimary: string;
-  };
+  }>;
   reason: string;
 }): TrainingFeedItem {
+  const primary = params.items[0]!;
   return {
     id: randomUUID(),
-    bankItemId: params.item.id,
-    concept: params.item.conceptPrimary,
-    difficulty: params.item.difficulty,
+    bankItemId: primary.id,
+    bankItemIds: params.items.map((item) => item.id),
+    concept: primary.conceptPrimary,
+    difficulty: primary.difficulty,
     reason: params.reason,
-    title: params.item.title.trim(),
+    title: primary.title.trim(),
     promptPreview: "",
-    problemCount: 1,
+    problemCount: params.items.length,
   };
 }
