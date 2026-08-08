@@ -1361,10 +1361,32 @@ class ApiClient {
   }
 
   Map<String, dynamic> _decode(http.Response response) {
+    final raw = response.body.trim();
+    if (raw.isEmpty) {
+      throw ApiException(
+        '서버 응답이 비어 있습니다. (HTTP ${response.statusCode}) '
+        '앱이 가리키는 API 주소·배포 상태를 확인해 주세요.',
+      );
+    }
     try {
-      return (jsonDecode(response.body) as Map).cast<String, dynamic>();
-    } catch (_) {
-      throw ApiException('서버 응답을 읽을 수 없습니다.');
+      final decoded = jsonDecode(raw);
+      if (decoded is Map) {
+        return decoded.cast<String, dynamic>();
+      }
+      throw ApiException('서버 응답 형식이 올바르지 않습니다.');
+    } catch (e) {
+      if (e is ApiException) rethrow;
+      final looksHtml =
+          raw.startsWith('<!DOCTYPE') || raw.toLowerCase().startsWith('<html');
+      if (looksHtml || response.statusCode == 404) {
+        throw ApiException(
+          '로그인 API를 찾을 수 없습니다. (HTTP ${response.statusCode}) '
+          '서버에 최신 앱이 배포됐는지 확인해 주세요.',
+        );
+      }
+      throw ApiException(
+        '서버 응답을 읽을 수 없습니다. (HTTP ${response.statusCode})',
+      );
     }
   }
 
