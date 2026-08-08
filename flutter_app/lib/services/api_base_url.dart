@@ -8,6 +8,7 @@ const _productionUrl = 'https://study-hazel-six.vercel.app';
 const _localPort = 3737;
 
 int? _debugPortFromAsset;
+String? _debugBaseUrlFromAsset;
 
 /// `--dart-define=API_BASE_URL=...` 가 있으면 항상 우선.
 /// 릴리스 빌드: 프로덕션. 디버그/프로파일: 로컬 Next (`npm run dev:next`).
@@ -22,11 +23,17 @@ String resolveApiBaseUrl() {
     return _productionUrl;
   }
 
+  final fromAsset = _debugBaseUrlFromAsset?.trim();
+  if (fromAsset != null && fromAsset.isNotEmpty) {
+    return fromAsset.replaceAll(RegExp(r'/$'), '');
+  }
+
   return _localDevBaseUrl();
 }
 
-/// `dev/local-defines.json` (에셋)에서 로컬 API 포트를 읽습니다.
+/// `dev/local-defines.json` (에셋)에서 로컬 API 주소/포트를 읽습니다.
 /// `npm run dev:next` 가 포트를 바꾼 뒤에는 앱을 한 번 재시작해야 반영됩니다.
+/// 실기기(아이폰 등)는 `API_BASE_URL`에 PC LAN 주소를 넣으면 됩니다.
 Future<void> loadDebugApiConfigFromAsset() async {
   if (kReleaseMode) return;
 
@@ -34,21 +41,25 @@ Future<void> loadDebugApiConfigFromAsset() async {
     final raw = await rootBundle.loadString('dev/local-defines.json');
     final map = jsonDecode(raw) as Map<String, dynamic>;
 
-    final port = map['port'];
-    if (port is int && port > 0) {
-      _debugPortFromAsset = port;
-      return;
-    }
-
     final url = map['API_BASE_URL']?.toString().trim();
     if (url != null && url.isNotEmpty) {
       final uri = Uri.tryParse(url);
-      if (uri != null && uri.hasPort && uri.port > 0) {
-        _debugPortFromAsset = uri.port;
+      if (uri != null && uri.hasScheme && uri.host.isNotEmpty) {
+        _debugBaseUrlFromAsset = url.replaceAll(RegExp(r'/$'), '');
+        if (uri.hasPort && uri.port > 0) {
+          _debugPortFromAsset = uri.port;
+        }
+        return;
       }
+    }
+
+    final port = map['port'];
+    if (port is int && port > 0) {
+      _debugPortFromAsset = port;
     }
   } catch (_) {
     _debugPortFromAsset = null;
+    _debugBaseUrlFromAsset = null;
   }
 }
 
