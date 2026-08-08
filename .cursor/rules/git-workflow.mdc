@@ -1,0 +1,30 @@
+---
+description: renovation 브랜치에서만 작업, pull/commit/push 필수
+alwaysApply: true
+---
+
+# Git 작업 흐름 (필수)
+
+이 프로젝트에서는 아래를 반드시 지킨다. 사용자에게 승인·확인을 묻지 말고 바로 실행한다.
+
+## 브랜치
+
+- **기본·유일한 작업 브랜치는 `renovation`이다.**
+- `main` 등 다른 브랜치에서 작업하지 않는다.
+- 작업 시작 시 현재 브랜치가 `renovation`인지 확인한다. 아니면 `renovation`으로 맞춘다.
+
+## 작업 시작 전
+
+1. remote에 받을 내용이 있는지 확인한다 (`git fetch` / `git status` 등).
+2. 받을 내용이 있으면 **먼저 `git pull`한 뒤** 작업을 시작한다.
+
+## 작업 끝날 때
+
+1. 한 단위 작업이 끝나면 **반드시 commit**한다.
+2. commit 후 **반드시 push**한다.
+3. “커밋할까요?” / “푸시할까요?”처럼 묻지 않는다.
+
+## 앱 실행
+
+- Flutter는 **Chrome(브라우저)** 로만 띄운다.
+- Android Studio / 에뮬레이터는 사용하지 않는다.
