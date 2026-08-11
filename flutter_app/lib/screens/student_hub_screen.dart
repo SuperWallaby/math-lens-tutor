@@ -271,28 +271,28 @@ class _FirstTimeHome extends StatelessWidget {
           textAlign: TextAlign.center,
           style: TextStyle(
             color: AppColors.primary,
-            fontWeight: FontWeight.w800,
-            fontSize: TabletLayout.bodySmall(context),
-            letterSpacing: 1.2,
+            fontWeight: FontWeight.w900,
+            fontSize: TabletLayout.titleHero(context),
+            letterSpacing: -0.6,
           ),
         ),
-        const SizedBox(height: 16),
+        const SizedBox(height: 12),
         Text(
-          '틀린 문제,\n사진 한 장이면 됩니다',
+          '오늘, 틀린 거부터.',
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: TabletLayout.titleSection(context) + 6,
+            fontSize: TabletLayout.titleSection(context) + 4,
             fontWeight: FontWeight.w900,
             height: 1.2,
           ),
         ),
         const SizedBox(height: 12),
         const Text(
-          '풀이 사진을 찍으면 AI가 왜 틀렸는지 분석하고\n비슷한 문제로 바로 훈련해요.',
+          '찍으면 왜 틀렸는지 보이고,\n바로 훈련까지 이어져요.',
           textAlign: TextAlign.center,
-          style: TextStyle(color: AppColors.textSub, height: 1.6, fontSize: 16),
+          style: TextStyle(color: AppColors.textSub, height: 1.55, fontSize: 15),
         ),
-        const SizedBox(height: 40),
+        const SizedBox(height: 36),
         if (supportsProblemImageCamera) ...[
           SizedBox(
             width: double.infinity,
@@ -300,7 +300,7 @@ class _FirstTimeHome extends StatelessWidget {
               onPressed: onCapture,
               icon: const Icon(Icons.camera_alt_rounded, size: 26),
               label: const Text(
-                '문제 사진 촬영하기',
+                '문제 사진 찍기',
                 style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
               ),
               style: FilledButton.styleFrom(

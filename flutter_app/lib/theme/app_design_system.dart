@@ -22,38 +22,42 @@ TextStyle _appTextStyle({
   );
 }
 abstract final class AppColors {
-  static const background = Color(0xFFF5F5F5);
-  static const surface = Color(0xFFFFFFFF);
-  static const surfaceElevated = Color(0xFFFAFAFA);
-  static const surfaceMuted = Color(0xFFEEEEEE);
+  /// C-tone dark + glass
+  static const background = Color(0xFF0B0D12);
+  static const surface = Color(0xFF171B24);
+  static const surfaceElevated = Color(0xFF222734);
+  static const surfaceMuted = Color(0xFF2C3240);
 
-  static const primary = Color(0xFF007BFF);
-  static const primaryDark = Color(0xFF0062CC);
+  static const primary = Color(0xFF4DA3FF);
+  static const primaryDark = Color(0xFF2F7FE0);
 
-  static const accent = Color(0xFFFF8C00);
-  static const success = Color(0xFF2ECC40);
-  static const warning = Color(0xFFB8860B);
-  static const teacher = Color(0xFF9370DB);
-  static const magenta = Color(0xFFFF00CC);
-  static const orange = Color(0xFFFF8C00);
+  static const accent = Color(0xFFFF9F43);
+  static const success = Color(0xFF3DDC97);
+  static const warning = Color(0xFFE6B422);
+  static const teacher = Color(0xFFB794F6);
+  static const magenta = Color(0xFFFF4FD8);
+  static const orange = Color(0xFFFF9F43);
 
   /// Category / progress wayfinding (Educacional hue mapping).
   static const categoryBlue = primary;
   static const categoryGold = warning;
   static const categoryGreen = success;
 
-  static const text = Color(0xFF1A1A2E);
-  static const textSub = Color(0xFF5A6278);
-  static const textMuted = Color(0xFF949BB0);
+  static const text = Color(0xFFF2F4F8);
+  static const textSub = Color(0xFFB0B6C6);
+  static const textMuted = Color(0xFF838AA0);
 
-  static const border = Color(0x14000000);
-  static const borderStrong = Color(0x1F000000);
+  static const border = Color(0x28FFFFFF);
+  static const borderStrong = Color(0x44FFFFFF);
+
+  static const glassFill = Color(0x28FFFFFF);
+  static const glassStroke = Color(0x55FFFFFF);
 }
 
 abstract final class AppRadii {
-  static const sm = 10.0;
-  static const md = 14.0;
-  static const lg = 16.0;
+  static const sm = 12.0;
+  static const md = 16.0;
+  static const lg = 22.0;
   static const pill = 999.0;
 }
 
@@ -217,19 +221,19 @@ extension AppDesignContext on BuildContext {
 }
 
 ThemeData buildAppTheme() {
-  const colorScheme = ColorScheme.light(
+  const colorScheme = ColorScheme.dark(
     surface: AppColors.surface,
     onSurface: AppColors.text,
     primary: AppColors.primary,
-    onPrimary: Colors.white,
+    onPrimary: Color(0xFF0B0D12),
     secondary: AppColors.accent,
-    onSecondary: Colors.white,
+    onSecondary: Color(0xFF0B0D12),
     error: AppColors.accent,
-    onError: Colors.white,
+    onError: Color(0xFF0B0D12),
     outline: AppColors.borderStrong,
   );
 
-  final textTheme = Typography.material2021().black.apply(
+  final textTheme = Typography.material2021().white.apply(
     fontFamily: AppFonts.family,
     bodyColor: AppColors.text,
     displayColor: AppColors.text,
@@ -261,20 +265,20 @@ ThemeData buildAppTheme() {
   return ThemeData(
     useMaterial3: true,
     fontFamily: AppFonts.family,
-    brightness: Brightness.light,
+    brightness: Brightness.dark,
     colorScheme: colorScheme,
     scaffoldBackgroundColor: AppColors.background,
     canvasColor: AppColors.background,
     dividerColor: AppColors.border,
     extensions: const [AppDesignColors.standard],
     appBarTheme: AppBarTheme(
-      backgroundColor: AppColors.surface,
+      backgroundColor: Colors.transparent,
       foregroundColor: AppColors.text,
       elevation: 0,
       scrolledUnderElevation: 0,
       centerTitle: false,
       surfaceTintColor: Colors.transparent,
-      systemOverlayStyle: SystemUiOverlayStyle.dark,
+      systemOverlayStyle: SystemUiOverlayStyle.light,
       iconTheme: const IconThemeData(color: AppColors.text),
       actionsIconTheme: const IconThemeData(color: AppColors.text),
       titleTextStyle: _appTextStyle(
@@ -300,13 +304,14 @@ ThemeData buildAppTheme() {
     filledButtonTheme: FilledButtonThemeData(
       style: AppButtonStyles.filled(
         backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        foregroundColor: const Color(0xFF0B0D12),
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.text,
         side: const BorderSide(color: AppColors.borderStrong),
+        backgroundColor: Colors.white.withValues(alpha: 0.06),
         elevation: 0,
         minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
@@ -321,7 +326,7 @@ ThemeData buildAppTheme() {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: AppColors.surfaceElevated,
+      fillColor: Colors.white.withValues(alpha: 0.06),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadii.md),
         borderSide: const BorderSide(color: AppColors.border),
@@ -343,25 +348,43 @@ ThemeData buildAppTheme() {
         fontWeight: FontWeight.w400,
         fontSize: 16,
       ),
+      labelStyle: _appTextStyle(
+        color: AppColors.textSub,
+        fontWeight: FontWeight.w500,
+        fontSize: 14,
+      ),
     ),
     textTheme: textTheme,
     snackBarTheme: SnackBarThemeData(
-      backgroundColor: AppColors.text,
-      contentTextStyle: _appTextStyle(color: Colors.white),
+      backgroundColor: AppColors.surfaceElevated,
+      contentTextStyle: _appTextStyle(color: AppColors.text),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadii.md),
       ),
     ),
-    progressIndicatorTheme: const ProgressIndicatorThemeData(
+    progressIndicatorTheme: ProgressIndicatorThemeData(
       color: AppColors.primary,
       linearTrackColor: AppColors.surfaceMuted,
     ),
+    chipTheme: ChipThemeData(
+      backgroundColor: Colors.white.withValues(alpha: 0.08),
+      selectedColor: AppColors.primary.withValues(alpha: 0.22),
+      labelStyle: _appTextStyle(
+        color: AppColors.text,
+        fontWeight: FontWeight.w600,
+        fontSize: 12,
+      ),
+      side: const BorderSide(color: AppColors.border),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+      ),
+    ),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: AppColors.surface,
+      backgroundColor: const Color(0xCC12151C),
       elevation: 0,
       shadowColor: Colors.transparent,
-      indicatorColor: AppColors.primary.withValues(alpha: 0.12),
+      indicatorColor: AppColors.primary.withValues(alpha: 0.22),
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
         return TextStyle(
@@ -377,6 +400,14 @@ ThemeData buildAppTheme() {
           color: selected ? AppColors.primary : AppColors.textMuted,
         );
       }),
+    ),
+    dividerTheme: const DividerThemeData(color: AppColors.border),
+    dialogTheme: DialogThemeData(
+      backgroundColor: AppColors.surfaceElevated,
+      surfaceTintColor: Colors.transparent,
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+      ),
     ),
   );
 }

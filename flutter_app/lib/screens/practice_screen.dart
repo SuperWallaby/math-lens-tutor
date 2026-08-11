@@ -11,6 +11,7 @@ import '../utils/problem_answer_format.dart';
 import '../utils/problem_set_pdf.dart';
 import '../widgets/app_card.dart';
 import '../widgets/bouncing_ellipsis_text.dart';
+import '../widgets/glass.dart';
 import '../widgets/problem_answer_input.dart';
 import '../widgets/question_view.dart';
 import '../widgets/mixed_math_text.dart';
@@ -346,8 +347,9 @@ class _PracticeScreenState extends State<PracticeScreen> {
         !widget.reviewMode && current != null && !hasSubmittedCurrent;
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
-        backgroundColor: AppColors.surface,
+        backgroundColor: Colors.transparent,
         foregroundColor: AppColors.text,
         iconTheme: const IconThemeData(color: AppColors.text),
         actionsIconTheme: const IconThemeData(color: AppColors.text),
@@ -389,7 +391,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                       borderRadius: BorderRadius.circular(AppRadii.md),
                       side: const BorderSide(color: AppColors.border),
                     ),
-                    color: AppColors.surface,
+                    color: AppColors.surfaceElevated,
                     elevation: 6,
                     onSelected: _onMenuAction,
                     itemBuilder: (context) => _practiceMenuEntries(),
@@ -397,8 +399,9 @@ class _PracticeScreenState extends State<PracticeScreen> {
                 ],
               ],
       ),
-      body: SafeArea(
-        child: Column(
+      body: GlassAtmosphere(
+        child: SafeArea(
+          child: Column(
           children: [
             Expanded(
               child: TabletBody(
@@ -511,6 +514,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
               ),
           ],
         ),
+      ),
       ),
     );
   }

@@ -8,6 +8,7 @@ import '../services/api_client.dart';
 import '../services/app_prefs.dart';
 import '../utils/problem_set_pdf.dart';
 import '../widgets/app_card.dart';
+import '../widgets/glass.dart';
 import '../widgets/mixed_math_text.dart';
 import '../widgets/skeleton_box.dart';
 import '../widgets/skeleton_lines.dart';
@@ -198,20 +199,23 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   Widget build(BuildContext context) {
     if (_error != null) {
       return Scaffold(
+        backgroundColor: Colors.transparent,
         appBar: AppBar(title: const Text('AI 풀이 분석')),
-        body: SafeArea(
-          child: Padding(
-            padding: TabletLayout.pagePadding(context),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(_error!, style: const TextStyle(color: AppColors.accent)),
-                const SizedBox(height: 16),
-                FilledButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('돌아가기'),
-                ),
-              ],
+        body: GlassAtmosphere(
+          child: SafeArea(
+            child: Padding(
+              padding: TabletLayout.pagePadding(context),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Text(_error!, style: const TextStyle(color: AppColors.accent)),
+                  const SizedBox(height: 16),
+                  FilledButton(
+                    onPressed: () => Navigator.of(context).pop(),
+                    child: const Text('돌아가기'),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -246,14 +250,16 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     final networkImageUrl = _resolveSubmissionImageUrl();
 
     return Scaffold(
+      backgroundColor: Colors.transparent,
       appBar: AppBar(
         title: Text(widget.liteMode ? '풀이 분석' : 'AI 풀이 분석'),
       ),
-      body: SafeArea(
-        child: TabletBody(
-          child: ListView(
-            padding: TabletLayout.pagePadding(context),
-            children: [
+      body: GlassAtmosphere(
+        child: SafeArea(
+          child: TabletBody(
+            child: ListView(
+              padding: TabletLayout.pagePadding(context),
+              children: [
               AppCard(
                 padding: const EdgeInsets.all(14),
                 child: Column(
@@ -634,6 +640,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
             ],
           ),
         ),
+      ),
       ),
     );
   }

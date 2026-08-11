@@ -4,6 +4,7 @@ import '../models/app_models.dart';
 import '../services/api_client.dart';
 import '../services/oauth_service.dart';
 import '../widgets/brand_splash_view.dart';
+import '../widgets/glass.dart';
 import 'onboarding_screen.dart';
 import 'parent_explain_screen.dart';
 import 'parent_screens.dart';
@@ -91,9 +92,12 @@ class _AppShellState extends State<AppShell> {
         }
 
         return Scaffold(
-          body: IndexedStack(
-            index: safeIndex,
-            children: tabs.map((tab) => tab.screen).toList(),
+          backgroundColor: Colors.transparent,
+          body: GlassAtmosphere(
+            child: IndexedStack(
+              index: safeIndex,
+              children: tabs.map((tab) => tab.screen).toList(),
+            ),
           ),
           bottomNavigationBar: NavigationBar(
             selectedIndex: safeIndex,
