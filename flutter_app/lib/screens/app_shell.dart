@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
 import '../services/oauth_service.dart';
+import '../widgets/brand_splash_view.dart';
 import 'onboarding_screen.dart';
 import 'parent_explain_screen.dart';
 import 'parent_screens.dart';
@@ -310,9 +311,7 @@ class _AppBootstrapState extends State<AppBootstrap> {
   @override
   Widget build(BuildContext context) {
     if (_onboardingDone == null) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const BrandSplashView(message: '잠시만요');
     }
 
     if (_onboardingDone == false) {

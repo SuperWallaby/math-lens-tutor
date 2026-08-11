@@ -64,10 +64,16 @@ Future<void> main() async {
     unawaited(initializeOAuthSdk());
     unawaited(initializeMagicLinkAuth());
   }
-  await loadDebugApiConfigFromAsset();
-  if (kDebugMode) {
-    debugPrint('[study] variant=$appVariantHeader API baseUrl=${resolveApiBaseUrl()}');
-  }
+  // 디버그 API 설정은 first frame을 막지 않도록 백그라운드에서 로드.
+  unawaited(
+    loadDebugApiConfigFromAsset().then((_) {
+      if (kDebugMode) {
+        debugPrint(
+          '[study] variant=$appVariantHeader API baseUrl=${resolveApiBaseUrl()}',
+        );
+      }
+    }),
+  );
 
   final authSession = AuthSession();
   final apiClient = ApiClient(authSession: authSession);

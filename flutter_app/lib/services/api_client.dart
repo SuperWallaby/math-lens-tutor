@@ -242,7 +242,7 @@ class ApiClient {
         'message': '풀이 중…',
       });
 
-      emitProgress('similar', '유사 문제 만드는 중…');
+      emitProgress('similar', '비슷한 문제 5개를 고르는 중…');
       final similarResponse = await http
           .post(
             Uri.parse('$baseUrl/api/analyze/similar'),
@@ -268,36 +268,60 @@ class ApiClient {
         'type': 'partial',
         'step': 'similar',
         'problemSet': similarJson['problemSet'],
-        'message': '유사 문제 만드는 중…',
+        'message': '유사 문제 준비 완료',
       });
+
+      // finalize(저장)는 백그라운드로 보내고, 유사 문제는 바로 쓸 수 있게 반환한다.
       emitProgress('save', '결과 저장 중…');
-      final finalizeResponse = await http
-          .post(
-            Uri.parse('$baseUrl/api/analyze/finalize'),
-            headers: await _jsonHeaders(),
-            body: jsonEncode({
-              'submissionId': visionJson['submissionId'],
-              'problemSetId': visionJson['problemSetId'],
-              'imageUrl': visionJson['imageUrl'],
-              'imageName': visionJson['imageName'],
-              'analysis': tutorJson['analysis'],
-              'qualityMode': quality,
-              'textDeploymentName': visionJson['textDeploymentName'],
-              'visionDeploymentName': visionJson['visionDeploymentName'],
-              'usedSample': similarJson['usedSample'] == true,
-              'problemSet': similarJson['problemSet'],
-            }),
-          )
-          .timeout(const Duration(minutes: 2));
+      final provisional = AnalyzeResult(
+        submission: SolutionSubmission(
+          id: visionJson['submissionId'] as String? ?? '',
+          userId: '',
+          imageUrl: visionJson['imageUrl'] as String?,
+          imageName: visionJson['imageName'] as String? ?? filename,
+          createdAt: DateTime.now().toIso8601String(),
+          analysis: SolutionAnalysis.fromJson(
+            (tutorJson['analysis'] as Map?)?.cast<String, dynamic>() ?? {},
+          ),
+        ),
+        problemSet: GeneratedProblemSet.fromJson(
+          (similarJson['problemSet'] as Map?)?.cast<String, dynamic>() ?? {},
+        ),
+      );
 
-      final finalizeJson = _decodeMap(finalizeResponse);
-      if (finalizeResponse.statusCode >= 400) {
-        throw ApiException(
-          finalizeJson['error'] as String? ?? '결과 저장에 실패했습니다.',
-        );
-      }
+      unawaited(() async {
+        try {
+          final finalizeResponse = await http
+              .post(
+                Uri.parse('$baseUrl/api/analyze/finalize'),
+                headers: await _jsonHeaders(),
+                body: jsonEncode({
+                  'submissionId': visionJson['submissionId'],
+                  'problemSetId': visionJson['problemSetId'],
+                  'imageUrl': visionJson['imageUrl'],
+                  'imageName': visionJson['imageName'],
+                  'analysis': tutorJson['analysis'],
+                  'qualityMode': quality,
+                  'textDeploymentName': visionJson['textDeploymentName'],
+                  'visionDeploymentName': visionJson['visionDeploymentName'],
+                  'usedSample': similarJson['usedSample'] == true,
+                  'problemSet': similarJson['problemSet'],
+                }),
+              )
+              .timeout(const Duration(minutes: 2));
+          if (finalizeResponse.statusCode >= 400 && kDebugMode) {
+            debugPrint(
+              '[analyze] finalize failed: ${finalizeResponse.statusCode}',
+            );
+          }
+        } catch (e) {
+          if (kDebugMode) {
+            debugPrint('[analyze] finalize background error: $e');
+          }
+        }
+      }());
 
-      return AnalyzeResult.fromJson(finalizeJson);
+      return provisional;
     } on ApiException {
       rethrow;
     } catch (e) {

@@ -555,13 +555,15 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                 ),
               ],
               const SizedBox(height: 18),
-              if (similarReady && _finalResult != null) ...[
+              if (similarReady) ...[
                 OutlinedButton.icon(
                   onPressed: () async {
+                    final set = _problemSet;
+                    if (set == null) return;
                     try {
                       await openSimilarProblemsPdf(
                         context,
-                        _finalResult!.problemSet,
+                        set,
                       );
                     } catch (e) {
                       if (!context.mounted) return;
@@ -576,11 +578,13 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                 const SizedBox(height: 12),
                 FilledButton.icon(
                   onPressed: () {
+                    final set = _problemSet;
+                    if (set == null) return;
                     Navigator.of(context).push(
                       MaterialPageRoute(
                         builder: (_) => PracticeScreen(
                           apiClient: widget.apiClient,
-                          problemSet: _finalResult!.problemSet,
+                          problemSet: set,
                           liteMode: widget.liteMode,
                         ),
                       ),
@@ -589,6 +593,17 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                   icon: const Icon(Icons.quiz_rounded),
                   label: const Text('유사 문제 5개 풀기'),
                 ),
+                if (_running) ...[
+                  const SizedBox(height: 12),
+                  Text(
+                    '분석을 마무리하는 중에도 유사 문제는 바로 풀 수 있어요.',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      color: AppColors.textSub,
+                      fontSize: TabletLayout.body(context) - 1,
+                    ),
+                  ),
+                ],
               ] else if (_running && _progressStep == 'similar') ...[
                 Center(
                   child: Row(

@@ -9,6 +9,7 @@ import '../services/app_prefs.dart';
 import '../services/auth_session.dart';
 import '../services/oauth_service.dart';
 import '../utils/pending_student_link.dart';
+import '../widgets/brand_splash_view.dart';
 import 'app_shell.dart';
 import 'guardian_link_required_screen.dart';
 import 'teacher_closed_screen.dart';
@@ -66,39 +67,45 @@ class _AuthGateState extends State<AuthGate> {
 
   Future<void> _bootstrap() async {
     try {
-      await _bootstrapInner().timeout(const Duration(seconds: 8));
-    } on TimeoutException catch (e) {
-      if (kDebugMode) {
-        debugPrint('[AuthGate] bootstrap timeout (web hot restart?): $e');
+      // 로컬 세션만 먼저 복구해 즉시 UI를 보여 체감 로딩을 줄인다.
+      await widget.authSession.load();
+      if (mounted) {
+        if (widget.authSession.isProfileComplete) {
+          _profileOnboardingDismissed = true;
+        }
+        setState(() => _ready = true);
       }
-      _recoverGuestSession();
+
+      unawaited(captureInitialStudentLinkCode());
+
+      if (widget.authSession.isSignedIn) {
+        try {
+          final me = await widget.apiClient
+              .fetchMe()
+              .timeout(const Duration(seconds: 8));
+          if (me.user.isGuardian) {
+            await widget.apiClient
+                .fetchLinkedStudents()
+                .timeout(const Duration(seconds: 8));
+          }
+          if (mounted && widget.authSession.isProfileComplete) {
+            setState(() => _profileOnboardingDismissed = true);
+          }
+        } on TimeoutException catch (e) {
+          if (kDebugMode) {
+            debugPrint('[AuthGate] fetchMe timeout: $e');
+          }
+        } catch (_) {
+          await widget.authSession.clear();
+          if (mounted) setState(() {});
+        }
+      }
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[AuthGate] bootstrap failed: $e');
       }
       _recoverGuestSession();
-    } finally {
-      if (mounted) {
-        setState(() => _ready = true);
-      }
-    }
-  }
-
-  Future<void> _bootstrapInner() async {
-    await widget.authSession.load();
-    await captureInitialStudentLinkCode();
-    if (widget.authSession.isSignedIn) {
-      try {
-        final me = await widget.apiClient.fetchMe();
-        if (me.user.isGuardian) {
-          await widget.apiClient.fetchLinkedStudents();
-        }
-        if (mounted && widget.authSession.isProfileComplete) {
-          setState(() => _profileOnboardingDismissed = true);
-        }
-      } catch (_) {
-        await widget.authSession.clear();
-      }
+      if (mounted) setState(() => _ready = true);
     }
   }
 
@@ -127,9 +134,7 @@ class _AuthGateState extends State<AuthGate> {
   @override
   Widget build(BuildContext context) {
     if (!_ready) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const BrandSplashView(message: '학습 준비를 하고 있어요');
     }
 
     final session = widget.authSession;
