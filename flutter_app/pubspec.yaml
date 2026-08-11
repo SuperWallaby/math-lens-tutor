@@ -116,13 +116,15 @@ flutter:
         - asset: assets/fonts/NotoSansKR-Variable.ttf
 
 flutter_launcher_icons:
-  image_path: wooooooo.png
+  image_path: assets/brand/app_icon.png
   android: true
   ios: true
   remove_alpha_ios: true
+  adaptive_icon_background: "#007BFF"
+  adaptive_icon_foreground: assets/brand/app_icon.png
   web:
     generate: true
-    background_color: "#F5F5F5"
+    background_color: "#007BFF"
     theme_color: "#007BFF"
   macos:
     generate: true
