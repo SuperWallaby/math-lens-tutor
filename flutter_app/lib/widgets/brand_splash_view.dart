@@ -14,13 +14,13 @@ class BrandSplashView extends StatelessWidget {
   final String message;
   final bool showProgress;
 
-  static const _heroAsset = 'assets/onboarding/student/01.webp';
-  static const _fallbackAsset = 'assets/icons/3d/practice_start.webp';
+  static const _heroAsset = 'assets/splash/brand_hero.png';
+  static const _fallbackAsset = 'assets/onboarding/student/01.webp';
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F5F5),
+      backgroundColor: const Color(0xFFF7F8FA),
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -29,16 +29,16 @@ class BrandSplashView extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 180,
-                  height: 180,
+                  width: 220,
+                  height: 220,
                   decoration: BoxDecoration(
                     color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(40),
+                    borderRadius: BorderRadius.circular(28),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.14),
-                        blurRadius: 32,
-                        offset: const Offset(0, 14),
+                        color: Colors.black.withValues(alpha: 0.06),
+                        blurRadius: 28,
+                        offset: const Offset(0, 12),
                       ),
                     ],
                   ),
@@ -61,51 +61,41 @@ class BrandSplashView extends StatelessWidget {
                 Text(
                   appDisplayName,
                   style: const TextStyle(
-                    fontSize: 32,
-                    fontWeight: FontWeight.w900,
+                    fontSize: 30,
+                    fontWeight: FontWeight.w800,
                     color: AppColors.primary,
-                    letterSpacing: -0.5,
+                    letterSpacing: -0.4,
                   ),
                 ),
                 const SizedBox(height: 10),
                 Text(
-                  '틀린 문제, 사진 한 장이면 됩니다',
+                  '틀린 문제를 사진으로 올리면\n바로 분석해 드려요',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 16,
-                    height: 1.35,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.text.withValues(alpha: 0.82),
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'AI가 왜 틀렸는지 알려주고\n비슷한 문제로 바로 훈련해요',
-                  textAlign: TextAlign.center,
-                  style: TextStyle(
-                    fontSize: 13,
+                    fontSize: 15,
                     height: 1.4,
-                    color: AppColors.textSub.withValues(alpha: 0.95),
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.text.withValues(alpha: 0.88),
                   ),
                 ),
-                const SizedBox(height: 30),
+                const SizedBox(height: 28),
                 if (showProgress) ...[
                   const SizedBox(
-                    width: 28,
-                    height: 28,
+                    width: 26,
+                    height: 26,
                     child: CircularProgressIndicator(
-                      strokeWidth: 2.6,
+                      strokeWidth: 2.4,
                       color: AppColors.primary,
                     ),
                   ),
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 12),
                 ],
                 Text(
                   message,
                   style: const TextStyle(
                     fontSize: 13,
                     color: AppColors.textSub,
-                    fontWeight: FontWeight.w600,
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
               ],
