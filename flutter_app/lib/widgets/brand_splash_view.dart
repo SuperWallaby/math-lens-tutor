@@ -14,39 +14,46 @@ class BrandSplashView extends StatelessWidget {
   final String message;
   final bool showProgress;
 
+  static const _heroAsset = 'assets/onboarding/student/01.webp';
+  static const _fallbackAsset = 'assets/icons/3d/practice_start.webp';
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.background,
+      backgroundColor: const Color(0xFFF5F5F5),
       body: SafeArea(
         child: Center(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
+            padding: const EdgeInsets.symmetric(horizontal: 28),
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  width: 132,
-                  height: 132,
+                  width: 180,
+                  height: 180,
                   decoration: BoxDecoration(
                     color: AppColors.surface,
-                    borderRadius: BorderRadius.circular(36),
+                    borderRadius: BorderRadius.circular(40),
                     boxShadow: [
                       BoxShadow(
-                        color: AppColors.primary.withValues(alpha: 0.12),
-                        blurRadius: 28,
-                        offset: const Offset(0, 12),
+                        color: AppColors.primary.withValues(alpha: 0.14),
+                        blurRadius: 32,
+                        offset: const Offset(0, 14),
                       ),
                     ],
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Image.asset(
-                    'assets/icons/3d/practice_start.webp',
+                    _heroAsset,
                     fit: BoxFit.cover,
-                    errorBuilder: (_, error, stackTrace) => const Icon(
-                      Icons.auto_awesome_rounded,
-                      size: 56,
-                      color: AppColors.primary,
+                    errorBuilder: (_, error, stackTrace) => Image.asset(
+                      _fallbackAsset,
+                      fit: BoxFit.cover,
+                      errorBuilder: (_, error2, stackTrace2) => const Icon(
+                        Icons.auto_awesome_rounded,
+                        size: 64,
+                        color: AppColors.primary,
+                      ),
                     ),
                   ),
                 ),
@@ -54,10 +61,10 @@ class BrandSplashView extends StatelessWidget {
                 Text(
                   appDisplayName,
                   style: const TextStyle(
-                    fontSize: 28,
+                    fontSize: 32,
                     fontWeight: FontWeight.w900,
                     color: AppColors.primary,
-                    letterSpacing: -0.4,
+                    letterSpacing: -0.5,
                   ),
                 ),
                 const SizedBox(height: 10),
@@ -65,13 +72,23 @@ class BrandSplashView extends StatelessWidget {
                   '틀린 문제, 사진 한 장이면 됩니다',
                   textAlign: TextAlign.center,
                   style: TextStyle(
-                    fontSize: 15,
+                    fontSize: 16,
                     height: 1.35,
-                    fontWeight: FontWeight.w600,
-                    color: AppColors.text.withValues(alpha: 0.78),
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.text.withValues(alpha: 0.82),
                   ),
                 ),
-                const SizedBox(height: 28),
+                const SizedBox(height: 8),
+                Text(
+                  'AI가 왜 틀렸는지 알려주고\n비슷한 문제로 바로 훈련해요',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: 13,
+                    height: 1.4,
+                    color: AppColors.textSub.withValues(alpha: 0.95),
+                  ),
+                ),
+                const SizedBox(height: 30),
                 if (showProgress) ...[
                   const SizedBox(
                     width: 28,

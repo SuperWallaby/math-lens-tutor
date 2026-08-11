@@ -34,8 +34,12 @@ class AuthGate extends StatefulWidget {
 
 class _AuthGateState extends State<AuthGate> {
   bool _ready = false;
+
   /// API로 profileComplete가 true가 되어도, 온보딩 UI는 onComplete까지 유지
   bool _profileOnboardingDismissed = false;
+
+  /// 스플래시가 너무 빨리 사라지지 않도록 최소 표시 시간
+  static const _minSplash = Duration(milliseconds: 1600);
 
   @override
   void initState() {
@@ -66,19 +70,23 @@ class _AuthGateState extends State<AuthGate> {
   }
 
   Future<void> _bootstrap() async {
+    final started = DateTime.now();
     try {
-      // 로컬 세션만 먼저 복구해 즉시 UI를 보여 체감 로딩을 줄인다.
       await widget.authSession.load();
-      if (mounted) {
-        if (widget.authSession.isProfileComplete) {
-          _profileOnboardingDismissed = true;
-        }
-        setState(() => _ready = true);
+      if (widget.authSession.isProfileComplete) {
+        _profileOnboardingDismissed = true;
       }
 
       unawaited(captureInitialStudentLinkCode());
 
-      if (widget.authSession.isSignedIn) {
+      // 최소 스플래시 시간과 세션 동기화를 함께 진행
+      final remaining = _minSplash - DateTime.now().difference(started);
+      final waitSplash = remaining > Duration.zero
+          ? Future<void>.delayed(remaining)
+          : Future<void>.value();
+
+      Future<void> syncSession() async {
+        if (!widget.authSession.isSignedIn) return;
         try {
           final me = await widget.apiClient
               .fetchMe()
@@ -89,7 +97,7 @@ class _AuthGateState extends State<AuthGate> {
                 .timeout(const Duration(seconds: 8));
           }
           if (mounted && widget.authSession.isProfileComplete) {
-            setState(() => _profileOnboardingDismissed = true);
+            _profileOnboardingDismissed = true;
           }
         } on TimeoutException catch (e) {
           if (kDebugMode) {
@@ -97,15 +105,24 @@ class _AuthGateState extends State<AuthGate> {
           }
         } catch (_) {
           await widget.authSession.clear();
-          if (mounted) setState(() {});
         }
       }
+
+      // 스플래시는 최소 시간 보장. 네트워크는 그 안/뒤에서 병행.
+      await Future.wait<void>([waitSplash, syncSession()]);
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[AuthGate] bootstrap failed: $e');
       }
       _recoverGuestSession();
-      if (mounted) setState(() => _ready = true);
+      final remaining = _minSplash - DateTime.now().difference(started);
+      if (remaining > Duration.zero) {
+        await Future<void>.delayed(remaining);
+      }
+    } finally {
+      if (mounted) {
+        setState(() => _ready = true);
+      }
     }
   }
 
