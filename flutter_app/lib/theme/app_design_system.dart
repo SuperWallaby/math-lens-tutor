@@ -22,36 +22,36 @@ TextStyle _appTextStyle({
   );
 }
 abstract final class AppColors {
-  /// C-tone dark + glass
-  static const background = Color(0xFF0B0D12);
-  static const surface = Color(0xFF171B24);
-  static const surfaceElevated = Color(0xFF222734);
-  static const surfaceMuted = Color(0xFF2C3240);
+  /// Light glass v2 — cool gray base (not pure white)
+  static const background = Color(0xFFE8ECF2);
+  static const surface = Color(0xFFF7F9FC);
+  static const surfaceElevated = Color(0xFFFFFFFF);
+  static const surfaceMuted = Color(0xFFDDE3EC);
 
-  static const primary = Color(0xFF4DA3FF);
-  static const primaryDark = Color(0xFF2F7FE0);
+  static const primary = Color(0xFF1E6FE0);
+  static const primaryDark = Color(0xFF1557B8);
 
-  static const accent = Color(0xFFFF9F43);
-  static const success = Color(0xFF3DDC97);
-  static const warning = Color(0xFFE6B422);
-  static const teacher = Color(0xFFB794F6);
-  static const magenta = Color(0xFFFF4FD8);
-  static const orange = Color(0xFFFF9F43);
+  static const accent = Color(0xFFFF8C00);
+  static const success = Color(0xFF2ECC40);
+  static const warning = Color(0xFFB8860B);
+  static const teacher = Color(0xFF7C5CBF);
+  static const magenta = Color(0xFFE0119D);
+  static const orange = Color(0xFFFF8C00);
 
   /// Category / progress wayfinding (Educacional hue mapping).
   static const categoryBlue = primary;
   static const categoryGold = warning;
   static const categoryGreen = success;
 
-  static const text = Color(0xFFF2F4F8);
-  static const textSub = Color(0xFFB0B6C6);
-  static const textMuted = Color(0xFF838AA0);
+  static const text = Color(0xFF141820);
+  static const textSub = Color(0xFF5A6278);
+  static const textMuted = Color(0xFF8A93A8);
 
-  static const border = Color(0x28FFFFFF);
-  static const borderStrong = Color(0x44FFFFFF);
+  static const border = Color(0x1A000000);
+  static const borderStrong = Color(0x2E000000);
 
-  static const glassFill = Color(0x28FFFFFF);
-  static const glassStroke = Color(0x55FFFFFF);
+  static const glassFill = Color(0xD9FFFFFF);
+  static const glassStroke = Color(0x66A8B4C8);
 }
 
 abstract final class AppRadii {
@@ -221,19 +221,19 @@ extension AppDesignContext on BuildContext {
 }
 
 ThemeData buildAppTheme() {
-  const colorScheme = ColorScheme.dark(
+  const colorScheme = ColorScheme.light(
     surface: AppColors.surface,
     onSurface: AppColors.text,
     primary: AppColors.primary,
-    onPrimary: Color(0xFF0B0D12),
+    onPrimary: Colors.white,
     secondary: AppColors.accent,
-    onSecondary: Color(0xFF0B0D12),
+    onSecondary: Colors.white,
     error: AppColors.accent,
-    onError: Color(0xFF0B0D12),
+    onError: Colors.white,
     outline: AppColors.borderStrong,
   );
 
-  final textTheme = Typography.material2021().white.apply(
+  final textTheme = Typography.material2021().black.apply(
     fontFamily: AppFonts.family,
     bodyColor: AppColors.text,
     displayColor: AppColors.text,
@@ -265,7 +265,7 @@ ThemeData buildAppTheme() {
   return ThemeData(
     useMaterial3: true,
     fontFamily: AppFonts.family,
-    brightness: Brightness.dark,
+    brightness: Brightness.light,
     colorScheme: colorScheme,
     scaffoldBackgroundColor: AppColors.background,
     canvasColor: AppColors.background,
@@ -278,7 +278,7 @@ ThemeData buildAppTheme() {
       scrolledUnderElevation: 0,
       centerTitle: false,
       surfaceTintColor: Colors.transparent,
-      systemOverlayStyle: SystemUiOverlayStyle.light,
+      systemOverlayStyle: SystemUiOverlayStyle.dark,
       iconTheme: const IconThemeData(color: AppColors.text),
       actionsIconTheme: const IconThemeData(color: AppColors.text),
       titleTextStyle: _appTextStyle(
@@ -293,7 +293,7 @@ ThemeData buildAppTheme() {
       ),
     ),
     cardTheme: CardThemeData(
-      color: AppColors.surface,
+      color: AppColors.surfaceElevated,
       elevation: 0,
       shadowColor: Colors.transparent,
       shape: RoundedRectangleBorder(
@@ -304,14 +304,14 @@ ThemeData buildAppTheme() {
     filledButtonTheme: FilledButtonThemeData(
       style: AppButtonStyles.filled(
         backgroundColor: AppColors.primary,
-        foregroundColor: const Color(0xFF0B0D12),
+        foregroundColor: Colors.white,
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.text,
         side: const BorderSide(color: AppColors.borderStrong),
-        backgroundColor: Colors.white.withValues(alpha: 0.06),
+        backgroundColor: Colors.white.withValues(alpha: 0.72),
         elevation: 0,
         minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
@@ -326,7 +326,7 @@ ThemeData buildAppTheme() {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.06),
+      fillColor: Colors.white.withValues(alpha: 0.88),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadii.md),
         borderSide: const BorderSide(color: AppColors.border),
@@ -356,20 +356,20 @@ ThemeData buildAppTheme() {
     ),
     textTheme: textTheme,
     snackBarTheme: SnackBarThemeData(
-      backgroundColor: AppColors.surfaceElevated,
-      contentTextStyle: _appTextStyle(color: AppColors.text),
+      backgroundColor: AppColors.text,
+      contentTextStyle: _appTextStyle(color: Colors.white),
       behavior: SnackBarBehavior.floating,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadii.md),
       ),
     ),
-    progressIndicatorTheme: ProgressIndicatorThemeData(
+    progressIndicatorTheme: const ProgressIndicatorThemeData(
       color: AppColors.primary,
       linearTrackColor: AppColors.surfaceMuted,
     ),
     chipTheme: ChipThemeData(
-      backgroundColor: Colors.white.withValues(alpha: 0.08),
-      selectedColor: AppColors.primary.withValues(alpha: 0.22),
+      backgroundColor: Colors.white.withValues(alpha: 0.85),
+      selectedColor: AppColors.primary.withValues(alpha: 0.16),
       labelStyle: _appTextStyle(
         color: AppColors.text,
         fontWeight: FontWeight.w600,
@@ -381,10 +381,10 @@ ThemeData buildAppTheme() {
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: const Color(0xCC12151C),
+      backgroundColor: const Color(0xE6F7F9FC),
       elevation: 0,
       shadowColor: Colors.transparent,
-      indicatorColor: AppColors.primary.withValues(alpha: 0.22),
+      indicatorColor: AppColors.primary.withValues(alpha: 0.14),
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
         return TextStyle(
