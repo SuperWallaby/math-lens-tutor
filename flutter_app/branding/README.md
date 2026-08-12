@@ -1,10 +1,8 @@
 # 우열 스토어 branding
 
-마스터: `app-icon-master-source.png` — **카메라 + 수식** 아이콘 (1024×1024)
+마스터: `app-icon-master-source.png` — **글래스 UO** 아이콘 (1024×1024)
 
-원본은 git `ce85780` 의 iOS AppIcon 1024에서 복원.
-
-3D UI용 카메라 일러스트(별도): `assets/icons/3d/upload_empty.png`
+U=우, O=열. 하늘색 글래스 + 물방울 스타일.
 
 ## Play Console
 

@@ -120,12 +120,12 @@ flutter_launcher_icons:
   android: true
   ios: true
   remove_alpha_ios: true
-  adaptive_icon_background: "#007BFF"
+  adaptive_icon_background: "#5EB7EB"
   adaptive_icon_foreground: assets/brand/app_icon.png
   web:
     generate: true
-    background_color: "#007BFF"
-    theme_color: "#007BFF"
+    background_color: "#5EB7EB"
+    theme_color: "#1E6FE0"
   macos:
     generate: true
   windows:
