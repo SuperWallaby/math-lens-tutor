@@ -38,8 +38,8 @@ class _AuthGateState extends State<AuthGate> {
   /// API로 profileComplete가 true가 되어도, 온보딩 UI는 onComplete까지 유지
   bool _profileOnboardingDismissed = false;
 
-  /// 스플래시가 너무 빨리 사라지지 않도록 최소 표시 시간
-  static const _minSplash = Duration(milliseconds: 1600);
+  /// 첫 프레임 깜빡임만 막는 짧은 최소 시간 (네트워크는 블로킹하지 않음)
+  static const _minSplash = Duration(milliseconds: 350);
 
   @override
   void initState() {
@@ -69,6 +69,32 @@ class _AuthGateState extends State<AuthGate> {
     setState(() {});
   }
 
+  Future<void> _syncSessionInBackground() async {
+    if (!widget.authSession.isSignedIn) return;
+    try {
+      final me = await widget.apiClient
+          .fetchMe()
+          .timeout(const Duration(seconds: 8));
+      if (me.user.isGuardian) {
+        await widget.apiClient
+            .fetchLinkedStudents()
+            .timeout(const Duration(seconds: 8));
+      }
+      if (!mounted) return;
+      if (widget.authSession.isProfileComplete) {
+        _profileOnboardingDismissed = true;
+      }
+      setState(() {});
+    } on TimeoutException catch (e) {
+      if (kDebugMode) {
+        debugPrint('[AuthGate] fetchMe timeout: $e');
+      }
+    } catch (_) {
+      await widget.authSession.clear();
+      if (mounted) setState(() {});
+    }
+  }
+
   Future<void> _bootstrap() async {
     final started = DateTime.now();
     try {
@@ -78,48 +104,18 @@ class _AuthGateState extends State<AuthGate> {
       }
 
       unawaited(captureInitialStudentLinkCode());
-
-      // 최소 스플래시 시간과 세션 동기화를 함께 진행
-      final remaining = _minSplash - DateTime.now().difference(started);
-      final waitSplash = remaining > Duration.zero
-          ? Future<void>.delayed(remaining)
-          : Future<void>.value();
-
-      Future<void> syncSession() async {
-        if (!widget.authSession.isSignedIn) return;
-        try {
-          final me = await widget.apiClient
-              .fetchMe()
-              .timeout(const Duration(seconds: 8));
-          if (me.user.isGuardian) {
-            await widget.apiClient
-                .fetchLinkedStudents()
-                .timeout(const Duration(seconds: 8));
-          }
-          if (mounted && widget.authSession.isProfileComplete) {
-            _profileOnboardingDismissed = true;
-          }
-        } on TimeoutException catch (e) {
-          if (kDebugMode) {
-            debugPrint('[AuthGate] fetchMe timeout: $e');
-          }
-        } catch (_) {
-          await widget.authSession.clear();
-        }
-      }
-
-      // 스플래시는 최소 시간 보장. 네트워크는 그 안/뒤에서 병행.
-      await Future.wait<void>([waitSplash, syncSession()]);
+      // 세션 동기화는 백그라운드 — 로딩 화면을 붙잡지 않음
+      unawaited(_syncSessionInBackground());
     } catch (e) {
       if (kDebugMode) {
         debugPrint('[AuthGate] bootstrap failed: $e');
       }
       _recoverGuestSession();
+    } finally {
       final remaining = _minSplash - DateTime.now().difference(started);
       if (remaining > Duration.zero) {
         await Future<void>.delayed(remaining);
       }
-    } finally {
       if (mounted) {
         setState(() => _ready = true);
       }
