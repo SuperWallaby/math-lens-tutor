@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>D · 인스타 스파크 미리보기</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh; display: grid; place-items: center;
+      background: #111;
+      font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      color: #fff;
+      padding: 24px;
+    }
+    .wrap { text-align: center; }
+    .phone {
+      width: 360px; height: 740px; border-radius: 44px;
+      background: linear-gradient(165deg, #0b1c3a 0%, #1a3a6b 45%, #0e284f 100%);
+      padding: 54px 28px 36px; position: relative;
+      box-shadow: 0 30px 80px rgba(0,0,0,.55);
+      overflow: hidden;
+      margin: 0 auto;
+    }
+    .phone::before {
+      content: ''; position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+      width: 110px; height: 28px; background: #0a0a0a; border-radius: 20px;
+    }
+    .status {
+      display: flex; justify-content: space-between; font-size: 13px; font-weight: 600;
+      opacity: .9; margin-bottom: 28px; padding: 0 4px;
+    }
+    .grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px 12px;
+      justify-items: center;
+    }
+    .app { width: 64px; text-align: center; }
+    .app .icon {
+      width: 60px; height: 60px; border-radius: 14px;
+      background: rgba(255,255,255,.12); margin: 0 auto 6px;
+    }
+    .app .label { font-size: 11px; opacity: .75; }
+    .app.target .icon {
+      background: transparent; padding: 0; overflow: hidden;
+      box-shadow: 0 8px 20px rgba(255,45,120,.45);
+      outline: 2px solid rgba(255,255,255,.9); outline-offset: 3px;
+    }
+    .app.target img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 14px; }
+    .app.target .label { opacity: 1; font-weight: 700; }
+    .dock {
+      position: absolute; left: 20px; right: 20px; bottom: 28px;
+      height: 84px; border-radius: 28px; background: rgba(255,255,255,.14);
+      display: flex; align-items: center; justify-content: space-around; padding: 0 16px;
+    }
+    .dock .icon { width: 54px; height: 54px; border-radius: 14px; background: rgba(255,255,255,.18); }
+    h1 { margin-top: 22px; font-size: 18px; font-weight: 700; }
+    p { margin-top: 8px; font-size: 13px; opacity: .65; max-width: 360px; margin-left: auto; margin-right: auto; line-height: 1.45; }
+    .big { margin-top: 28px; }
+    .big img {
+      width: 160px; height: 160px; border-radius: 36px; display: block; margin: 0 auto;
+      box-shadow: 0 16px 40px rgba(0,0,0,.4); object-fit: cover;
+    }
+    .big .cap { margin-top: 10px; font-size: 12px; opacity: .7; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="phone">
+      <div class="status"><span>9:41</span><span>5G 100%</span></div>
+      <div class="grid">
+        <div class="app"><div class="icon"></div><div class="label">Safari</div></div>
+        <div class="app"><div class="icon"></div><div class="label">Photos</div></div>
+        <div class="app"><div class="icon"></div><div class="label">Maps</div></div>
+        <div class="app"><div class="icon"></div><div class="label">Music</div></div>
+        <div class="app"><div class="icon"></div><div class="label">Notes</div></div>
+        <div class="app target"><div class="icon"><img src="icon-d-spark.png" alt="" /></div><div class="label">우열</div></div>
+        <div class="app"><div class="icon"></div><div class="label">Clock</div></div>
+        <div class="app"><div class="icon"></div><div class="label">Settings</div></div>
+      </div>
+      <div class="dock"><div class="icon"></div><div class="icon"></div><div class="icon"></div><div class="icon"></div></div>
+    </div>
+    <h1>D · 인스타 스파크</h1>
+    <p>앱에는 아직 안 넣었어요. 이 느낌 괜찮으면 「반영해줘」라고 해주세요.</p>
+    <div class="big">
+      <img src="icon-d-spark.png" alt="" />
+      <div class="cap">큰 사이즈</div>
+    </div>
+  </div>
+</body>
+</html>

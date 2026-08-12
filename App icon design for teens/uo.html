@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>UO 아이콘 미리보기</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh; background: #0B0D12; color: #F2F4F8;
+      font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      padding: 28px 16px 48px;
+    }
+    h1 { text-align: center; font-size: 20px; font-weight: 800; margin-bottom: 6px; color: #4DA3FF; }
+    .sub { text-align: center; font-size: 13px; color: #B0B6C6; margin-bottom: 28px; line-height: 1.45; }
+    .row {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+      gap: 24px; max-width: 900px; margin: 0 auto;
+    }
+    .item { text-align: center; }
+    .phone {
+      width: 220px; height: 440px; border-radius: 32px; margin: 0 auto 14px;
+      background: linear-gradient(165deg, #0B0D12, #171B24 50%, #0B0D12);
+      padding: 36px 14px 24px; position: relative;
+      box-shadow: 0 20px 50px rgba(0,0,0,.55); overflow: hidden;
+    }
+    .phone::before {
+      content: ''; position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+      width: 72px; height: 18px; background: #050507; border-radius: 12px;
+    }
+    .apps { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px 6px; justify-items: center; margin-top: 8px; }
+    .app { width: 42px; text-align: center; }
+    .app .box { width: 40px; height: 40px; border-radius: 10px; background: rgba(255,255,255,.08); margin: 0 auto 4px; }
+    .app .lbl { font-size: 8px; color: #838AA0; }
+    .app.target .box { background: transparent; outline: 2px solid #4DA3FF; outline-offset: 2px; overflow: hidden; padding: 0; }
+    .app.target img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 10px; }
+    .app.target .lbl { color: #F2F4F8; font-weight: 700; }
+    .big {
+      width: 120px; height: 120px; border-radius: 28px; object-fit: cover;
+      box-shadow: 0 12px 32px rgba(77,163,255,.25); margin: 0 auto;
+    }
+    .name { margin-top: 12px; font-size: 14px; font-weight: 700; }
+    .desc { margin-top: 4px; font-size: 12px; color: #838AA0; }
+  </style>
+</head>
+<body>
+  <h1>UO · 새 UI 톤 아이콘</h1>
+  <p class="sub">U=우 · O=열 · 앱에는 아직 안 넣음<br/>맘에 드는 안 고른 뒤 「반영해줘」라고 해주세요</p>
+  <div class="row">
+    <div class="item">
+      <div class="phone">
+        <div class="apps">
+          <div class="app"><div class="box"></div><div class="lbl">A</div></div>
+          <div class="app"><div class="box"></div><div class="lbl">B</div></div>
+          <div class="app"><div class="box"></div><div class="lbl">C</div></div>
+          <div class="app"><div class="box"></div><div class="lbl">D</div></div>
+          <div class="app"><div class="box"></div><div class="lbl">E</div></div>
+          <div class="app target"><div class="box"><img src="icon-uo-a-dark.png" alt="" /></div><div class="lbl">우열</div></div>
+          <div class="app"><div class="box"></div><div class="lbl">G</div></div>
+          <div class="app"><div class="box"></div><div class="lbl">H</div></div>
+        </div>
+      </div>
+      <img class="big" src="icon-uo-a-dark.png" alt="" />
+      <div class="name">UO-A · 다크</div>
+      <div class="desc">지금 UI 배경톤과 가장 맞음</div>
+    </div>
+    <div class="item">
+      <div class="phone">
+        <div class="apps">
+          <div class="app"><div class="box"></div><div class="lbl">A</div></div>
+          <div class="app"><div class="box"></div><div class="lbl">B</div></div>
+          <div class="app"><div class="box"></div><div class="lbl">C</div></div>
+          <div class="app"><div class="box"></div><div class="lbl">D</div></div>
+          <div class="app"><div class="box"></div><div class="lbl">E</div></div>
+          <div class="app target"><div class="box"><img src="icon-uo-b-blue.png" alt="" /></div><div class="lbl">우열</div></div>
+          <div class="app"><div class="box"></div><div class="lbl">G</div></div>
+          <div class="app"><div class="box"></div><div class="lbl">H</div></div>
+        </div>
+      </div>
+      <img class="big" src="icon-uo-b-blue.png" alt="" />
+      <div class="name">UO-B · 블루</div>
+      <div class="desc">프라이머리 #4DA3FF · 눈에 잘 띔</div>
+    </div>
+    <div class="item">
+      <div class="phone">
+        <div class="apps">
+          <div class="app"><div class="box"></div><div class="lbl">A</div></div>
+          <div class="app"><div class="box"></div><div class="lbl">B</div></div>
+          <div class="app"><div class="box"></div><div class="lbl">C</div></div>
+          <div class="app"><div class="box"></div><div class="lbl">D</div></div>
+          <div class="app"><div class="box"></div><div class="lbl">E</div></div>
+          <div class="app target"><div class="box"><img src="icon-uo-c-glass.png" alt="" /></div><div class="lbl">우열</div></div>
+          <div class="app"><div class="box"></div><div class="lbl">G</div></div>
+          <div class="app"><div class="box"></div><div class="lbl">H</div></div>
+        </div>
+      </div>
+      <img class="big" src="icon-uo-c-glass.png" alt="" />
+      <div class="name">UO-C · 글래스</div>
+      <div class="desc">다크 글래스 UI 감성</div>
+    </div>
+  </div>
+</body>
+</html>

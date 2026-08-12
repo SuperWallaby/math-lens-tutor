@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>우열 스토리 아이콘</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh; background: #0c0c0e; color: #fff;
+      font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      padding: 28px 16px 48px;
+    }
+    h1 { text-align: center; font-size: 18px; margin-bottom: 6px; line-height: 1.4; }
+    .sub { text-align: center; font-size: 13px; opacity: .6; margin-bottom: 24px; }
+    .row {
+      display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 22px; max-width: 960px; margin: 0 auto;
+    }
+    .item { text-align: center; }
+    .item img {
+      width: 168px; height: 168px; border-radius: 38px; object-fit: cover;
+      box-shadow: 0 16px 40px rgba(0,0,0,.45);
+    }
+    .item .name { margin-top: 12px; font-size: 15px; font-weight: 700; }
+    .item .desc { margin-top: 4px; font-size: 12px; opacity: .55; line-height: 1.4; }
+  </style>
+</head>
+<body>
+  <h1>「엄마가 가르치다 열받아서 만든 앱」</h1>
+  <p class="sub">앱에는 아직 안 넣음 · 번호로 골라주세요</p>
+  <div class="row">
+    <div class="item">
+      <img src="icon-story-mom.png" alt="S1" />
+      <div class="name">S1 · 열받은 엄마</div>
+      <div class="desc">캐릭터로 바로 읽힘</div>
+    </div>
+    <div class="item">
+      <img src="icon-story-hands.png" alt="S2" />
+      <div class="name">S2 · 숙제 지적</div>
+      <div class="desc">가르치다 폭발</div>
+    </div>
+    <div class="item">
+      <img src="icon-story-heat.png" alt="S3" />
+      <div class="name">S3 · 열받음 상징</div>
+      <div class="desc">책 + 끓는 열</div>
+    </div>
+    <div class="item">
+      <img src="icon-story-bubble.png" alt="S4" />
+      <div class="name">S4 · 화난 말풍선</div>
+      <div class="desc">밈/채팅 감성</div>
+    </div>
+  </div>
+</body>
+</html>

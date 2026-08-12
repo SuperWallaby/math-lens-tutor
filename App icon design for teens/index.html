@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>우열 앱 아이콘 미리보기 (중고등용)</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100vh;
+      background: #0c0c0e;
+      font-family: -apple-system, BlinkMacSystemFont, 'Apple SD Gothic Neo', 'Noto Sans KR', sans-serif;
+      color: #fff;
+      padding: 28px 20px 48px;
+    }
+    h1 { text-align: center; font-size: 20px; font-weight: 700; margin-bottom: 6px; }
+    .sub { text-align: center; font-size: 13px; opacity: .6; margin-bottom: 28px; }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 28px;
+      max-width: 1200px;
+      margin: 0 auto;
+    }
+    .card { text-align: center; }
+    .tag {
+      display: inline-block; font-size: 12px; font-weight: 700;
+      letter-spacing: .04em; padding: 4px 10px; border-radius: 999px;
+      background: rgba(255,255,255,.1); margin-bottom: 12px;
+    }
+    .phone {
+      width: 260px; height: 540px; border-radius: 36px;
+      background: linear-gradient(165deg, #0b1c3a 0%, #1a3a6b 45%, #0e284f 100%);
+      padding: 42px 18px 28px; position: relative;
+      box-shadow: 0 24px 60px rgba(0,0,0,.55);
+      overflow: hidden;
+      margin: 0 auto;
+    }
+    .phone::before {
+      content: ''; position: absolute; top: 10px; left: 50%; transform: translateX(-50%);
+      width: 84px; height: 22px; background: #0a0a0a; border-radius: 16px;
+    }
+    .status {
+      display: flex; justify-content: space-between; font-size: 11px; font-weight: 600;
+      opacity: .9; margin-bottom: 20px; padding: 0 2px;
+    }
+    .apps {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px 8px;
+      justify-items: center;
+    }
+    .app { width: 48px; text-align: center; }
+    .app .icon {
+      width: 46px; height: 46px; border-radius: 11px;
+      background: rgba(255,255,255,.12); margin: 0 auto 5px;
+    }
+    .app .label { font-size: 9px; opacity: .7; }
+    .app.target .icon {
+      background: transparent; padding: 0; overflow: hidden;
+      box-shadow: 0 6px 16px rgba(0,123,255,.45);
+      outline: 2px solid rgba(255,255,255,.95); outline-offset: 2px;
+    }
+    .app.target img { width: 100%; height: 100%; object-fit: cover; display: block; border-radius: 11px; }
+    .app.target .label { opacity: 1; font-weight: 700; }
+    .dock {
+      position: absolute; left: 14px; right: 14px; bottom: 20px;
+      height: 62px; border-radius: 20px; background: rgba(255,255,255,.14);
+      display: flex; align-items: center; justify-content: space-around; padding: 0 10px;
+    }
+    .dock .icon { width: 40px; height: 40px; border-radius: 11px; background: rgba(255,255,255,.18); }
+    .big {
+      margin-top: 16px;
+      display: flex; align-items: center; justify-content: center; gap: 12px;
+    }
+    .big img {
+      width: 88px; height: 88px; border-radius: 20px;
+      box-shadow: 0 12px 28px rgba(0,0,0,.4);
+      object-fit: cover;
+    }
+    .name { margin-top: 10px; font-size: 14px; font-weight: 700; }
+    .desc { margin-top: 4px; font-size: 12px; opacity: .55; line-height: 1.4; }
+  </style>
+</head>
+<body>
+  <h1>중·고등 감성 아이콘 후보 (「우」 글자 없음)</h1>
+  <p class="sub">마음에 드는 번호 말해주세요. 확인 후 「반영해줘」하시면 앱에 넣습니다.</p>
+
+  <div class="grid">
+    <div class="card">
+      <div class="tag">A · 랭킹 애로우</div>
+      <div class="phone">
+        <div class="status"><span>9:41</span><span>5G</span></div>
+        <div class="apps">
+          <div class="app"><div class="icon"></div><div class="label">Safari</div></div>
+          <div class="app"><div class="icon"></div><div class="label">Photos</div></div>
+          <div class="app"><div class="icon"></div><div class="label">Maps</div></div>
+          <div class="app"><div class="icon"></div><div class="label">Music</div></div>
+          <div class="app"><div class="icon"></div><div class="label">Notes</div></div>
+          <div class="app target"><div class="icon"><img src="icon-a-rank.png" alt="" /></div><div class="label">우열</div></div>
+          <div class="app"><div class="icon"></div><div class="label">Clock</div></div>
+          <div class="app"><div class="icon"></div><div class="label">Settings</div></div>
+        </div>
+        <div class="dock"><div class="icon"></div><div class="icon"></div><div class="icon"></div><div class="icon"></div></div>
+      </div>
+      <div class="big"><img src="icon-a-rank.png" alt="" /></div>
+      <div class="name">A · 위로 올라가는 랭킹</div>
+      <div class="desc">게임/랭킹 앱 느낌 · 남학생층에 잘 먹음</div>
+    </div>
+
+    <div class="card">
+      <div class="tag">B · 스트릭 불꽃</div>
+      <div class="phone">
+        <div class="status"><span>9:41</span><span>5G</span></div>
+        <div class="apps">
+          <div class="app"><div class="icon"></div><div class="label">Safari</div></div>
+          <div class="app"><div class="icon"></div><div class="label">Photos</div></div>
+          <div class="app"><div class="icon"></div><div class="label">Maps</div></div>
+          <div class="app"><div class="icon"></div><div class="label">Music</div></div>
+          <div class="app"><div class="icon"></div><div class="label">Notes</div></div>
+          <div class="app target"><div class="icon"><img src="icon-b-streak.png" alt="" /></div><div class="label">우열</div></div>
+          <div class="app"><div class="icon"></div><div class="label">Clock</div></div>
+          <div class="app"><div class="icon"></div><div class="label">Settings</div></div>
+        </div>
+        <div class="dock"><div class="icon"></div><div class="icon"></div><div class="icon"></div><div class="icon"></div></div>
+      </div>
+      <div class="big"><img src="icon-b-streak.png" alt="" /></div>
+      <div class="name">B · 공부 스트릭 불꽃</div>
+      <div class="desc">듀오링고/습관 앱 느낌 · 동기부여 강함</div>
+    </div>
+
+    <div class="card">
+      <div class="tag">C · 번개 + 책</div>
+      <div class="phone">
+        <div class="status"><span>9:41</span><span>5G</span></div>
+        <div class="apps">
+          <div class="app"><div class="icon"></div><div class="label">Safari</div></div>
+          <div class="app"><div class="icon"></div><div class="label">Photos</div></div>
+          <div class="app"><div class="icon"></div><div class="label">Maps</div></div>
+          <div class="app"><div class="icon"></div><div class="label">Music</div></div>
+          <div class="app"><div class="icon"></div><div class="label">Notes</div></div>
+          <div class="app target"><div class="icon"><img src="icon-c-bolt.png" alt="" /></div><div class="label">우열</div></div>
+          <div class="app"><div class="icon"></div><div class="label">Clock</div></div>
+          <div class="app"><div class="icon"></div><div class="label">Settings</div></div>
+        </div>
+        <div class="dock"><div class="icon"></div><div class="icon"></div><div class="icon"></div><div class="icon"></div></div>
+      </div>
+      <div class="big"><img src="icon-c-bolt.png" alt="" /></div>
+      <div class="name">C · 번개 학습</div>
+      <div class="desc">빠른 학습/퀴즈 앱 느낌 · 임팩트 큼</div>
+    </div>
+
+    <div class="card">
+      <div class="tag">D · 스파크</div>
+      <div class="phone">
+        <div class="status"><span>9:41</span><span>5G</span></div>
+        <div class="apps">
+          <div class="app"><div class="icon"></div><div class="label">Safari</div></div>
+          <div class="app"><div class="icon"></div><div class="label">Photos</div></div>
+          <div class="app"><div class="icon"></div><div class="label">Maps</div></div>
+          <div class="app"><div class="icon"></div><div class="label">Music</div></div>
+          <div class="app"><div class="icon"></div><div class="label">Notes</div></div>
+          <div class="app target"><div class="icon"><img src="icon-d-spark.png" alt="" /></div><div class="label">우열</div></div>
+          <div class="app"><div class="icon"></div><div class="label">Clock</div></div>
+          <div class="app"><div class="icon"></div><div class="label">Settings</div></div>
+        </div>
+        <div class="dock"><div class="icon"></div><div class="icon"></div><div class="icon"></div><div class="icon"></div></div>
+      </div>
+      <div class="big"><img src="icon-d-spark.png" alt="" /></div>
+      <div class="name">D · 핑크 스파크</div>
+      <div class="desc">인스타/스토리 감성 · 여학생층에 잘 먹음</div>
+    </div>
+  </div>
+</body>
+</html>
