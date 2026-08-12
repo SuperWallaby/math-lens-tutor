@@ -1,8 +1,8 @@
 # 우열 스토어 branding
 
-마스터: `app-icon-master-source.png` — **글래스 UO** 아이콘 (1024×1024)
+마스터: `app-icon-master-source.png` — **발견·전환·성장** 글래스 마크 (1024×1024)
 
-U=우, O=열. 하늘색 글래스 + 물방울 스타일.
+흰 링(발견) + 파란 화살(전환) + 주황 점(성장). 하늘색 글래스 베이스.
 
 ## Play Console
 
