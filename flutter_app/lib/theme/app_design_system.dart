@@ -22,14 +22,14 @@ TextStyle _appTextStyle({
   );
 }
 abstract final class AppColors {
-  /// Light glass v2 — cool gray base (not pure white)
-  static const background = Color(0xFFE8ECF2);
-  static const surface = Color(0xFFF7F9FC);
-  static const surfaceElevated = Color(0xFFFFFFFF);
-  static const surfaceMuted = Color(0xFFDDE3EC);
+  /// Soft gray canvas — neumorphic glass (no pure black)
+  static const background = Color(0xFFE4E9F0);
+  static const surface = Color(0xFFF4F6FA);
+  static const surfaceElevated = Color(0xFFF7F9FC);
+  static const surfaceMuted = Color(0xFFD5DCE6);
 
-  static const primary = Color(0xFF1E6FE0);
-  static const primaryDark = Color(0xFF1557B8);
+  static const primary = Color(0xFF8EABD4);
+  static const primaryDark = Color(0xFF6E8FBE);
 
   static const accent = Color(0xFFFF8C00);
   static const success = Color(0xFF2ECC40);
@@ -43,21 +43,64 @@ abstract final class AppColors {
   static const categoryGold = warning;
   static const categoryGreen = success;
 
-  static const text = Color(0xFF141820);
-  static const textSub = Color(0xFF5A6278);
-  static const textMuted = Color(0xFF8A93A8);
+  static const text = Color(0xFF4A5568);
+  static const textSub = Color(0xFF7A8496);
+  static const textMuted = Color(0xFF8A94A6);
 
-  static const border = Color(0x1A000000);
-  static const borderStrong = Color(0x2E000000);
+  static const border = Color(0xFFD5DCE6);
+  static const borderStrong = Color(0xFFC5CDD8);
 
-  static const glassFill = Color(0xD9FFFFFF);
-  static const glassStroke = Color(0x66A8B4C8);
+  static const glassFill = Color(0x52FFFFFF);
+  static const glassStroke = Color(0xB3FFFFFF);
+  static const glassShadow = Color(0xFFC2CAD6);
+}
+
+abstract final class AppShadows {
+  static const raised = [
+    BoxShadow(
+      color: AppColors.glassShadow,
+      offset: Offset(9, 9),
+      blurRadius: 18,
+    ),
+    BoxShadow(
+      color: Color(0xFFFFFFFF),
+      offset: Offset(-9, -9),
+      blurRadius: 18,
+    ),
+  ];
+
+  static const sunken = [
+    BoxShadow(
+      color: AppColors.glassShadow,
+      offset: Offset(4, 4),
+      blurRadius: 10,
+      spreadRadius: -1,
+    ),
+    BoxShadow(
+      color: Color(0xFFFFFFFF),
+      offset: Offset(-3, -3),
+      blurRadius: 8,
+    ),
+  ];
+
+  static const gel = [
+    BoxShadow(
+      color: AppColors.glassShadow,
+      offset: Offset(8, 8),
+      blurRadius: 16,
+    ),
+    BoxShadow(
+      color: Color(0xFFFFFFFF),
+      offset: Offset(-6, -6),
+      blurRadius: 14,
+    ),
+  ];
 }
 
 abstract final class AppRadii {
   static const sm = 12.0;
   static const md = 16.0;
-  static const lg = 22.0;
+  static const lg = 26.0;
   static const pill = 999.0;
 }
 
@@ -101,9 +144,7 @@ abstract final class AppButtonStyles {
         fontSize: AppTypography.button,
         fontWeight: AppTypography.buttonWeight,
       ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadii.md),
-      ),
+      shape: const StadiumBorder(),
     );
   }
 
@@ -121,9 +162,7 @@ abstract final class AppButtonStyles {
         fontSize: AppTypography.buttonKeyAction,
         fontWeight: AppTypography.buttonKeyActionWeight,
       ),
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(AppRadii.md),
-      ),
+      shape: const StadiumBorder(),
     );
   }
 }
@@ -310,8 +349,8 @@ ThemeData buildAppTheme() {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.text,
-        side: const BorderSide(color: AppColors.borderStrong),
-        backgroundColor: Colors.white.withValues(alpha: 0.72),
+        side: const BorderSide(color: Color(0x99FFFFFF)),
+        backgroundColor: const Color(0x52FFFFFF),
         elevation: 0,
         minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
@@ -319,25 +358,23 @@ ThemeData buildAppTheme() {
           fontSize: AppTypography.button,
           fontWeight: AppTypography.buttonWeight,
         ),
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(AppRadii.md),
-        ),
+        shape: const StadiumBorder(),
       ),
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: Colors.white.withValues(alpha: 0.88),
+      fillColor: const Color(0x2EFFFFFF),
       border: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadii.md),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+        borderSide: const BorderSide(color: Color(0x59FFFFFF)),
       ),
       enabledBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadii.md),
-        borderSide: const BorderSide(color: AppColors.border),
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+        borderSide: const BorderSide(color: Color(0x59FFFFFF)),
       ),
       focusedBorder: OutlineInputBorder(
-        borderRadius: BorderRadius.circular(AppRadii.md),
-        borderSide: const BorderSide(color: AppColors.primary, width: 2),
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+        borderSide: const BorderSide(color: AppColors.primary, width: 1.5),
       ),
       contentPadding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
@@ -381,10 +418,11 @@ ThemeData buildAppTheme() {
       ),
     ),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: const Color(0xE6F7F9FC),
+      backgroundColor: const Color(0x99F4F6FA),
       elevation: 0,
       shadowColor: Colors.transparent,
-      indicatorColor: AppColors.primary.withValues(alpha: 0.14),
+      indicatorColor: AppColors.primary.withValues(alpha: 0.28),
+      indicatorShape: const StadiumBorder(),
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);
         return TextStyle(

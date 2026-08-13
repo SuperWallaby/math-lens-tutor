@@ -550,6 +550,7 @@ class _PracticeSubmitBar extends StatelessWidget {
           style: FilledButton.styleFrom(
             minimumSize:
                 const Size.fromHeight(AppSizes.buttonHeightKeyAction),
+            shape: const StadiumBorder(),
           ),
           child: _SubmitButtonLabel(submitting: submitting),
         ),
@@ -642,6 +643,7 @@ class _ProblemCard extends StatelessWidget {
                   style: FilledButton.styleFrom(
                     minimumSize:
                         const Size.fromHeight(AppSizes.buttonHeightKeyAction),
+                    shape: const StadiumBorder(),
                   ),
                 ),
               ),
@@ -662,25 +664,27 @@ class _ProblemCard extends StatelessWidget {
                 Padding(
                   padding: const EdgeInsets.only(bottom: 8),
                   child: InkWell(
-                    borderRadius: BorderRadius.circular(AppRadii.md),
+                    borderRadius: BorderRadius.circular(AppRadii.pill),
                     onTap: () => onAnswerChanged(choice.id),
                     child: Container(
                       width: double.infinity,
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 14,
+                        horizontal: 16,
                         vertical: 14,
                       ),
                       decoration: BoxDecoration(
                         color: answer == choice.id
-                            ? AppColors.primary.withValues(alpha: 0.12)
-                            : AppColors.surface,
-                        borderRadius: BorderRadius.circular(AppRadii.md),
+                            ? AppColors.primary.withValues(alpha: 0.58)
+                            : const Color(0x2EFFFFFF),
+                        borderRadius: BorderRadius.circular(AppRadii.pill),
                         border: Border.all(
                           color: answer == choice.id
-                              ? AppColors.primary
-                              : AppColors.borderStrong,
-                          width: answer == choice.id ? 2 : 1.5,
+                              ? const Color(0x99FFFFFF)
+                              : const Color(0x59FFFFFF),
                         ),
+                        boxShadow: answer == choice.id
+                            ? AppShadows.gel
+                            : AppShadows.sunken,
                       ),
                       child: Row(
                         children: [
@@ -690,17 +694,20 @@ class _ProblemCard extends StatelessWidget {
                                 : Icons.radio_button_unchecked,
                             size: 22,
                             color: answer == choice.id
-                                ? AppColors.primary
+                                ? Colors.white
                                 : AppColors.textMuted,
                           ),
                           const SizedBox(width: 12),
                           Expanded(
                             child: MixedMathText(
                               formatChoiceDisplayLabel(choice.id, choice.label),
-                              style: const TextStyle(
-                                color: AppColors.text,
+                              style: TextStyle(
+                                color: answer == choice.id
+                                    ? Colors.white
+                                    : AppColors.text,
                                 height: 1.4,
                                 fontSize: 15,
+                                fontWeight: FontWeight.w700,
                               ),
                             ),
                           ),
@@ -725,6 +732,7 @@ class _ProblemCard extends StatelessWidget {
                   style: FilledButton.styleFrom(
                     minimumSize:
                         const Size.fromHeight(AppSizes.buttonHeightKeyAction),
+                    shape: const StadiumBorder(),
                   ),
                   child: _SubmitButtonLabel(submitting: submitting),
                 ),

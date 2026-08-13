@@ -36,13 +36,7 @@ class BrandSplashView extends StatelessWidget {
                     color: AppColors.surfaceElevated,
                     borderRadius: BorderRadius.circular(AppRadii.lg),
                     border: Border.all(color: AppColors.border),
-                    boxShadow: [
-                      BoxShadow(
-                        color: const Color(0xFF1A2A44).withValues(alpha: 0.08),
-                        blurRadius: 18,
-                        offset: const Offset(0, 8),
-                      ),
-                    ],
+                    boxShadow: AppShadows.raised,
                   ),
                   clipBehavior: Clip.antiAlias,
                   child: Image.asset(

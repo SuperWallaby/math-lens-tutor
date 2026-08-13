@@ -308,6 +308,7 @@ class _FirstTimeHome extends StatelessWidget {
                   AppSizes.buttonHeightKeyAction,
                 ),
                 padding: const EdgeInsets.symmetric(horizontal: 24),
+                shape: const StadiumBorder(),
               ),
             ),
           ),
