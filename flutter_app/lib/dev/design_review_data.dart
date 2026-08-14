@@ -166,7 +166,7 @@ LearningProfile designReviewProfileReturning() {
       levelLabel: '중급',
       masteryScore: 68,
       totalAttempts: 42,
-      accuracy: 71,
+      accuracy: 72,
       weakConcepts: const [
         WeakConcept(concept: '일차방정식', misses: 3),
       ],
@@ -175,9 +175,9 @@ LearningProfile designReviewProfileReturning() {
       ],
     ),
     stats: const LearningStats(
-      accuracy: 71,
+      accuracy: 72,
       accuracyDelta: 4,
-      totalProblems: 48,
+      totalProblems: 18,
       problemsDelta: 6,
       streakWeeks: 2,
     ),
@@ -425,9 +425,9 @@ AnalyzeResult designReviewAnalyzeResultWeak() {
       '2x = 8',
       'x = 3',
     ],
-    errorSummary: '양변에서 5를 뺄 때 부호를 반대로 처리했습니다.',
-    weakConcepts: ['일차방정식', '이항'],
-    recommendedFocus: ['일차방정식 이항 연습', '양변에 같은 수 더하기·빼기'],
+    errorSummary: '기울기 부호를 자주 헷갈려요',
+    weakConcepts: ['일차함수'],
+    recommendedFocus: ['같은 유형 5문제'],
     imageQualityWarning: false,
   );
 
@@ -481,13 +481,30 @@ GeneratedProblemSet designReviewProblemSet() =>
     storeScreenshotAnalyzeResult().problemSet;
 
 GeneratedProblemSet designReviewProblemSetQuestion() {
-  final full = designReviewProblemSet();
   return GeneratedProblemSet(
-    id: full.id,
-    submissionId: full.submissionId,
-    title: '9까지의 수 · 순서 연습',
-    learningGoal: '수의 순서를 보고 빈칸에 알맞은 수를 씁니다.',
-    problems: [full.problems.first],
+    id: 'review_slope_set',
+    submissionId: 'review_slope_sub',
+    title: '일차함수 · 기울기',
+    learningGoal: '일차함수의 기울기를 읽습니다.',
+    problems: const [
+      GeneratedProblem(
+        id: 'slope_p1',
+        type: 'multiple_choice',
+        title: '기울기 구하기',
+        prompt: r'일차함수 $y = 2x + 1$ 의 기울기는?',
+        choices: [
+          ProblemChoice(id: '1', label: '1'),
+          ProblemChoice(id: '0', label: '0'),
+          ProblemChoice(id: '2', label: '2'),
+          ProblemChoice(id: '-1', label: '-1'),
+        ],
+        correctAnswer: '2',
+        explanation: '일차함수 y = ax + b 에서 a가 기울기입니다.',
+        difficulty: 'easy',
+        conceptTags: ['일차함수', '기울기'],
+        chart: null,
+      ),
+    ],
   );
 }
 

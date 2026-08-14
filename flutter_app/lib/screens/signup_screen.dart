@@ -43,7 +43,6 @@ class _SignupScreenState extends State<SignupScreen> {
   StreamSubscription<String>? _magicLinkSub;
 
   bool _loading = false;
-  bool _showEmailInput = false;
   String? _error;
   String? _sentEmail;
   String? _devMagicLink;
@@ -52,6 +51,10 @@ class _SignupScreenState extends State<SignupScreen> {
   void initState() {
     super.initState();
     _magicLinkSub = MagicLinkAuth.instance.tokens.listen(_verifyMagicToken);
+
+    if (kDebugMode && _emailController.text.trim().isEmpty) {
+      _emailController.text = _devBypassEmail;
+    }
 
     final webToken = readWebMagicLinkToken();
     if (webToken != null) {
@@ -67,24 +70,6 @@ class _SignupScreenState extends State<SignupScreen> {
     _emailFocusNode.dispose();
     _emailController.dispose();
     super.dispose();
-  }
-
-  void _openEmailInput() {
-    if (_loading || _sentEmail != null) return;
-
-    setState(() {
-      _showEmailInput = true;
-      _error = null;
-      if (kDebugMode && _emailController.text.trim().isEmpty) {
-        _emailController.text = _devBypassEmail;
-      }
-    });
-
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      if (mounted) {
-        _emailFocusNode.requestFocus();
-      }
-    });
   }
 
   Future<void> _continueAfterAuth(AppUser user) async {
@@ -170,7 +155,6 @@ class _SignupScreenState extends State<SignupScreen> {
       setState(() {
         _sentEmail = email;
         _devMagicLink = result.devLink;
-        _showEmailInput = false;
       });
     } on ApiException catch (error) {
       setState(() => _error = error.message);
@@ -255,7 +239,6 @@ class _SignupScreenState extends State<SignupScreen> {
                   : () => setState(() {
                       _sentEmail = null;
                       _devMagicLink = null;
-                      _showEmailInput = false;
                     }),
               child: const Text('다른 이메일로 받기'),
             ),
@@ -267,58 +250,36 @@ class _SignupScreenState extends State<SignupScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton(
-            onPressed: _loading || _showEmailInput ? null : _openEmailInput,
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
-              backgroundColor: AppColors.surface,
-              foregroundColor: AppColors.text,
-              side: BorderSide(color: AppColors.border),
-            ),
-            child: const Text(
-              '이메일로 시작하기',
-              style: TextStyle(fontWeight: FontWeight.w700),
-            ),
-          ),
+        GlassField(
+          hint: '이메일',
+          icon: Icons.mail_outline_rounded,
+          controller: _emailController,
+          focusNode: _emailFocusNode,
+          keyboardType: TextInputType.emailAddress,
+          enabled: !_loading,
+          onSubmitted: (_) => _sendMagicLink(),
         ),
-        if (_showEmailInput) ...[
-          const SizedBox(height: AppSpacing.md),
-          TextField(
-            controller: _emailController,
-            focusNode: _emailFocusNode,
-            keyboardType: TextInputType.emailAddress,
-            autofillHints: const [AutofillHints.email],
-            textInputAction: TextInputAction.send,
-            enabled: !_loading,
-            decoration: const InputDecoration(
-              labelText: '이메일',
-              hintText: 'name@example.com',
-            ),
-            onSubmitted: (_) => _sendMagicLink(),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton(
-              onPressed: _loading ? null : _sendMagicLink,
-              style: AppButtonStyles.filled(),
-              child: const Text('로그인 링크 보내기'),
-            ),
-          ),
-        ],
+        const SizedBox(height: 12),
+        GlassField(
+          hint: '비밀번호',
+          icon: Icons.lock_outline_rounded,
+          obscureText: true,
+          enabled: !_loading,
+          onSubmitted: (_) => _sendMagicLink(),
+        ),
+        const SizedBox(height: 18),
+        GlassButton(
+          label: '시작하기',
+          onPressed: _loading ? null : _sendMagicLink,
+        ),
       ],
     );
   }
 
   Widget _heroHeader() {
     final headline = widget.signupOnly
-        ? '새 계정으로 가입하기'
-        : '스스로 생각하고, 성장이 보이게';
-    final sub = widget.signupOnly
-        ? '체험 중이던 기록을 계정에 저장합니다.\n이미 가입한 계정은 앱을 처음부터 다시 열어 로그인해 주세요.'
-        : '가입하면 학습 기록이 계정에 저장돼요.\n간편 로그인으로 바로 시작해요.';
+        ? '체험 기록을 계정에 저장해요'
+        : '수학, 왜 틀렸는지\n먼저 보여드릴게요';
 
     return Column(
       children: [
@@ -326,54 +287,22 @@ class _SignupScreenState extends State<SignupScreen> {
           appDisplayName,
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: TabletLayout.titleHero(context) + 6,
+            fontSize: TabletLayout.titleHero(context) + 10,
             fontWeight: FontWeight.w900,
             color: AppColors.text,
             letterSpacing: -0.8,
             height: 1.1,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 14),
         Text(
           headline,
           textAlign: TextAlign.center,
           style: TextStyle(
-            fontSize: TabletLayout.titleSection(context),
+            fontSize: TabletLayout.titleSection(context) + 2,
             fontWeight: FontWeight.w800,
             color: AppColors.text,
             height: 1.35,
-          ),
-        ),
-        const SizedBox(height: 8),
-        Text(
-          sub,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: AppColors.textSub,
-            fontSize: TabletLayout.body(context),
-            height: 1.5,
-          ),
-        ),
-        const SizedBox(height: 22),
-        GlassPanel(
-          padding: EdgeInsets.zero,
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 320),
-            child: AspectRatio(
-              aspectRatio: 1,
-              child: Image.asset(
-                'assets/splash/brand_hero.png',
-                fit: BoxFit.cover,
-                errorBuilder: (_, error, stackTrace) => const ColoredBox(
-                  color: AppColors.surfaceElevated,
-                  child: Icon(
-                    Icons.auto_awesome_rounded,
-                    size: 48,
-                    color: AppColors.primary,
-                  ),
-                ),
-              ),
-            ),
           ),
         ),
       ],
@@ -397,8 +326,9 @@ class _SignupScreenState extends State<SignupScreen> {
                   padding: TabletLayout.pagePadding(context),
                   children: [
                     const SizedBox(height: 12),
+                    const SizedBox(height: 28),
                     _heroHeader(),
-                    const SizedBox(height: 24),
+                    const SizedBox(height: 36),
                     if (_error != null) ...[
                       GlassPanel(
                         child: Text(
@@ -408,6 +338,18 @@ class _SignupScreenState extends State<SignupScreen> {
                       ),
                       const SizedBox(height: 16),
                     ],
+                    _emailSection(),
+                    if (widget.onContinueAsGuest != null) ...[
+                      const SizedBox(height: 12),
+                      GlassButton(
+                        label: '게스트로 둘러보기',
+                        primary: false,
+                        onPressed: _loading ? null : widget.onContinueAsGuest,
+                      ),
+                    ],
+                    const SizedBox(height: AppSpacing.section),
+                    _orDivider(),
+                    const SizedBox(height: AppSpacing.lg),
                     OAuthSignInButton(
                       provider: OAuthProvider.kakao,
                       enabled: !_loading && kakaoEnabled,
@@ -437,26 +379,9 @@ class _SignupScreenState extends State<SignupScreen> {
                         label: 'Apple로 시작하기',
                       ),
                     ],
-                    const SizedBox(height: AppSpacing.section),
-                    _orDivider(),
-                    const SizedBox(height: AppSpacing.lg),
-                    _emailSection(),
                     if (_loading) ...[
                       const SizedBox(height: 24),
                       const Center(child: CircularProgressIndicator()),
-                    ],
-                    if (widget.onContinueAsGuest != null) ...[
-                      const SizedBox(height: AppSpacing.section),
-                      Center(
-                        child: TextButton(
-                          onPressed:
-                              _loading ? null : widget.onContinueAsGuest,
-                          child: const Text(
-                            '로그인 없이 체험하기',
-                            style: TextStyle(color: AppColors.textMuted),
-                          ),
-                        ),
-                      ),
                     ],
                     const SizedBox(height: 16),
                   ],

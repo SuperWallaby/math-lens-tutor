@@ -99,10 +99,16 @@ class _AppShellState extends State<AppShell> {
               children: tabs.map((tab) => tab.screen).toList(),
             ),
           ),
-          bottomNavigationBar: GlassNavBar(
-            child: NavigationBar(
+          bottomNavigationBar: GlassTabBar(
+            labels: [for (final tab in tabs) tab.label],
             selectedIndex: safeIndex,
-            onDestinationSelected: (value) {
+            badgeIndex: user.role == AppUserRole.student
+                ? _studentTrainingTabIndex
+                : null,
+            badgeCount: _showTrainingBadge(user.role, _studentTrainingTabIndex)
+                ? _trainingBadgeCount
+                : 0,
+            onSelected: (value) {
               setState(() => _index = value);
               if (user.role == AppUserRole.student) {
                 if (value == _studentHomeTabIndex) {
@@ -120,20 +126,6 @@ class _AppShellState extends State<AppShell> {
                 }
               }
             },
-            destinations: [
-              for (var i = 0; i < tabs.length; i++)
-                NavigationDestination(
-                  icon: _showTrainingBadge(user.role, i)
-                      ? Badge.count(
-                          count: _trainingBadgeCount,
-                          child: Icon(tabs[i].icon),
-                        )
-                      : Icon(tabs[i].icon),
-                  selectedIcon: Icon(tabs[i].selectedIcon),
-                  label: tabs[i].label,
-                ),
-            ],
-          ),
           ),
         );
       },
@@ -241,7 +233,7 @@ class _AppShellState extends State<AppShell> {
             ),
           ),
           _ShellTab(
-            label: '맞춤훈련',
+            label: '훈련',
             icon: Icons.edit_note_outlined,
             selectedIcon: Icons.edit_note_rounded,
             screen: StudentTrainingScreen(
@@ -250,7 +242,7 @@ class _AppShellState extends State<AppShell> {
             ),
           ),
           _ShellTab(
-            label: '진도',
+            label: '성장',
             icon: Icons.menu_book_outlined,
             selectedIcon: Icons.menu_book_rounded,
             screen: StudentProgressScreen(

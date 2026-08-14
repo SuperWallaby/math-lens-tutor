@@ -95,38 +95,10 @@ class _StoreScreenshotStudentShellState
           ),
         ),
       ),
-      bottomNavigationBar: GlassNavBar(
-        child: NavigationBar(
+      bottomNavigationBar: GlassTabBar(
         selectedIndex: _index,
-        onDestinationSelected: (value) => setState(() => _index = value),
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.home_outlined),
-            selectedIcon: Icon(Icons.home_rounded),
-            label: '홈',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.camera_alt_outlined),
-            selectedIcon: Icon(Icons.camera_alt_rounded),
-            label: '업로드',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.edit_note_outlined),
-            selectedIcon: Icon(Icons.edit_note_rounded),
-            label: '훈련',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.menu_book_outlined),
-            selectedIcon: Icon(Icons.menu_book_rounded),
-            label: '진도',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            selectedIcon: Icon(Icons.settings_rounded),
-            label: '설정',
-          ),
-        ],
-      ),
+        onSelected: (value) => setState(() => _index = value),
+        labels: const ['홈', '업로드', '훈련', '성장', '설정'],
       ),
     );
   }

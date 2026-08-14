@@ -252,7 +252,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     return Scaffold(
       backgroundColor: Colors.transparent,
       appBar: AppBar(
-        title: Text(widget.liteMode ? '풀이 분석' : 'AI 풀이 분석'),
+        title: Text(tutorReady ? '' : (widget.liteMode ? '풀이 분석' : 'AI 풀이 분석')),
       ),
       body: GlassAtmosphere(
         child: SafeArea(
@@ -260,6 +260,73 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
             child: ListView(
               padding: TabletLayout.pagePadding(context),
               children: [
+              if (tutorReady && analysis != null) ...[
+                Text(
+                  '분석 완료',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    color: AppColors.primaryDark,
+                    fontSize: TabletLayout.body(context),
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  analysis.errorSummary.trim().isNotEmpty
+                      ? analysis.errorSummary
+                      : '오답 원인을 정리했어요',
+                  textAlign: TextAlign.center,
+                  style: TextStyle(
+                    fontSize: TabletLayout.isWideTablet(context) ? 26 : 22,
+                    fontWeight: FontWeight.w900,
+                    height: 1.3,
+                    color: AppColors.text,
+                  ),
+                ),
+                const SizedBox(height: 18),
+                GlassInfoRow(
+                  icon: Icons.show_chart_rounded,
+                  title: '약한 유형',
+                  subtitle: weakShown.isNotEmpty
+                      ? weakShown.first
+                      : '아직 유형을 좁히는 중',
+                ),
+                const SizedBox(height: 10),
+                GlassInfoRow(
+                  icon: Icons.gps_fixed_rounded,
+                  title: '추천 훈련',
+                  subtitle: focusShown.isNotEmpty
+                      ? focusShown.first
+                      : '같은 유형 5문제',
+                ),
+                const SizedBox(height: 18),
+                if (similarReady)
+                  GlassButton(
+                    label: '비슷한 문제 풀기',
+                    onPressed: () {
+                      final set = _problemSet;
+                      if (set == null) return;
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => PracticeScreen(
+                            apiClient: widget.apiClient,
+                            problemSet: set,
+                            liteMode: widget.liteMode,
+                          ),
+                        ),
+                      );
+                    },
+                  )
+                else
+                  const GlassButton(label: '비슷한 문제 풀기', onPressed: null),
+                const SizedBox(height: 10),
+                GlassButton(
+                  label: '홈으로',
+                  primary: false,
+                  onPressed: () => Navigator.of(context).pop(),
+                ),
+                const SizedBox(height: 22),
+              ],
               AppCard(
                 padding: const EdgeInsets.all(14),
                 child: Column(
@@ -562,7 +629,10 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
               ],
               const SizedBox(height: 18),
               if (similarReady) ...[
-                OutlinedButton.icon(
+                GlassButton(
+                  label: '유사문제 PDF로 받기',
+                  primary: false,
+                  icon: Icons.picture_as_pdf_outlined,
                   onPressed: () async {
                     final set = _problemSet;
                     if (set == null) return;
@@ -578,27 +648,26 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                       );
                     }
                   },
-                  icon: const Icon(Icons.picture_as_pdf_outlined),
-                  label: const Text('유사문제 PDF로 받기'),
                 ),
-                const SizedBox(height: 12),
-                FilledButton.icon(
-                  onPressed: () {
-                    final set = _problemSet;
-                    if (set == null) return;
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => PracticeScreen(
-                          apiClient: widget.apiClient,
-                          problemSet: set,
-                          liteMode: widget.liteMode,
+                if (!tutorReady) ...[
+                  const SizedBox(height: 12),
+                  GlassButton(
+                    label: '비슷한 문제 풀기',
+                    onPressed: () {
+                      final set = _problemSet;
+                      if (set == null) return;
+                      Navigator.of(context).push(
+                        MaterialPageRoute(
+                          builder: (_) => PracticeScreen(
+                            apiClient: widget.apiClient,
+                            problemSet: set,
+                            liteMode: widget.liteMode,
+                          ),
                         ),
-                      ),
-                    );
-                  },
-                  icon: const Icon(Icons.quiz_rounded),
-                  label: const Text('유사 문제 5개 풀기'),
-                ),
+                      );
+                    },
+                  ),
+                ],
                 if (_running) ...[
                   const SizedBox(height: 12),
                   Text(

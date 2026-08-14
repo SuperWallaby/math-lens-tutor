@@ -9,7 +9,6 @@ import '../services/api_client.dart';
 import '../utils/choice_label_format.dart';
 import '../utils/problem_answer_format.dart';
 import '../utils/problem_set_pdf.dart';
-import '../widgets/app_card.dart';
 import '../widgets/bouncing_ellipsis_text.dart';
 import '../widgets/glass.dart';
 import '../widgets/problem_answer_input.dart';
@@ -339,7 +338,6 @@ class _PracticeScreenState extends State<PracticeScreen> {
     final problems = _problemSet.problems;
     final total = problems.length;
     final current = total == 0 ? null : problems[_currentIndex.clamp(0, total - 1)];
-    final progress = total == 0 ? 0.0 : (_currentIndex + 1) / total;
     final currentFeedback = current == null ? null : _feedback[current.id];
     final hasSubmittedCurrent = currentFeedback != null;
 
@@ -429,29 +427,27 @@ class _PracticeScreenState extends State<PracticeScreen> {
                     ),
                     if (total > 0) ...[
                       const SizedBox(height: 14),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: ClipRRect(
-                              borderRadius: BorderRadius.circular(99),
-                              child: LinearProgressIndicator(
-                                value: progress,
-                                minHeight: 7,
-                                backgroundColor: AppColors.surfaceMuted,
-                                color: AppColors.primary,
+                      Center(
+                        child: ConstrainedBox(
+                          constraints: const BoxConstraints(maxWidth: 160),
+                          child: GlassPanel(
+                            tone: GlassTone.blue,
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 16,
+                              vertical: 8,
+                            ),
+                            borderRadius: BorderRadius.circular(AppRadii.pill),
+                            child: Text(
+                              '훈련 ${_currentIndex + 1} / $total',
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontWeight: FontWeight.w800,
+                                fontSize: 13,
+                                color: AppColors.text,
                               ),
                             ),
                           ),
-                          const SizedBox(width: 10),
-                          Text(
-                            '${_currentIndex + 1}/$total',
-                            style: const TextStyle(
-                              fontWeight: FontWeight.w800,
-                              fontSize: 13,
-                              color: AppColors.primary,
-                            ),
-                          ),
-                        ],
+                        ),
                       ),
                     ],
                     if (_error != null) ...[
@@ -474,6 +470,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                           feedback: currentFeedback,
                           submitting: _submittingProblemId == current.id,
                           showInlineSubmit: !showSubmitBar,
+                          reviewMode: widget.reviewMode,
                           onAnswerChanged: (value) {
                             setState(() => _answers[current.id] = value);
                           },
@@ -539,21 +536,9 @@ class _PracticeSubmitBar extends StatelessWidget {
         TabletLayout.pagePadding(context).right,
         AppSpacing.lg,
       ),
-      decoration: const BoxDecoration(
-        color: AppColors.surface,
-        border: Border(top: BorderSide(color: AppColors.border)),
-      ),
-      child: SizedBox(
-        width: double.infinity,
-        child: FilledButton(
-          onPressed: submitting ? null : onSubmit,
-          style: FilledButton.styleFrom(
-            minimumSize:
-                const Size.fromHeight(AppSizes.buttonHeightKeyAction),
-            shape: const StadiumBorder(),
-          ),
-          child: _SubmitButtonLabel(submitting: submitting),
-        ),
+      child: GlassButton(
+        onPressed: submitting ? null : onSubmit,
+        label: submitting ? '채점 중' : '답안 제출',
       ),
     );
   }
@@ -569,6 +554,7 @@ class _ProblemCard extends StatelessWidget {
     required this.feedback,
     required this.submitting,
     required this.showInlineSubmit,
+    this.reviewMode = false,
     required this.onAnswerChanged,
     required this.onSubmit,
     required this.onNext,
@@ -581,6 +567,7 @@ class _ProblemCard extends StatelessWidget {
   final ProblemAttempt? feedback;
   final bool submitting;
   final bool showInlineSubmit;
+  final bool reviewMode;
   final ValueChanged<String> onAnswerChanged;
   final VoidCallback onSubmit;
   final VoidCallback? onNext;
@@ -591,163 +578,118 @@ class _ProblemCard extends StatelessWidget {
     final concept = primaryConceptTag(problem.conceptTags);
     final submitted = feedback != null;
 
-    return AppCard(
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            [
-              formatDifficultyLabel(problem.difficulty),
-              ?concept,
-            ].join(' · '),
-            style: const TextStyle(
-              color: AppColors.textMuted,
-              fontSize: 12,
-              height: 1.4,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        GlassPanel(
+          padding: const EdgeInsets.all(18),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                [
+                  formatDifficultyLabel(problem.difficulty),
+                  ?concept,
+                ].join(' · '),
+                style: const TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 12,
+                  height: 1.4,
+                ),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                problem.title,
+                style: const TextStyle(
+                  color: AppColors.text,
+                  fontSize: 17,
+                  fontWeight: FontWeight.w900,
+                ),
+              ),
+              const SizedBox(height: 10),
+              QuestionView(problem: problem),
+            ],
           ),
-          const SizedBox(height: 12),
-          Text(
-            problem.title,
-            style: const TextStyle(
-              color: AppColors.text,
-              fontSize: 17,
-              fontWeight: FontWeight.w900,
-            ),
+        ),
+        const SizedBox(height: 14),
+        if (submitted) ...[
+          QuestionView(
+            problem: problem,
+            showPrompt: false,
+            showSolution: true,
           ),
-          const SizedBox(height: 10),
-          QuestionView(problem: problem),
-          if (submitted) ...[
-            const SizedBox(height: 12),
-            QuestionView(
-              problem: problem,
-              showPrompt: false,
-              showSolution: true,
+          const SizedBox(height: 20),
+          _SubmittedBanner(
+            feedback: feedback!,
+            correctAnswer: problem.correctAnswer,
+          ),
+          if (onNext != null) ...[
+            const SizedBox(height: 24),
+            GlassButton(
+              onPressed: onNext,
+              label: '다음 문제',
+            ),
+          ] else if (index + 1 >= total) ...[
+            const SizedBox(height: 16),
+            Text(
+              '마지막 문제입니다. 아래에서 세트 결과를 확인하세요.',
+              style: TextStyle(
+                color: AppColors.textSub,
+                fontSize: TabletLayout.bodySmall(context),
+              ),
             ),
           ],
-          if (submitted) ...[
-            const SizedBox(height: 20),
-            _SubmittedBanner(
-              feedback: feedback!,
-              correctAnswer: problem.correctAnswer,
-            ),
-            if (onNext != null) ...[
-              const SizedBox(height: 24),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton.icon(
-                  onPressed: onNext,
-                  icon: const Icon(Icons.arrow_forward_rounded),
-                  label: const Text('다음 문제'),
-                  style: FilledButton.styleFrom(
-                    minimumSize:
-                        const Size.fromHeight(AppSizes.buttonHeightKeyAction),
-                    shape: const StadiumBorder(),
-                  ),
-                ),
-              ),
-            ] else if (index + 1 >= total) ...[
-              const SizedBox(height: 16),
-              Text(
-                '마지막 문제입니다. 아래에서 세트 결과를 확인하세요.',
-                style: TextStyle(
-                  color: AppColors.textSub,
-                  fontSize: TabletLayout.bodySmall(context),
-                ),
-              ),
-            ],
-          ] else ...[
-            const SizedBox(height: 16),
-            if (answerFormat == ProblemAnswerFormat.multipleChoice)
-              for (final choice in problem.choices)
-                Padding(
-                  padding: const EdgeInsets.only(bottom: 8),
-                  child: InkWell(
-                    borderRadius: BorderRadius.circular(AppRadii.pill),
-                    onTap: () => onAnswerChanged(choice.id),
-                    child: Container(
-                      width: double.infinity,
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 14,
-                      ),
-                      decoration: BoxDecoration(
-                        color: answer == choice.id
-                            ? AppColors.primarySoft
-                            : const Color(0x66FFFFFF),
-                        borderRadius: BorderRadius.circular(AppRadii.pill),
-                        border: Border.all(color: AppColors.glassStroke),
-                        boxShadow: answer == choice.id
-                            ? AppShadows.gel
-                            : AppShadows.sunken,
-                      ),
-                      child: Row(
-                        children: [
-                          Icon(
-                            answer == choice.id
-                                ? Icons.radio_button_checked
-                                : Icons.radio_button_unchecked,
-                            size: 22,
-                            color: answer == choice.id
-                                ? AppColors.onPrimarySoft
-                                : AppColors.textMuted,
-                          ),
-                          const SizedBox(width: 12),
-                          Expanded(
-                            child: MixedMathText(
-                              formatChoiceDisplayLabel(choice.id, choice.label),
-                              style: TextStyle(
-                                color: AppColors.text,
-                                height: 1.4,
-                                fontSize: 15,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ),
-                        ],
-                      ),
+        ] else ...[
+          if (answerFormat == ProblemAnswerFormat.multipleChoice)
+            for (final choice in problem.choices)
+              Padding(
+                padding: const EdgeInsets.only(bottom: 10),
+                child: GlassChoice(
+                  selected: answer == choice.id,
+                  onTap: () => onAnswerChanged(choice.id),
+                  label: MixedMathText(
+                    formatChoiceDisplayLabel(choice.id, choice.label),
+                    style: const TextStyle(
+                      color: AppColors.text,
+                      height: 1.4,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
                     ),
                   ),
-                )
-            else
-              ProblemAnswerInput(
-                format: answerFormat,
-                value: answer,
-                enabled: !submitting,
-                onChanged: onAnswerChanged,
-              ),
-            if (showInlineSubmit) ...[
-              const SizedBox(height: 16),
-              SizedBox(
-                width: double.infinity,
-                child: FilledButton(
-                  onPressed: submitting ? null : onSubmit,
-                  style: FilledButton.styleFrom(
-                    minimumSize:
-                        const Size.fromHeight(AppSizes.buttonHeightKeyAction),
-                    shape: const StadiumBorder(),
-                  ),
-                  child: _SubmitButtonLabel(submitting: submitting),
                 ),
-              ),
-            ] else
-              const SizedBox(height: 4),
-          ],
-          if (kDebugMode) ...[
-            const SizedBox(height: 10),
-            Text(
-              describeProblemRender(problem),
-              style: const TextStyle(
-                fontSize: 10,
-                color: AppColors.textMuted,
-                fontFamily: 'monospace',
-                height: 1.3,
-              ),
+              )
+          else
+            ProblemAnswerInput(
+              format: answerFormat,
+              value: answer,
+              enabled: !submitting,
+              onChanged: onAnswerChanged,
+            ),
+          if (showInlineSubmit) ...[
+            const SizedBox(height: 16),
+            GlassButton(
+              onPressed: reviewMode
+                  ? (onNext ?? () {})
+                  : (submitting ? null : onSubmit),
+              label: reviewMode
+                  ? '다음 문제'
+                  : (submitting ? '채점 중' : '답안 제출'),
             ),
           ],
         ],
-      ),
+        if (kDebugMode) ...[
+          const SizedBox(height: 10),
+          Text(
+            describeProblemRender(problem),
+            style: const TextStyle(
+              fontSize: 10,
+              color: AppColors.textMuted,
+              fontFamily: 'monospace',
+              height: 1.3,
+            ),
+          ),
+        ],
+      ],
     );
   }
 }

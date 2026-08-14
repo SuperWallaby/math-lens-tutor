@@ -351,9 +351,9 @@ class _ReturningHome extends StatelessWidget {
         const SizedBox(height: AppSpacing.sm),
         TagChip('$grade 맞춤'),
         const SizedBox(height: AppSpacing.lg),
-        Text(
-          hasMission ? '오늘은 이어서 훈련해요' : '오늘 어떤문제를 풀어볼까요?',
-          style: const TextStyle(
+        const Text(
+          '오늘 어떤문제를 풀어볼까요?',
+          style: TextStyle(
             fontSize: 24,
             fontWeight: FontWeight.w800,
             height: 1.22,
@@ -370,13 +370,15 @@ class _ReturningHome extends StatelessWidget {
         Row(
           children: [
             _StatPill(
-              label: '유형 정답률',
+              label: '정답률',
               value: accuracy > 0 ? '$accuracy%' : '시작 전',
+              caption: '최근 7일',
             ),
             const SizedBox(width: AppSpacing.sm),
             _StatPill(
-              label: '푼 문제',
+              label: '해결한 문제',
               value: '$totalProblems개',
+              caption: '최근 7일',
             ),
           ],
         ),
@@ -477,10 +479,12 @@ class _StatPill extends StatelessWidget {
   const _StatPill({
     required this.label,
     required this.value,
+    required this.caption,
   });
 
   final String label;
   final String value;
+  final String caption;
 
   @override
   Widget build(BuildContext context) {
@@ -488,26 +492,36 @@ class _StatPill extends StatelessWidget {
       child: GlassPanel(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
-          vertical: AppSpacing.md,
+          vertical: AppSpacing.lg,
         ),
-        borderRadius: BorderRadius.circular(AppRadii.md),
+        borderRadius: BorderRadius.circular(22),
         child: Column(
           children: [
-            Text(
-              value,
-              style: const TextStyle(
-                color: AppColors.primaryDark,
-                fontSize: 22,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 2),
             Text(
               label,
               style: const TextStyle(
                 color: AppColors.textSub,
-                fontSize: 11,
+                fontSize: 12,
                 fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              value,
+              style: const TextStyle(
+                color: AppColors.primaryDark,
+                fontSize: 28,
+                fontWeight: FontWeight.w800,
+                height: 1.05,
+              ),
+            ),
+            const SizedBox(height: 4),
+            Text(
+              caption,
+              style: const TextStyle(
+                color: AppColors.textMuted,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
               ),
             ),
           ],

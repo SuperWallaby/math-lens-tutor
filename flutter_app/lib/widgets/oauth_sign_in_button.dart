@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_design_system.dart';
+import 'glass.dart';
 
 enum OAuthProvider { kakao, google, apple }
 
@@ -31,7 +32,7 @@ class OAuthProviderIcon extends StatelessWidget {
       OAuthProvider.kakao => Icon(
           Icons.chat_bubble_rounded,
           size: 18,
-          color: color ?? const Color(0xFF191919),
+          color: color ?? AppColors.text,
         ),
       OAuthProvider.google => Image.asset(
           _googleLogoAsset,
@@ -65,69 +66,40 @@ class OAuthSignInButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final effectiveOnPressed = enabled ? onPressed : null;
-    final labelStyle = TextStyle(
-      fontSize: 16,
-      fontWeight: FontWeight.w700,
-      color: _labelColor,
-    );
-
-    final content = Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      mainAxisSize: MainAxisSize.min,
-      children: [
-        OAuthProviderIcon(provider, color: _iconColor),
-        const SizedBox(width: 10),
-        Flexible(
-          child: Text(
-            label,
-            style: labelStyle,
-            overflow: TextOverflow.ellipsis,
+    return Opacity(
+      opacity: enabled ? 1 : 0.45,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: effectiveOnPressed,
+          borderRadius: BorderRadius.circular(AppRadii.pill),
+          child: GlassPanel(
+            padding: EdgeInsets.zero,
+            borderRadius: BorderRadius.circular(AppRadii.pill),
+            child: SizedBox(
+              height: AppSizes.buttonHeight,
+              child: Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  OAuthProviderIcon(provider, color: AppColors.text),
+                  const SizedBox(width: 10),
+                  Flexible(
+                    child: Text(
+                      label,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: AppColors.text,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
           ),
         ),
-      ],
-    );
-
-    final minHeight = const Size.fromHeight(AppSizes.buttonHeight);
-
-    if (provider == OAuthProvider.kakao) {
-      return FilledButton(
-        onPressed: effectiveOnPressed,
-        style: FilledButton.styleFrom(
-          minimumSize: minHeight,
-          backgroundColor: const Color(0xFFFEE500),
-          foregroundColor: const Color(0xFF191919),
-          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
-        ),
-        child: content,
-      );
-    }
-
-    return OutlinedButton(
-      onPressed: effectiveOnPressed,
-      style: OutlinedButton.styleFrom(
-        minimumSize: minHeight,
-        foregroundColor: AppColors.text,
-        backgroundColor: AppColors.surface,
-        disabledBackgroundColor: AppColors.surfaceMuted,
-        padding: const EdgeInsets.symmetric(horizontal: AppSpacing.lg),
       ),
-      child: content,
     );
-  }
-
-  Color? get _iconColor {
-    return switch (provider) {
-      OAuthProvider.kakao => const Color(0xFF191919),
-      OAuthProvider.google => null,
-      OAuthProvider.apple => AppColors.text,
-    };
-  }
-
-  Color get _labelColor {
-    return switch (provider) {
-      OAuthProvider.kakao => const Color(0xFF191919),
-      OAuthProvider.google => AppColors.text,
-      OAuthProvider.apple => AppColors.text,
-    };
   }
 }

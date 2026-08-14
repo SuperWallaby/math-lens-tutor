@@ -7,6 +7,7 @@ import '../screens/practice_screen.dart';
 import '../services/api_client.dart';
 import '../services/oauth_service.dart';
 import '../theme/app_design_system.dart';
+import '../widgets/glass.dart';
 import 'design_review_data.dart';
 import 'store_screenshot_student_shell.dart';
 
@@ -25,8 +26,10 @@ class StoreScreenshotShell extends StatelessWidget {
 
   Widget _fullScreen(Widget child) {
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(child: child),
+      backgroundColor: Colors.transparent,
+      body: GlassAtmosphere(
+        child: SafeArea(child: child),
+      ),
     );
   }
 
@@ -111,6 +114,7 @@ class StoreScreenshotShell extends StatelessWidget {
           PracticeScreen(
             apiClient: apiClient,
             problemSet: designReviewProblemSetQuestion(),
+            demoAnswers: const {'slope_p1': '2'},
             reviewMode: true,
           ),
         );
