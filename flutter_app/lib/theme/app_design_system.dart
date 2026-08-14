@@ -22,14 +22,16 @@ TextStyle _appTextStyle({
   );
 }
 abstract final class AppColors {
-  /// Soft gray canvas — neumorphic glass (no pure black)
-  static const background = Color(0xFFE4E9F0);
-  static const surface = Color(0xFFF4F6FA);
-  static const surfaceElevated = Color(0xFFF7F9FC);
-  static const surfaceMuted = Color(0xFFD5DCE6);
+  /// Soft frosted glass — Pinterest pin 1128714725387731504
+  static const background = Color(0xFFF0F0F0);
+  static const surface = Color(0xFFF7F7F7);
+  static const surfaceElevated = Color(0xFFFFFFFF);
+  static const surfaceMuted = Color(0xFFE4E4E4);
 
-  static const primary = Color(0xFF8EABD4);
-  static const primaryDark = Color(0xFF6E8FBE);
+  static const primary = Color(0xFF7EAFD9);
+  static const primarySoft = Color(0xFFB7D4F0);
+  static const primaryDark = Color(0xFF5E8FBF);
+  static const onPrimarySoft = Color(0xFF2C2C2C);
 
   static const accent = Color(0xFFFF8C00);
   static const success = Color(0xFF2ECC40);
@@ -43,56 +45,50 @@ abstract final class AppColors {
   static const categoryGold = warning;
   static const categoryGreen = success;
 
-  static const text = Color(0xFF4A5568);
-  static const textSub = Color(0xFF7A8496);
-  static const textMuted = Color(0xFF8A94A6);
+  static const text = Color(0xFF2C2C2C);
+  static const textSub = Color(0xFF6B6B6B);
+  static const textMuted = Color(0xFF8A8A8A);
 
-  static const border = Color(0xFFD5DCE6);
-  static const borderStrong = Color(0xFFC5CDD8);
+  static const border = Color(0xFFE2E2E2);
+  static const borderStrong = Color(0xFFD0D0D0);
 
-  static const glassFill = Color(0x52FFFFFF);
-  static const glassStroke = Color(0xB3FFFFFF);
-  static const glassShadow = Color(0xFFC2CAD6);
+  static const glassFill = Color(0x73FFFFFF);
+  static const glassStroke = Color(0xB8FFFFFF);
+  static const glassShadow = Color(0x14000000);
 }
 
 abstract final class AppShadows {
   static const raised = [
     BoxShadow(
       color: AppColors.glassShadow,
-      offset: Offset(9, 9),
-      blurRadius: 18,
+      offset: Offset(0, 8),
+      blurRadius: 20,
     ),
     BoxShadow(
-      color: Color(0xFFFFFFFF),
-      offset: Offset(-9, -9),
-      blurRadius: 18,
+      color: Color(0x0A000000),
+      offset: Offset(0, 2),
+      blurRadius: 6,
     ),
   ];
 
   static const sunken = [
     BoxShadow(
-      color: AppColors.glassShadow,
-      offset: Offset(4, 4),
-      blurRadius: 10,
-      spreadRadius: -1,
-    ),
-    BoxShadow(
-      color: Color(0xFFFFFFFF),
-      offset: Offset(-3, -3),
+      color: Color(0x0D000000),
+      offset: Offset(0, 2),
       blurRadius: 8,
     ),
   ];
 
   static const gel = [
     BoxShadow(
-      color: AppColors.glassShadow,
-      offset: Offset(8, 8),
-      blurRadius: 16,
+      color: Color(0x337EAFD9),
+      offset: Offset(0, 8),
+      blurRadius: 18,
     ),
     BoxShadow(
-      color: Color(0xFFFFFFFF),
-      offset: Offset(-6, -6),
-      blurRadius: 14,
+      color: Color(0x14000000),
+      offset: Offset(0, 2),
+      blurRadius: 6,
     ),
   ];
 }
@@ -342,15 +338,15 @@ ThemeData buildAppTheme() {
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: AppButtonStyles.filled(
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
+        backgroundColor: AppColors.primarySoft,
+        foregroundColor: AppColors.onPrimarySoft,
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.text,
-        side: const BorderSide(color: Color(0x99FFFFFF)),
-        backgroundColor: const Color(0x52FFFFFF),
+        side: const BorderSide(color: AppColors.glassStroke),
+        backgroundColor: const Color(0x66FFFFFF),
         elevation: 0,
         minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
@@ -363,14 +359,14 @@ ThemeData buildAppTheme() {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: const Color(0x2EFFFFFF),
+      fillColor: const Color(0x66FFFFFF),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadii.pill),
-        borderSide: const BorderSide(color: Color(0x59FFFFFF)),
+        borderSide: const BorderSide(color: AppColors.glassStroke),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadii.pill),
-        borderSide: const BorderSide(color: Color(0x59FFFFFF)),
+        borderSide: const BorderSide(color: AppColors.glassStroke),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadii.pill),
@@ -405,23 +401,36 @@ ThemeData buildAppTheme() {
       linearTrackColor: AppColors.surfaceMuted,
     ),
     chipTheme: ChipThemeData(
-      backgroundColor: Colors.white.withValues(alpha: 0.85),
-      selectedColor: AppColors.primary.withValues(alpha: 0.16),
+      backgroundColor: Colors.white.withValues(alpha: 0.55),
+      selectedColor: AppColors.primarySoft,
       labelStyle: _appTextStyle(
         color: AppColors.text,
         fontWeight: FontWeight.w600,
         fontSize: 12,
       ),
-      side: const BorderSide(color: AppColors.border),
+      side: const BorderSide(color: AppColors.glassStroke),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadii.pill),
       ),
     ),
+    switchTheme: SwitchThemeData(
+      thumbColor: WidgetStateProperty.resolveWith((states) {
+        return states.contains(WidgetState.selected)
+            ? AppColors.primary
+            : Colors.white;
+      }),
+      trackColor: WidgetStateProperty.resolveWith((states) {
+        return states.contains(WidgetState.selected)
+            ? AppColors.primarySoft
+            : const Color(0x66FFFFFF);
+      }),
+      trackOutlineColor: WidgetStateProperty.all(AppColors.glassStroke),
+    ),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: const Color(0x99F4F6FA),
+      backgroundColor: const Color(0x99FFFFFF),
       elevation: 0,
       shadowColor: Colors.transparent,
-      indicatorColor: AppColors.primary.withValues(alpha: 0.28),
+      indicatorColor: AppColors.primarySoft,
       indicatorShape: const StadiumBorder(),
       labelTextStyle: WidgetStateProperty.resolveWith((states) {
         final selected = states.contains(WidgetState.selected);

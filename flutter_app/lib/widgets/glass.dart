@@ -4,14 +4,14 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_design_system.dart';
 
-/// 레퍼런스 뉴모+글래스 — 들어올린 반투명 패널.
+/// Soft frosted glass panel — light fill, thin rim, quiet drop shadow.
 class GlassPanel extends StatelessWidget {
   const GlassPanel({
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(AppSpacing.lg + 2),
     this.borderRadius,
-    this.opacity = 0.32,
+    this.opacity = 0.48,
   });
 
   final Widget child;
@@ -30,22 +30,14 @@ class GlassPanel extends StatelessWidget {
       child: ClipRRect(
         borderRadius: radius,
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
           child: Container(
             width: double.infinity,
             padding: padding,
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: opacity),
               borderRadius: radius,
-              border: Border.all(color: AppColors.glassStroke, width: 1),
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [
-                  Colors.white.withValues(alpha: opacity + 0.12),
-                  Colors.white.withValues(alpha: opacity),
-                ],
-              ),
+              border: Border.all(color: AppColors.glassStroke),
             ),
             child: child,
           ),
@@ -55,7 +47,7 @@ class GlassPanel extends StatelessWidget {
   }
 }
 
-/// 패인 입력·비선택 보기.
+/// Clear glass input / unselected choice.
 class GlassSunken extends StatelessWidget {
   const GlassSunken({
     super.key,
@@ -78,9 +70,9 @@ class GlassSunken extends StatelessWidget {
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        color: const Color(0x2EFFFFFF),
+        color: const Color(0x66FFFFFF),
         borderRadius: radius,
-        border: Border.all(color: const Color(0x59FFFFFF)),
+        border: Border.all(color: AppColors.glassStroke),
         boxShadow: AppShadows.sunken,
       ),
       child: child,
@@ -88,7 +80,7 @@ class GlassSunken extends StatelessWidget {
   }
 }
 
-/// 연한 회색 바닥 + 아래쪽 보랏빛·분홍 글로우.
+/// Flat light-gray canvas. No colored glow blobs.
 class GlassAtmosphere extends StatelessWidget {
   const GlassAtmosphere({super.key, required this.child});
 
@@ -96,45 +88,9 @@ class GlassAtmosphere extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        const ColoredBox(color: AppColors.background),
-        Positioned(
-          top: -90,
-          left: -70,
-          child: _blob(const Color(0xFFC5D6EF), 300),
-        ),
-        Positioned(
-          bottom: -80,
-          left: -40,
-          child: _blob(const Color(0xFFBAAAE6), 320),
-        ),
-        Positioned(
-          bottom: -70,
-          right: -50,
-          child: _blob(const Color(0xFFE8B0D2), 300),
-        ),
-        child,
-      ],
-    );
-  }
-
-  static Widget _blob(Color color, double size) {
-    return IgnorePointer(
-      child: Container(
-        width: size,
-        height: size,
-        decoration: BoxDecoration(
-          shape: BoxShape.circle,
-          gradient: RadialGradient(
-            colors: [
-              color.withValues(alpha: 0.42),
-              color.withValues(alpha: 0),
-            ],
-          ),
-        ),
-      ),
+    return ColoredBox(
+      color: AppColors.background,
+      child: child,
     );
   }
 }

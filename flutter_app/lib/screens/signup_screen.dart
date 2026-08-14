@@ -328,7 +328,7 @@ class _SignupScreenState extends State<SignupScreen> {
           style: TextStyle(
             fontSize: TabletLayout.titleHero(context) + 6,
             fontWeight: FontWeight.w900,
-            color: AppColors.primary,
+            color: AppColors.text,
             letterSpacing: -0.8,
             height: 1.1,
           ),

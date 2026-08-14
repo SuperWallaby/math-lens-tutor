@@ -60,7 +60,7 @@ class BrandSplashView extends StatelessWidget {
                   style: const TextStyle(
                     fontSize: 28,
                     fontWeight: FontWeight.w900,
-                    color: AppColors.primary,
+                    color: AppColors.text,
                     letterSpacing: -0.4,
                   ),
                 ),

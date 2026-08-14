@@ -674,14 +674,10 @@ class _ProblemCard extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: answer == choice.id
-                            ? AppColors.primary.withValues(alpha: 0.58)
-                            : const Color(0x2EFFFFFF),
+                            ? AppColors.primarySoft
+                            : const Color(0x66FFFFFF),
                         borderRadius: BorderRadius.circular(AppRadii.pill),
-                        border: Border.all(
-                          color: answer == choice.id
-                              ? const Color(0x99FFFFFF)
-                              : const Color(0x59FFFFFF),
-                        ),
+                        border: Border.all(color: AppColors.glassStroke),
                         boxShadow: answer == choice.id
                             ? AppShadows.gel
                             : AppShadows.sunken,
@@ -694,7 +690,7 @@ class _ProblemCard extends StatelessWidget {
                                 : Icons.radio_button_unchecked,
                             size: 22,
                             color: answer == choice.id
-                                ? Colors.white
+                                ? AppColors.onPrimarySoft
                                 : AppColors.textMuted,
                           ),
                           const SizedBox(width: 12),
@@ -702,9 +698,7 @@ class _ProblemCard extends StatelessWidget {
                             child: MixedMathText(
                               formatChoiceDisplayLabel(choice.id, choice.label),
                               style: TextStyle(
-                                color: answer == choice.id
-                                    ? Colors.white
-                                    : AppColors.text,
+                                color: AppColors.text,
                                 height: 1.4,
                                 fontSize: 15,
                                 fontWeight: FontWeight.w700,
