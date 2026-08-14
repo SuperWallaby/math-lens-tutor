@@ -99,7 +99,8 @@ class _AppShellState extends State<AppShell> {
               children: tabs.map((tab) => tab.screen).toList(),
             ),
           ),
-          bottomNavigationBar: NavigationBar(
+          bottomNavigationBar: GlassNavBar(
+            child: NavigationBar(
             selectedIndex: safeIndex,
             onDestinationSelected: (value) {
               setState(() => _index = value);
@@ -132,6 +133,7 @@ class _AppShellState extends State<AppShell> {
                   label: tabs[i].label,
                 ),
             ],
+          ),
           ),
         );
       },

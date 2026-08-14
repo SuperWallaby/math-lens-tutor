@@ -427,7 +427,7 @@ ThemeData buildAppTheme() {
       trackOutlineColor: WidgetStateProperty.all(AppColors.glassStroke),
     ),
     navigationBarTheme: NavigationBarThemeData(
-      backgroundColor: const Color(0x99FFFFFF),
+      backgroundColor: Colors.transparent,
       elevation: 0,
       shadowColor: Colors.transparent,
       indicatorColor: AppColors.primarySoft,

@@ -4,14 +4,14 @@ import 'package:flutter/material.dart';
 
 import '../theme/app_design_system.dart';
 
-/// Soft frosted glass panel — light fill, thin rim, quiet drop shadow.
+/// Frosted glass panel matching the approved Pinterest pin.
 class GlassPanel extends StatelessWidget {
   const GlassPanel({
     super.key,
     required this.child,
     this.padding = const EdgeInsets.all(AppSpacing.lg + 2),
     this.borderRadius,
-    this.opacity = 0.48,
+    this.opacity = 0.34,
   });
 
   final Widget child;
@@ -30,14 +30,22 @@ class GlassPanel extends StatelessWidget {
       child: ClipRRect(
         borderRadius: radius,
         child: BackdropFilter(
-          filter: ImageFilter.blur(sigmaX: 16, sigmaY: 16),
+          filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
           child: Container(
             width: double.infinity,
             padding: padding,
             decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: opacity),
               borderRadius: radius,
-              border: Border.all(color: AppColors.glassStroke),
+              border: Border.all(color: const Color(0xCCFFFFFF), width: 1.2),
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  Colors.white.withValues(alpha: opacity + 0.18),
+                  const Color(0xFFD7E6F5).withValues(alpha: opacity),
+                  Colors.white.withValues(alpha: opacity),
+                ],
+              ),
             ),
             child: child,
           ),
@@ -70,9 +78,9 @@ class GlassSunken extends StatelessWidget {
       width: double.infinity,
       padding: padding,
       decoration: BoxDecoration(
-        color: const Color(0x66FFFFFF),
+        color: const Color(0x59FFFFFF),
         borderRadius: radius,
-        border: Border.all(color: AppColors.glassStroke),
+        border: Border.all(color: const Color(0xB3FFFFFF)),
         boxShadow: AppShadows.sunken,
       ),
       child: child,
@@ -80,7 +88,7 @@ class GlassSunken extends StatelessWidget {
   }
 }
 
-/// Flat light-gray canvas. No colored glow blobs.
+/// Light gray canvas with a faint blue wash so glass can frost.
 class GlassAtmosphere extends StatelessWidget {
   const GlassAtmosphere({super.key, required this.child});
 
@@ -88,9 +96,53 @@ class GlassAtmosphere extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return ColoredBox(
-      color: AppColors.background,
-      child: child,
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        const ColoredBox(color: AppColors.background),
+        const Positioned(
+          top: -120,
+          left: -80,
+          child: IgnorePointer(
+            child: SizedBox(
+              width: 280,
+              height: 280,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [
+                      Color(0x66C5D9EE),
+                      Color(0x00F0F0F0),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        child,
+      ],
+    );
+  }
+}
+
+/// Floating frosted pill around a Material navigation bar.
+class GlassNavBar extends StatelessWidget {
+  const GlassNavBar({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 0, 16, 12),
+      child: GlassPanel(
+        padding: EdgeInsets.zero,
+        opacity: 0.4,
+        borderRadius: BorderRadius.circular(AppRadii.pill),
+        child: child,
+      ),
     );
   }
 }

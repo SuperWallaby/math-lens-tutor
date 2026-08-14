@@ -8,6 +8,7 @@ import '../screens/upload_screen.dart';
 import '../services/api_client.dart';
 import '../services/oauth_service.dart';
 import '../theme/app_design_system.dart';
+import '../widgets/glass.dart';
 import 'design_review_data.dart';
 
 /// 학생 AppShell + 하단 탭 — 스토어 스크린샷용.
@@ -85,14 +86,17 @@ class _StoreScreenshotStudentShellState
     ];
 
     return Scaffold(
-      backgroundColor: AppColors.background,
-      body: SafeArea(
-        child: IndexedStack(
-          index: _index,
-          children: tabs,
+      backgroundColor: Colors.transparent,
+      body: GlassAtmosphere(
+        child: SafeArea(
+          child: IndexedStack(
+            index: _index,
+            children: tabs,
+          ),
         ),
       ),
-      bottomNavigationBar: NavigationBar(
+      bottomNavigationBar: GlassNavBar(
+        child: NavigationBar(
         selectedIndex: _index,
         onDestinationSelected: (value) => setState(() => _index = value),
         destinations: const [
@@ -122,6 +126,7 @@ class _StoreScreenshotStudentShellState
             label: '설정',
           ),
         ],
+      ),
       ),
     );
   }

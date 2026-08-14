@@ -9,6 +9,7 @@ import '../theme/app_design_system.dart';
 import '../utils/problem_image_picker.dart';
 import '../utils/network_thumbnail_cache.dart';
 import '../widgets/app_card.dart';
+import '../widgets/glass.dart';
 import '../widgets/learning_profile_widgets.dart';
 import '../widgets/mixed_math_text.dart';
 import '../widgets/skeleton_box.dart';
@@ -428,40 +429,26 @@ class _TodayLearningCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Row(
+          Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    TagChip('$grade 맞춤', color: AppColors.primary),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      title,
-                      style: const TextStyle(
-                        fontSize: 24,
-                        fontWeight: FontWeight.w800,
-                        height: 1.22,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    MixedMathText(
-                      body,
-                      style: const TextStyle(
-                        color: AppColors.textSub,
-                        height: 1.5,
-                      ),
-                    ),
-                  ],
+              TagChip('$grade 맞춤', color: AppColors.primary),
+              const SizedBox(height: AppSpacing.sm),
+              Text(
+                title,
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.w800,
+                  height: 1.22,
                 ),
               ),
-              const SizedBox(width: AppSpacing.sm),
-              Image.asset(
-                'assets/icons/3d/training_active.webp',
-                width: 58,
-                height: 58,
-                fit: BoxFit.contain,
+              const SizedBox(height: AppSpacing.sm),
+              MixedMathText(
+                body,
+                style: const TextStyle(
+                  color: AppColors.textSub,
+                  height: 1.5,
+                ),
               ),
             ],
           ),
@@ -471,13 +458,11 @@ class _TodayLearningCard extends StatelessWidget {
               _StatPill(
                 label: '유형 정답률',
                 value: accuracy > 0 ? '$accuracy%' : '시작 전',
-                color: AppColors.success,
               ),
               const SizedBox(width: AppSpacing.sm),
               _StatPill(
                 label: '푼 문제',
                 value: '$totalProblems개',
-                color: AppColors.warning,
               ),
             ],
           ),
@@ -569,43 +554,37 @@ class _StatPill extends StatelessWidget {
   const _StatPill({
     required this.label,
     required this.value,
-    required this.color,
   });
 
   final String label;
   final String value;
-  final Color color;
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Container(
+      child: GlassPanel(
         padding: const EdgeInsets.symmetric(
           horizontal: AppSpacing.md,
-          vertical: AppSpacing.sm - 1,
+          vertical: AppSpacing.md,
         ),
-        decoration: BoxDecoration(
-          color: color.withValues(alpha: 0.12),
-          borderRadius: BorderRadius.circular(AppRadii.md),
-        ),
+        borderRadius: BorderRadius.circular(AppRadii.md),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            Text(
+              value,
+              style: const TextStyle(
+                color: AppColors.primaryDark,
+                fontSize: 22,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+            const SizedBox(height: 2),
             Text(
               label,
               style: const TextStyle(
                 color: AppColors.textSub,
                 fontSize: 11,
                 fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 2),
-            Text(
-              value,
-              style: TextStyle(
-                color: Color.lerp(color, AppColors.text, 0.25),
-                fontSize: 14,
-                fontWeight: FontWeight.w900,
               ),
             ),
           ],
