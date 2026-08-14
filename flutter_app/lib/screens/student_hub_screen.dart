@@ -11,7 +11,6 @@ import '../utils/network_thumbnail_cache.dart';
 import '../widgets/app_card.dart';
 import '../widgets/glass.dart';
 import '../widgets/learning_profile_widgets.dart';
-import '../widgets/mixed_math_text.dart';
 import '../widgets/skeleton_box.dart';
 import '../widgets/skeleton_lines.dart';
 import 'analysis_screen.dart';
@@ -266,73 +265,37 @@ class _FirstTimeHome extends StatelessWidget {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: TabletLayout.pagePadding(context),
       children: [
-        SizedBox(height: MediaQuery.sizeOf(context).height * 0.12),
-        Text(
-          '우열',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            color: AppColors.primary,
-            fontWeight: FontWeight.w900,
-            fontSize: TabletLayout.titleHero(context),
-            letterSpacing: -0.6,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Text(
-          '오늘, 틀린 거부터.',
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontSize: TabletLayout.titleSection(context) + 4,
-            fontWeight: FontWeight.w900,
-            height: 1.2,
-          ),
-        ),
-        const SizedBox(height: 12),
         const Text(
-          '찍으면 왜 틀렸는지 보이고,\n바로 훈련까지 이어져요.',
-          textAlign: TextAlign.center,
-          style: TextStyle(color: AppColors.textSub, height: 1.55, fontSize: 15),
-        ),
-        const SizedBox(height: 36),
-        if (supportsProblemImageCamera) ...[
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: onCapture,
-              icon: const Icon(Icons.camera_alt_rounded, size: 26),
-              label: const Text(
-                '문제 사진 찍기',
-                style: TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-              ),
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(
-                  AppSizes.buttonHeightKeyAction,
-                ),
-                padding: const EdgeInsets.symmetric(horizontal: 24),
-                shape: const StadiumBorder(),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
-        ],
-        SizedBox(
-          width: double.infinity,
-          child: OutlinedButton.icon(
-            onPressed: onPickGallery,
-            icon: Icon(problemImageGalleryIcon, size: 26),
-            label: Text(
-              supportsProblemImageCamera ? '앨범에서 선택' : '이미지 파일 선택',
-              style: const TextStyle(fontSize: 17, fontWeight: FontWeight.w700),
-            ),
-            style: OutlinedButton.styleFrom(
-              minimumSize: const Size.fromHeight(
-                AppSizes.buttonHeightKeyAction,
-              ),
-              padding: const EdgeInsets.symmetric(horizontal: 24),
-            ),
+          '우열',
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            fontSize: 28,
+            letterSpacing: -0.6,
+            height: 1.1,
           ),
         ),
-        const SizedBox(height: 48),
+        const SizedBox(height: AppSpacing.sm),
+        const TagChip('중1 맞춤'),
+        const SizedBox(height: AppSpacing.lg),
+        const Text(
+          '오늘 어떤문제를 풀어볼까요?',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            height: 1.22,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        const Text(
+          '풀이 사진을 올리면 오답 원인과 비슷한 문제를 바로 만들어요.',
+          style: TextStyle(color: AppColors.textSub, height: 1.5),
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        _NewProblemCard(
+          onCapture: onCapture,
+          onPickGallery: onPickGallery,
+        ),
+        const SizedBox(height: AppSpacing.xxl),
       ],
     );
   }
@@ -364,15 +327,74 @@ class _ReturningHome extends StatelessWidget {
     final recent = data.submissions.take(5).toList();
     final mission = data.profile.mission;
 
+    final missionTitle = mission?.title.trim();
+    final hasMission = missionTitle != null && missionTitle.isNotEmpty;
+    final grade = data.profile.grade.trim().isNotEmpty
+        ? data.profile.grade.trim()
+        : '중1';
+    final accuracy = data.profile.stats.accuracy;
+    final totalProblems = data.profile.stats.totalProblems;
+
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
       padding: TabletLayout.pagePadding(context),
       children: [
-        _TodayLearningCard(
-          profile: data.profile,
-          mission: mission,
-          onOpenMission: mission == null ? null : () => onOpenMission(mission),
+        const Text(
+          '우열',
+          style: TextStyle(
+            fontWeight: FontWeight.w900,
+            fontSize: 28,
+            letterSpacing: -0.6,
+            height: 1.1,
+          ),
         ),
+        const SizedBox(height: AppSpacing.sm),
+        TagChip('$grade 맞춤'),
+        const SizedBox(height: AppSpacing.lg),
+        Text(
+          hasMission ? '오늘은 이어서 훈련해요' : '오늘 어떤문제를 풀어볼까요?',
+          style: const TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            height: 1.22,
+          ),
+        ),
+        const SizedBox(height: AppSpacing.sm),
+        Text(
+          hasMission
+              ? missionTitle
+              : '풀이 사진을 올리면 오답 원인과 비슷한 문제를 바로 만들어요.',
+          style: const TextStyle(color: AppColors.textSub, height: 1.5),
+        ),
+        const SizedBox(height: AppSpacing.xl),
+        Row(
+          children: [
+            _StatPill(
+              label: '유형 정답률',
+              value: accuracy > 0 ? '$accuracy%' : '시작 전',
+            ),
+            const SizedBox(width: AppSpacing.sm),
+            _StatPill(
+              label: '푼 문제',
+              value: '$totalProblems개',
+            ),
+          ],
+        ),
+        if (hasMission && mission != null) ...[
+          const SizedBox(height: AppSpacing.lg),
+          SizedBox(
+            width: double.infinity,
+            child: FilledButton.icon(
+              onPressed: () => onOpenMission(mission),
+              icon: const Icon(Icons.play_arrow_rounded),
+              label: Text(
+                mission.remainingCount > 0
+                    ? '이어서 ${mission.remainingCount}문제 풀기'
+                    : '이어서 훈련하기',
+              ),
+            ),
+          ),
+        ],
         const SizedBox(height: AppSpacing.lg),
         _NewProblemCard(
           onCapture: onCapture,
@@ -397,92 +419,6 @@ class _ReturningHome extends StatelessWidget {
         ],
         const SizedBox(height: AppSpacing.xxl),
       ],
-    );
-  }
-}
-
-class _TodayLearningCard extends StatelessWidget {
-  const _TodayLearningCard({
-    required this.profile,
-    required this.mission,
-    required this.onOpenMission,
-  });
-
-  final LearningProfile profile;
-  final TodayMission? mission;
-  final VoidCallback? onOpenMission;
-
-  @override
-  Widget build(BuildContext context) {
-    final missionTitle = mission?.title.trim();
-    final hasMission = missionTitle != null && missionTitle.isNotEmpty;
-    final title = hasMission ? '오늘은 이어서 훈련해요' : '오늘 어떤문제를 풀어볼까요?';
-    final body = hasMission
-        ? missionTitle
-        : '풀이 사진을 올리면 오답 원인과 비슷한 문제를 바로 만들어요.';
-    final accuracy = profile.stats.accuracy;
-    final totalProblems = profile.stats.totalProblems;
-    final grade = profile.grade.trim().isNotEmpty ? profile.grade.trim() : '중1';
-
-    return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.lg + 2),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              TagChip('$grade 맞춤', color: AppColors.primary),
-              const SizedBox(height: AppSpacing.sm),
-              Text(
-                title,
-                style: const TextStyle(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  height: 1.22,
-                ),
-              ),
-              const SizedBox(height: AppSpacing.sm),
-              MixedMathText(
-                body,
-                style: const TextStyle(
-                  color: AppColors.textSub,
-                  height: 1.5,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          Row(
-            children: [
-              _StatPill(
-                label: '유형 정답률',
-                value: accuracy > 0 ? '$accuracy%' : '시작 전',
-              ),
-              const SizedBox(width: AppSpacing.sm),
-              _StatPill(
-                label: '푼 문제',
-                value: '$totalProblems개',
-              ),
-            ],
-          ),
-          if (hasMission && onOpenMission != null) ...[
-            const SizedBox(height: AppSpacing.lg),
-            OutlinedButton.icon(
-              onPressed: onOpenMission,
-              icon: const Icon(Icons.play_arrow_rounded),
-              label: Text(
-                mission!.remainingCount > 0
-                    ? '이어서 ${mission!.remainingCount}문제 풀기'
-                    : '이어서 훈련하기',
-              ),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
-              ),
-            ),
-          ],
-        ],
-      ),
     );
   }
 }
@@ -530,7 +466,7 @@ class _NewProblemCard extends StatelessWidget {
             OutlinedButton.icon(
               onPressed: onPickGallery,
               icon: Icon(problemImageGalleryIcon),
-              label: Text(problemImageGalleryLabel),
+              label: const Text('앨범에서 고르기'),
               style: OutlinedButton.styleFrom(
                 minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
               ),
@@ -601,16 +537,12 @@ class _GuestSaveBanner extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GlassPanel(
       padding: const EdgeInsets.symmetric(
         horizontal: AppSpacing.lg,
         vertical: AppSpacing.md,
       ),
-      decoration: BoxDecoration(
-        color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadii.md),
-        border: Border.all(color: AppColors.border),
-      ),
+      borderRadius: BorderRadius.circular(AppRadii.md),
       child: Row(
         children: [
           Container(
@@ -702,19 +634,14 @@ class _RecentSubmissionTile extends StatelessWidget {
         .toList();
     final primaryConcept = weakConcepts.isNotEmpty ? weakConcepts.first : null;
 
-    return Material(
-      color: AppColors.surface,
+    return GlassPanel(
+      padding: EdgeInsets.zero,
       borderRadius: BorderRadius.circular(AppRadii.md),
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(AppRadii.md),
-        child: Container(
-          width: double.infinity,
+        child: Padding(
           padding: const EdgeInsets.all(AppSpacing.md),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadii.md),
-            border: Border.all(color: AppColors.border),
-          ),
           child: Row(
             children: [
               _SubmissionThumbnail(imageUrl: imageUrl),
