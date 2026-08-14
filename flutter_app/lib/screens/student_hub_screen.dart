@@ -382,17 +382,12 @@ class _ReturningHome extends StatelessWidget {
         ),
         if (hasMission && mission != null) ...[
           const SizedBox(height: AppSpacing.lg),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
-              onPressed: () => onOpenMission(mission),
-              icon: const Icon(Icons.play_arrow_rounded),
-              label: Text(
-                mission.remainingCount > 0
-                    ? '이어서 ${mission.remainingCount}문제 풀기'
-                    : '이어서 훈련하기',
-              ),
-            ),
+          GlassButton(
+            onPressed: () => onOpenMission(mission),
+            icon: Icons.play_arrow_rounded,
+            label: mission.remainingCount > 0
+                ? '이어서 ${mission.remainingCount}문제 풀기'
+                : '이어서 훈련하기',
           ),
         ],
         const SizedBox(height: AppSpacing.lg),
@@ -454,31 +449,23 @@ class _NewProblemCard extends StatelessWidget {
           ),
           const SizedBox(height: AppSpacing.lg),
           if (supportsProblemImageCamera) ...[
-            FilledButton.icon(
+            GlassButton(
               onPressed: onCapture,
-              icon: const Icon(Icons.camera_alt_rounded),
-              label: const Text('촬영하기'),
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
-              ),
+              icon: Icons.camera_alt_rounded,
+              label: '촬영하기',
             ),
             const SizedBox(height: AppSpacing.sm),
-            OutlinedButton.icon(
+            GlassButton(
               onPressed: onPickGallery,
-              icon: Icon(problemImageGalleryIcon),
-              label: const Text('앨범에서 고르기'),
-              style: OutlinedButton.styleFrom(
-                minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
-              ),
+              icon: problemImageGalleryIcon,
+              label: '앨범에서 고르기',
+              primary: false,
             ),
           ] else
-            FilledButton.icon(
+            GlassButton(
               onPressed: onPickGallery,
-              icon: Icon(problemImageGalleryIcon),
-              label: const Text('새 문제 등록'),
-              style: FilledButton.styleFrom(
-                minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
-              ),
+              icon: problemImageGalleryIcon,
+              label: '새 문제 등록',
             ),
         ],
       ),
