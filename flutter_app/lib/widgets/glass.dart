@@ -49,136 +49,71 @@ class _GlassSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        borderRadius: borderRadius,
-        boxShadow: switch (tone) {
-          GlassTone.blue => const [
-              BoxShadow(
-                color: Color(0x3D7EAFD9),
-                offset: Offset(0, 10),
-                blurRadius: 22,
-              ),
-              BoxShadow(
-                color: Color(0x14000000),
-                offset: Offset(0, 4),
-                blurRadius: 10,
-              ),
-            ],
-          GlassTone.sunken => const [
-              BoxShadow(
-                color: Color(0x14000000),
-                offset: Offset(0, 3),
-                blurRadius: 8,
-              ),
-            ],
-          GlassTone.clear => const [
-              BoxShadow(
-                color: Color(0x1A4F6D7A),
-                offset: Offset(0, 10),
-                blurRadius: 22,
-              ),
-              BoxShadow(
-                color: Color(0x227EAFD9),
-                offset: Offset(0, 4),
-                blurRadius: 14,
-              ),
-            ],
-        },
-      ),
-      child: ClipRRect(
-        borderRadius: borderRadius,
-        child: CustomPaint(
-          painter: _GlassPainter(tone: tone, borderRadius: borderRadius),
-          child: child,
-        ),
-      ),
-    );
-  }
-}
-
-class _GlassPainter extends CustomPainter {
-  _GlassPainter({required this.tone, required this.borderRadius});
-
-  final GlassTone tone;
-  final BorderRadius borderRadius;
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rect = Offset.zero & size;
-    final rrect = borderRadius.toRRect(rect);
-
-    final colors = switch (tone) {
+    final fill = switch (tone) {
+      GlassTone.blue => const Color(0x8CB7D4F0),
+      GlassTone.sunken => const Color(0x4DFFFFFF),
+      GlassTone.clear => const Color(0x73FFFFFF),
+    };
+    final shadows = switch (tone) {
       GlassTone.blue => const [
-          Color(0xD4D4EAF8),
-          Color(0xB89EC4EA),
-          Color(0xC4B7D4F0),
+          BoxShadow(
+            color: Color(0x337EAFD9),
+            offset: Offset(0, 10),
+            blurRadius: 20,
+          ),
+          BoxShadow(
+            color: Color(0x14000000),
+            offset: Offset(0, 3),
+            blurRadius: 8,
+          ),
+          BoxShadow(
+            color: Color(0xCCFFFFFF),
+            offset: Offset(0, 1),
+            blurRadius: 0,
+          ),
         ],
       GlassTone.sunken => const [
-          Color(0x73FFFFFF),
-          Color(0x59E8EDF3),
-          Color(0x66FFFFFF),
+          BoxShadow(
+            color: Color(0x14000000),
+            offset: Offset(0, 2),
+            blurRadius: 6,
+            spreadRadius: -1,
+          ),
+          BoxShadow(
+            color: Color(0xB3FFFFFF),
+            offset: Offset(0, 1),
+            blurRadius: 0,
+          ),
         ],
       GlassTone.clear => const [
-          Color(0x8CFFFFFF),
-          Color(0x59E4ECF4),
-          Color(0x73FFFFFF),
+          BoxShadow(
+            color: Color(0x1A4F6D7A),
+            offset: Offset(0, 10),
+            blurRadius: 22,
+          ),
+          BoxShadow(
+            color: Color(0x147EAFD9),
+            offset: Offset(0, 4),
+            blurRadius: 10,
+          ),
+          BoxShadow(
+            color: Color(0xE6FFFFFF),
+            offset: Offset(0, 1),
+            blurRadius: 0,
+          ),
         ],
     };
 
-    canvas.drawRRect(
-      rrect,
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: colors,
-        ).createShader(rect),
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: fill,
+        borderRadius: borderRadius,
+        border: Border.all(color: const Color(0xE6FFFFFF), width: 1.3),
+        boxShadow: shadows,
+      ),
+      child: child,
     );
-
-    canvas.save();
-    canvas.clipRRect(rrect);
-    canvas.drawRect(
-      rect,
-      Paint()
-        ..shader = RadialGradient(
-          center: const Alignment(-0.72, -0.88),
-          radius: 1.15,
-          colors: const [Color(0xD9FFFFFF), Color(0x00FFFFFF)],
-        ).createShader(rect),
-    );
-    canvas.drawRect(
-      Rect.fromLTWH(0, 0, size.width, size.height * 0.42),
-      Paint()
-        ..shader = LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: const [Color(0xE6FFFFFF), Color(0x00FFFFFF)],
-        ).createShader(Rect.fromLTWH(0, 0, size.width, size.height * 0.42)),
-    );
-    canvas.restore();
-
-    canvas.drawRRect(
-      rrect.deflate(0.8),
-      Paint()
-        ..style = PaintingStyle.stroke
-        ..strokeWidth = 1.7
-        ..shader = const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Color(0xF5FFFFFF),
-            Color(0x73FFFFFF),
-            Color(0x338AA0B4),
-          ],
-        ).createShader(rect),
-    );
-  }
-
-  @override
-  bool shouldRepaint(covariant _GlassPainter oldDelegate) {
-    return oldDelegate.tone != tone || oldDelegate.borderRadius != borderRadius;
   }
 }
 
@@ -230,7 +165,7 @@ class GlassAtmosphere extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [Color(0x99C4D8EE), Color(0x00E8EDF3)],
+                    colors: [Color(0x66C9DCF0), Color(0x00E8EDF3)],
                   ),
                 ),
               ),
