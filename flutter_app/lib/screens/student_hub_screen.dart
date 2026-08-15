@@ -35,6 +35,7 @@ class StudentHubScreen extends StatefulWidget {
     this.demoProfile,
     this.demoSubmissions,
     this.demoIsGuest,
+    this.matchPinPreview = false,
   });
 
   final ApiClient apiClient;
@@ -42,6 +43,7 @@ class StudentHubScreen extends StatefulWidget {
   final LearningProfile? demoProfile;
   final List<SubmissionSummary>? demoSubmissions;
   final bool? demoIsGuest;
+  final bool matchPinPreview;
 
   @override
   State<StudentHubScreen> createState() => StudentHubScreenState();
@@ -246,6 +248,7 @@ class StudentHubScreenState extends State<StudentHubScreen> {
             onSignup: _openSignup,
             onOpenSubmission: _openSubmission,
             onOpenMission: _openMission,
+            matchPinPreview: widget.matchPinPreview,
           );
         },
       ),
@@ -297,6 +300,7 @@ class _ReturningHome extends StatelessWidget {
     required this.onSignup,
     required this.onOpenSubmission,
     required this.onOpenMission,
+    this.matchPinPreview = false,
   });
 
   final _HubData data;
@@ -307,6 +311,7 @@ class _ReturningHome extends StatelessWidget {
   final VoidCallback onSignup;
   final ValueChanged<SubmissionSummary> onOpenSubmission;
   final ValueChanged<TodayMission> onOpenMission;
+  final bool matchPinPreview;
 
   @override
   Widget build(BuildContext context) {
@@ -325,17 +330,28 @@ class _ReturningHome extends StatelessWidget {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: TabletLayout.pagePadding(context),
       children: [
+        if (!matchPinPreview) ...[
+          const Text(
+            '우열',
+            style: TextStyle(
+              fontWeight: FontWeight.w900,
+              fontSize: 28,
+              letterSpacing: -0.6,
+              height: 1.1,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.sm),
+          TagChip('$grade 맞춤'),
+          const SizedBox(height: AppSpacing.lg),
+        ],
         const Text(
-          '우열',
+          '오늘 어떤문제를 풀어볼까요?',
           style: TextStyle(
-            fontWeight: FontWeight.w900,
-            fontSize: 28,
-            letterSpacing: -0.6,
-            height: 1.1,
+            fontSize: 24,
+            fontWeight: FontWeight.w800,
+            height: 1.22,
           ),
         ),
-        const SizedBox(height: AppSpacing.sm),
-        TagChip('$grade 맞춤'),
         const SizedBox(height: AppSpacing.xl),
         GlassPanel(
           padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 18),
@@ -352,7 +368,7 @@ class _ReturningHome extends StatelessWidget {
             ],
           ),
         ),
-        if (hasMission && mission != null) ...[
+        if (!matchPinPreview && hasMission && mission != null) ...[
           const SizedBox(height: AppSpacing.lg),
           GlassButton(
             onPressed: () => onOpenMission(mission),
@@ -366,12 +382,13 @@ class _ReturningHome extends StatelessWidget {
         _NewProblemCard(
           onCapture: onCapture,
           onPickGallery: onPickGallery,
+          matchPinPreview: matchPinPreview,
         ),
-        if (isGuest) ...[
+        if (!matchPinPreview && isGuest) ...[
           const SizedBox(height: AppSpacing.lg),
           _GuestSaveBanner(onSignup: onSignup),
         ],
-        if (recent.isNotEmpty) ...[
+        if (!matchPinPreview && recent.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.section),
           _SectionHeader(title: '최근 분석', caption: '${recent.length}개 기록'),
           const SizedBox(height: AppSpacing.md),
@@ -394,43 +411,49 @@ class _NewProblemCard extends StatelessWidget {
   const _NewProblemCard({
     required this.onCapture,
     required this.onPickGallery,
+    this.matchPinPreview = false,
   });
 
   final VoidCallback onCapture;
   final VoidCallback onPickGallery;
+  final bool matchPinPreview;
 
   @override
   Widget build(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '새 문제',
-          style: TextStyle(
-            fontSize: 20,
-            fontWeight: FontWeight.w800,
-            height: 1.2,
+        if (!matchPinPreview) ...[
+          const Text(
+            '새 문제',
+            style: TextStyle(
+              fontSize: 20,
+              fontWeight: FontWeight.w800,
+              height: 1.2,
+            ),
           ),
-        ),
-        const SizedBox(height: AppSpacing.md),
+          const SizedBox(height: AppSpacing.md),
+        ],
         if (supportsProblemImageCamera) ...[
           GlassButton(
             onPressed: onCapture,
             icon: Icons.camera_alt_rounded,
             label: '촬영하기',
           ),
-          const SizedBox(height: AppSpacing.sm),
-          GlassButton(
-            onPressed: onPickGallery,
-            icon: problemImageGalleryIcon,
-            label: '앨범에서 고르기',
-            primary: false,
-          ),
+          if (!matchPinPreview) ...[
+            const SizedBox(height: AppSpacing.sm),
+            GlassButton(
+              onPressed: onPickGallery,
+              icon: problemImageGalleryIcon,
+              label: '앨범에서 고르기',
+              primary: false,
+            ),
+          ],
         ] else
           GlassButton(
             onPressed: onPickGallery,
             icon: problemImageGalleryIcon,
-            label: '새 문제 등록',
+            label: matchPinPreview ? '촬영하기' : '새 문제 등록',
           ),
       ],
     );

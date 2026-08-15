@@ -155,6 +155,7 @@ class _AuthGateState extends State<AuthGate> {
       return SignupScreen(
         apiClient: widget.apiClient,
         oauthService: widget.oauthService,
+        matchPinPreview: true,
         onSignedIn: () => setState(() {
           if (widget.authSession.isProfileComplete) {
             _profileOnboardingDismissed = true;

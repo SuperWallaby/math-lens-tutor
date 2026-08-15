@@ -25,6 +25,7 @@ class SignupScreen extends StatefulWidget {
     required this.onSignedIn,
     this.onContinueAsGuest,
     this.signupOnly = false,
+    this.matchPinPreview = false,
   });
 
   final ApiClient apiClient;
@@ -32,6 +33,7 @@ class SignupScreen extends StatefulWidget {
   final VoidCallback onSignedIn;
   final VoidCallback? onContinueAsGuest;
   final bool signupOnly;
+  final bool matchPinPreview;
 
   @override
   State<SignupScreen> createState() => _SignupScreenState();
@@ -341,12 +343,25 @@ class _SignupScreenState extends State<SignupScreen> {
                     _emailSection(),
                     if (widget.onContinueAsGuest != null) ...[
                       const SizedBox(height: 12),
-                      GlassButton(
-                        label: '게스트로 둘러보기',
-                        primary: false,
-                        onPressed: _loading ? null : widget.onContinueAsGuest,
-                      ),
+                      if (widget.matchPinPreview)
+                        TextButton(
+                          onPressed: _loading ? null : widget.onContinueAsGuest,
+                          child: const Text(
+                            '게스트로 둘러보기',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w700,
+                              color: AppColors.textSub,
+                            ),
+                          ),
+                        )
+                      else
+                        GlassButton(
+                          label: '게스트로 둘러보기',
+                          primary: false,
+                          onPressed: _loading ? null : widget.onContinueAsGuest,
+                        ),
                     ],
+                    if (!widget.matchPinPreview) ...[
                     const SizedBox(height: AppSpacing.section),
                     _orDivider(),
                     const SizedBox(height: AppSpacing.lg),
@@ -379,6 +394,7 @@ class _SignupScreenState extends State<SignupScreen> {
                         label: 'Apple로 시작하기',
                       ),
                     ],
+                    ],
                     if (_loading) ...[
                       const SizedBox(height: 24),
                       const Center(child: CircularProgressIndicator()),
@@ -387,14 +403,15 @@ class _SignupScreenState extends State<SignupScreen> {
                   ],
                 ),
               ),
-              Positioned(
-                top: 8,
-                right: 16,
-                child: DevOAuthLoginChip(
-                  apiClient: widget.apiClient,
-                  onSignedIn: widget.onSignedIn,
+              if (!widget.matchPinPreview)
+                Positioned(
+                  top: 8,
+                  right: 16,
+                  child: DevOAuthLoginChip(
+                    apiClient: widget.apiClient,
+                    onSignedIn: widget.onSignedIn,
+                  ),
                 ),
-              ),
             ],
           ),
         ),

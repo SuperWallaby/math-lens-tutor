@@ -67,6 +67,7 @@ class _StoreScreenshotStudentShellState
         demoProfile: hubProfile,
         demoSubmissions: hubSubmissions,
         demoIsGuest: widget.hubFirstVisit,
+        matchPinPreview: true,
       ),
       UploadScreen(
         apiClient: widget.apiClient,

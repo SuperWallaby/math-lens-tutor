@@ -26,6 +26,7 @@ class PracticeScreen extends StatefulWidget {
     this.demoAnswers,
     this.reviewMode = false,
     this.liteMode = false,
+    this.matchPinPreview = false,
   });
 
   final ApiClient apiClient;
@@ -35,6 +36,7 @@ class PracticeScreen extends StatefulWidget {
   final Map<String, String>? demoAnswers;
   final bool reviewMode;
   final bool liteMode;
+  final bool matchPinPreview;
 
   @override
   State<PracticeScreen> createState() => _PracticeScreenState();
@@ -345,7 +347,9 @@ class _PracticeScreenState extends State<PracticeScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(
+      appBar: widget.matchPinPreview
+          ? null
+          : AppBar(
         backgroundColor: Colors.transparent,
         foregroundColor: AppColors.text,
         iconTheme: const IconThemeData(color: AppColors.text),
@@ -405,25 +409,27 @@ class _PracticeScreenState extends State<PracticeScreen> {
                 child: ListView(
                   padding: TabletLayout.pagePadding(context),
                   children: [
-                    MixedMathText(
-                      _problemSet.title,
-                      style: TextStyle(
-                        color: AppColors.text,
-                        fontSize: TabletLayout.isWideTablet(context) ? 22 : 18,
-                        fontWeight: FontWeight.w900,
+                    if (!widget.matchPinPreview) ...[
+                      MixedMathText(
+                        _problemSet.title,
+                        style: TextStyle(
+                          color: AppColors.text,
+                          fontSize: TabletLayout.isWideTablet(context) ? 22 : 18,
+                          fontWeight: FontWeight.w900,
+                        ),
                       ),
-                    ),
-                    const SizedBox(height: 8),
-                    MixedMathText(
-                      _problemSet.learningGoal,
-                      style: TextStyle(
-                        color: AppColors.textSub,
-                        height: 1.55,
-                        letterSpacing: 0.1,
-                        fontWeight: FontWeight.w500,
-                        fontSize: TabletLayout.bodySmall(context),
+                      const SizedBox(height: 8),
+                      MixedMathText(
+                        _problemSet.learningGoal,
+                        style: TextStyle(
+                          color: AppColors.textSub,
+                          height: 1.55,
+                          letterSpacing: 0.1,
+                          fontWeight: FontWeight.w500,
+                          fontSize: TabletLayout.bodySmall(context),
+                        ),
                       ),
-                    ),
+                    ],
                     if (total > 0) ...[
                       const SizedBox(height: 14),
                       Center(
@@ -470,6 +476,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                           submitting: _submittingProblemId == current.id,
                           showInlineSubmit: !showSubmitBar,
                           reviewMode: widget.reviewMode,
+                          matchPinPreview: widget.matchPinPreview,
                           onAnswerChanged: (value) {
                             setState(() => _answers[current.id] = value);
                           },
@@ -479,7 +486,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
                               : null,
                         ),
                       ),
-                      if (_currentIndex > 0) ...[
+                      if (!widget.matchPinPreview && _currentIndex > 0) ...[
                         const SizedBox(height: 24),
                         Align(
                           alignment: Alignment.centerLeft,
@@ -490,7 +497,9 @@ class _PracticeScreenState extends State<PracticeScreen> {
                         ),
                       ],
                     ],
-                    if (!widget.reviewMode && _isSetComplete) ...[
+                    if (!widget.matchPinPreview &&
+                        !widget.reviewMode &&
+                        _isSetComplete) ...[
                       const SizedBox(height: 16),
                       FilledButton.icon(
                         onPressed: _openLoopResult,
@@ -554,6 +563,7 @@ class _ProblemCard extends StatelessWidget {
     required this.submitting,
     required this.showInlineSubmit,
     this.reviewMode = false,
+    this.matchPinPreview = false,
     required this.onAnswerChanged,
     required this.onSubmit,
     required this.onNext,
@@ -567,6 +577,7 @@ class _ProblemCard extends StatelessWidget {
   final bool submitting;
   final bool showInlineSubmit;
   final bool reviewMode;
+  final bool matchPinPreview;
   final ValueChanged<String> onAnswerChanged;
   final VoidCallback onSubmit;
   final VoidCallback? onNext;
@@ -585,27 +596,29 @@ class _ProblemCard extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text(
-                [
-                  formatDifficultyLabel(problem.difficulty),
-                  ?concept,
-                ].join(' · '),
-                style: const TextStyle(
-                  color: AppColors.textMuted,
-                  fontSize: 12,
-                  height: 1.4,
+              if (!matchPinPreview) ...[
+                Text(
+                  [
+                    formatDifficultyLabel(problem.difficulty),
+                    ?concept,
+                  ].join(' · '),
+                  style: const TextStyle(
+                    color: AppColors.textMuted,
+                    fontSize: 12,
+                    height: 1.4,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                problem.title,
-                style: const TextStyle(
-                  color: AppColors.text,
-                  fontSize: 17,
-                  fontWeight: FontWeight.w900,
+                const SizedBox(height: 12),
+                Text(
+                  problem.title,
+                  style: const TextStyle(
+                    color: AppColors.text,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w900,
+                  ),
                 ),
-              ),
-              const SizedBox(height: 10),
+                const SizedBox(height: 10),
+              ],
               QuestionView(problem: problem),
             ],
           ),

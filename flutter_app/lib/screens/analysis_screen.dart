@@ -43,6 +43,7 @@ class AnalysisScreen extends StatefulWidget {
     this.uploadFilename,
     this.demoLoading = false,
     this.liteMode = false,
+    this.matchPinPreview = false,
   }) : assert(demoLoading || result != null || imageBytes != null);
 
   final ApiClient apiClient;
@@ -51,6 +52,7 @@ class AnalysisScreen extends StatefulWidget {
   final String? uploadFilename;
   final bool demoLoading;
   final bool liteMode;
+  final bool matchPinPreview;
 
   @override
   State<AnalysisScreen> createState() => _AnalysisScreenState();
@@ -251,9 +253,13 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
 
     return Scaffold(
       backgroundColor: Colors.transparent,
-      appBar: AppBar(
-        title: Text(tutorReady ? '' : (widget.liteMode ? '풀이 분석' : 'AI 풀이 분석')),
-      ),
+      appBar: widget.matchPinPreview
+          ? null
+          : AppBar(
+              title: Text(
+                tutorReady ? '' : (widget.liteMode ? '풀이 분석' : 'AI 풀이 분석'),
+              ),
+            ),
       body: GlassAtmosphere(
         child: SafeArea(
           child: TabletBody(
@@ -325,8 +331,10 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                   primary: false,
                   onPressed: () => Navigator.of(context).pop(),
                 ),
-                const SizedBox(height: 22),
+                if (widget.matchPinPreview) const SizedBox(height: 24),
+                if (!widget.matchPinPreview) const SizedBox(height: 22),
               ],
+              if (!widget.matchPinPreview) ...[
               AppCard(
                 padding: const EdgeInsets.all(14),
                 child: Column(
@@ -705,6 +713,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                 const SkeletonLines(widthFactors: SkeletonLines.button),
                 const SizedBox(height: 12),
                 const SkeletonLines(widthFactors: [0.72]),
+              ],
               ],
             ],
           ),

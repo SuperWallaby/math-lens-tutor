@@ -7,7 +7,6 @@ import '../screens/practice_screen.dart';
 import '../screens/signup_screen.dart';
 import '../services/api_client.dart';
 import '../services/oauth_service.dart';
-import '../theme/app_design_system.dart';
 import '../widgets/glass.dart';
 import 'design_review_data.dart';
 import 'store_screenshot_student_shell.dart';
@@ -46,6 +45,7 @@ class StoreScreenshotShell extends StatelessWidget {
           oauthService: oauthService,
           onSignedIn: () {},
           onContinueAsGuest: () {},
+          matchPinPreview: true,
         );
       case 'hub-first':
         return StoreScreenshotStudentShell(
@@ -107,6 +107,7 @@ class StoreScreenshotShell extends StatelessWidget {
           AnalysisScreen(
             apiClient: apiClient,
             result: designReviewAnalyzeResultWeak(),
+            matchPinPreview: true,
           ),
         );
       case 'analysis-ok':
@@ -125,6 +126,7 @@ class StoreScreenshotShell extends StatelessWidget {
             problemSet: designReviewProblemSetQuestion(),
             demoAnswers: const {'slope_p1': '2'},
             reviewMode: true,
+            matchPinPreview: true,
           ),
         );
       case 'practice-correct':

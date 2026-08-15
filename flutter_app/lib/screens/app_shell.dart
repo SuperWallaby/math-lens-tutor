@@ -221,6 +221,7 @@ class _AppShellState extends State<AppShell> {
               key: _studentHubKey,
               apiClient: widget.apiClient,
               oauthService: widget.oauthService,
+              matchPinPreview: true,
             ),
           ),
           _ShellTab(
