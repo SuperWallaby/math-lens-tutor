@@ -343,23 +343,11 @@ class _SignupScreenState extends State<SignupScreen> {
                     _emailSection(),
                     if (widget.onContinueAsGuest != null) ...[
                       const SizedBox(height: 12),
-                      if (widget.matchPinPreview)
-                        TextButton(
-                          onPressed: _loading ? null : widget.onContinueAsGuest,
-                          child: const Text(
-                            '게스트로 둘러보기',
-                            style: TextStyle(
-                              fontWeight: FontWeight.w700,
-                              color: AppColors.textSub,
-                            ),
-                          ),
-                        )
-                      else
-                        GlassButton(
-                          label: '게스트로 둘러보기',
-                          primary: false,
-                          onPressed: _loading ? null : widget.onContinueAsGuest,
-                        ),
+                      GlassButton(
+                        label: '게스트로 둘러보기',
+                        primary: false,
+                        onPressed: _loading ? null : widget.onContinueAsGuest,
+                      ),
                     ],
                     if (!widget.matchPinPreview) ...[
                     const SizedBox(height: AppSpacing.section),

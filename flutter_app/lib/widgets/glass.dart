@@ -55,42 +55,53 @@ class _GlassSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final gradient = switch (tone) {
-      GlassTone.blue => const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xC2D4E8F8), Color(0x99B7D4F0)],
-        ),
-      GlassTone.sunken => const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0x38FFFFFF), Color(0x22FFFFFF)],
-        ),
-      GlassTone.clear => const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [Color(0xA8FFFFFF), Color(0x5CFFFFFF)],
-        ),
-    };
-    final border = switch (tone) {
-      GlassTone.sunken => const Color(0x66FFFFFF),
-      GlassTone.blue => const Color(0xE6FFFFFF),
-      GlassTone.clear => const Color(0xF2FFFFFF),
+    // Same fill as the field — depth comes only from dual shadows.
+    final fill = switch (tone) {
+      GlassTone.blue => const Color(0xFFB8C8E6),
+      GlassTone.sunken => _kField,
+      GlassTone.clear => _kField,
     };
     final shadows = tight
-        ? const <BoxShadow>[]
-        : switch (tone) {
+        ? switch (tone) {
             GlassTone.sunken => const [
                 BoxShadow(
-                  color: Color(0x66C5CDD6),
-                  offset: Offset(4, 4),
-                  blurRadius: 8,
+                  color: Color(0xFFC5CDD6),
+                  offset: Offset(3, 3),
+                  blurRadius: 6,
                   blurStyle: BlurStyle.inner,
                 ),
                 BoxShadow(
-                  color: Color(0xB3FFFFFF),
+                  color: Color(0xFFFFFFFF),
                   offset: Offset(-3, -3),
                   blurRadius: 6,
+                  blurStyle: BlurStyle.inner,
+                ),
+              ],
+            _ => const [
+                BoxShadow(
+                  color: _kShade,
+                  offset: Offset(4, 4),
+                  blurRadius: 8,
+                ),
+                BoxShadow(
+                  color: Color(0xFFFFFFFF),
+                  offset: Offset(-4, -4),
+                  blurRadius: 8,
+                ),
+              ],
+          }
+        : switch (tone) {
+            GlassTone.sunken => const [
+                BoxShadow(
+                  color: Color(0xFFC5CDD6),
+                  offset: Offset(6, 6),
+                  blurRadius: 12,
+                  blurStyle: BlurStyle.inner,
+                ),
+                BoxShadow(
+                  color: Color(0xFFFFFFFF),
+                  offset: Offset(-6, -6),
+                  blurRadius: 12,
                   blurStyle: BlurStyle.inner,
                 ),
               ],
@@ -102,14 +113,8 @@ class _GlassSurface extends StatelessWidget {
                 ),
                 BoxShadow(
                   color: Color(0xFFFFFFFF),
-                  offset: Offset(-6, -6),
-                  blurRadius: 12,
-                ),
-                BoxShadow(
-                  color: Color(0xCCFFFFFF),
-                  offset: Offset(0, 1),
-                  blurRadius: 1,
-                  blurStyle: BlurStyle.inner,
+                  offset: Offset(-8, -8),
+                  blurRadius: 16,
                 ),
               ],
             GlassTone.clear => const [
@@ -120,29 +125,19 @@ class _GlassSurface extends StatelessWidget {
                 ),
                 BoxShadow(
                   color: Color(0xFFFFFFFF),
-                  offset: Offset(-6, -6),
-                  blurRadius: 12,
-                ),
-                BoxShadow(
-                  color: Color(0xE6FFFFFF),
-                  offset: Offset(0, 1),
-                  blurRadius: 1,
-                  blurStyle: BlurStyle.inner,
+                  offset: Offset(-8, -8),
+                  blurRadius: 16,
                 ),
               ],
           };
 
-    // HtmlElementView frost slips off the widget box on Flutter web
-    // (tab chips slide sideways). Paint the slab in Flutter only.
     return Container(
       width: expand ? double.infinity : null,
       decoration: BoxDecoration(
-        gradient: gradient,
+        color: fill,
         borderRadius: borderRadius,
-        border: Border.all(color: border, width: 1),
         boxShadow: shadows,
       ),
-      clipBehavior: Clip.antiAlias,
       child: Material(
         type: MaterialType.transparency,
         borderRadius: borderRadius,
@@ -226,42 +221,6 @@ class GlassAtmosphere extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         const ColoredBox(color: _kField),
-        const Positioned(
-          top: -120,
-          left: -80,
-          child: IgnorePointer(
-            child: SizedBox(
-              width: 280,
-              height: 280,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [Color(0x33C5D0DC), Color(0x00F0F2F5)],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        const Positioned(
-          bottom: -90,
-          right: -60,
-          child: IgnorePointer(
-            child: SizedBox(
-              width: 240,
-              height: 240,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [Color(0x29B8C4D0), Color(0x00F0F2F5)],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
         child,
       ],
     );

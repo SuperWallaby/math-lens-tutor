@@ -7,7 +7,6 @@ import '../screens/student_training_screen.dart';
 import '../screens/upload_screen.dart';
 import '../services/api_client.dart';
 import '../services/oauth_service.dart';
-import '../theme/app_design_system.dart';
 import '../widgets/glass.dart';
 import 'design_review_data.dart';
 
@@ -43,7 +42,7 @@ class _StoreScreenshotStudentShellState
   void initState() {
     super.initState();
     widget.apiClient.authSession.useStoreScreenshotDemoStudent();
-    _index = widget.initialTabIndex.clamp(0, 4);
+    _index = widget.initialTabIndex.clamp(0, 3);
   }
 
   LearningProfile get _returningProfile => designReviewProfileReturning();
@@ -83,7 +82,6 @@ class _StoreScreenshotStudentShellState
         demoProfile: progressProfile,
         demoInitialGradeTab: progressTab,
       ),
-      const _SettingsPlaceholder(),
     ];
 
     return Scaffold(
@@ -99,32 +97,13 @@ class _StoreScreenshotStudentShellState
       bottomNavigationBar: GlassTabBar(
         selectedIndex: _index,
         onSelected: (value) => setState(() => _index = value),
-        labels: const ['홈', '업로드', '훈련', '성장', '설정'],
+        labels: const ['홈', '업로드', '훈련', '성장'],
         icons: const [
           Icons.home_outlined,
           Icons.photo_camera_outlined,
           Icons.edit_note_outlined,
           Icons.menu_book_outlined,
-          Icons.settings_outlined,
         ],
-      ),
-    );
-  }
-}
-
-class _SettingsPlaceholder extends StatelessWidget {
-  const _SettingsPlaceholder();
-
-  @override
-  Widget build(BuildContext context) {
-    return const Center(
-      child: Text(
-        '설정',
-        style: TextStyle(
-          fontSize: 22,
-          fontWeight: FontWeight.w800,
-          color: AppColors.textSub,
-        ),
       ),
     );
   }

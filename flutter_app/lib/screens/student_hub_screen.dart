@@ -353,20 +353,28 @@ class _ReturningHome extends StatelessWidget {
           ),
         ),
         const SizedBox(height: AppSpacing.xl),
-        GlassPanel(
-          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 18),
-          child: Row(
-            children: [
-              _StatPill(
-                label: '정답률',
-                value: accuracy > 0 ? '$accuracy%' : '시작 전',
+        Row(
+          children: [
+            Expanded(
+              child: GlassPanel(
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                child: _StatPill(
+                  label: '정답률',
+                  value: accuracy > 0 ? '$accuracy%' : '시작 전',
+                ),
               ),
-              _StatPill(
-                label: '해결한 문제',
-                value: '$totalProblems개',
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: GlassPanel(
+                padding: const EdgeInsets.symmetric(vertical: 18),
+                child: _StatPill(
+                  label: '해결한 문제',
+                  value: '$totalProblems개',
+                ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
         if (!matchPinPreview && hasMission && mission != null) ...[
           const SizedBox(height: AppSpacing.lg),
@@ -471,8 +479,7 @@ class _StatPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Expanded(
-      child: Column(
+    return Column(
         children: [
           Text(
             label,
@@ -493,7 +500,6 @@ class _StatPill extends StatelessWidget {
             ),
           ),
         ],
-      ),
     );
   }
 }
