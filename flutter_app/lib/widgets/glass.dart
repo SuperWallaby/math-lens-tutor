@@ -1,9 +1,6 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/app_design_system.dart';
-import 'glass_css_layer_stub.dart'
-    if (dart.library.html) 'glass_css_layer_web.dart';
 
 enum GlassTone { clear, blue, sunken }
 
@@ -11,7 +8,7 @@ const Color _kField = Color(0xFFF0F2F5);
 const Color _kShade = Color(0xFFC5CDD6);
 const Color _kInk = Color(0xFF2C2C2C);
 
-/// Web: CSS frost under a translucent slab. Native: painted glass only.
+/// Painted frosted slab. Web HTML glass views are not used — they drift.
 class GlassPanel extends StatelessWidget {
   const GlassPanel({
     super.key,
@@ -47,12 +44,14 @@ class _GlassSurface extends StatelessWidget {
     required this.tone,
     required this.borderRadius,
     this.tight = false,
+    this.expand = true,
   });
 
   final Widget child;
   final GlassTone tone;
   final BorderRadius borderRadius;
   final bool tight;
+  final bool expand;
 
   @override
   Widget build(BuildContext context) {
@@ -133,21 +132,10 @@ class _GlassSurface extends StatelessWidget {
               ],
           };
 
-    final css = kIsWeb
-        ? buildCssGlassLayer(
-            tone: tone.name,
-            radius: borderRadius.topLeft.x,
-          )
-        : null;
-
-    final content = Material(
-      type: MaterialType.transparency,
-      borderRadius: borderRadius,
-      child: child,
-    );
-
+    // HtmlElementView frost slips off the widget box on Flutter web
+    // (tab chips slide sideways). Paint the slab in Flutter only.
     return Container(
-      width: double.infinity,
+      width: expand ? double.infinity : null,
       decoration: BoxDecoration(
         gradient: gradient,
         borderRadius: borderRadius,
@@ -155,14 +143,11 @@ class _GlassSurface extends StatelessWidget {
         boxShadow: shadows,
       ),
       clipBehavior: Clip.antiAlias,
-      child: css == null
-          ? content
-          : Stack(
-              children: [
-                Positioned.fill(child: IgnorePointer(child: css)),
-                content,
-              ],
-            ),
+      child: Material(
+        type: MaterialType.transparency,
+        borderRadius: borderRadius,
+        child: child,
+      ),
     );
   }
 }
@@ -190,6 +175,7 @@ class GlassGlyph extends StatelessWidget {
       child: _GlassSurface(
         tone: tint,
         tight: true,
+        expand: false,
         borderRadius: BorderRadius.circular(size / 2),
         child: Center(
           child: Icon(
@@ -325,67 +311,88 @@ class GlassTabBar extends StatelessWidget {
         height: icons == null ? 56 : 64,
         child: Row(
           children: [
-            for (var i = 0; i < labels.length; i++) ...[
-              if (i > 0)
-                const SizedBox(
-                  width: 1,
-                  height: 22,
-                  child: ColoredBox(color: Color(0x2290A0B0)),
-                ),
-              Expanded(
-                child: Padding(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 3, vertical: 5),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: () => onSelected(i),
-                      borderRadius: BorderRadius.circular(AppRadii.pill),
-                      child: i == selectedIndex
-                          ? _GlassSurface(
-                              tone: GlassTone.blue,
-                              borderRadius:
-                                  BorderRadius.circular(AppRadii.pill),
-                              child: _tabChild(i),
-                            )
-                          : _tabChild(i),
-                    ),
-                  ),
-                ),
-              ),
-            ],
+            for (var i = 0; i < labels.length; i++)
+              Expanded(child: _tabCell(i)),
           ],
         ),
       ),
     );
   }
 
-  Widget _tabChild(int i) {
+  Widget _tabCell(int i) {
+    final selected = i == selectedIndex;
+    final showBadge = badgeIndex == i && badgeCount > 0;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: () => onSelected(i),
+          borderRadius: BorderRadius.circular(AppRadii.pill),
+          child: selected
+              ? _GlassSurface(
+                  tone: GlassTone.blue,
+                  borderRadius: BorderRadius.circular(AppRadii.pill),
+                  child: _tabLabel(i, showBadge: showBadge),
+                )
+              : _tabLabel(i, showBadge: showBadge),
+        ),
+      ),
+    );
+  }
+
+  Widget _tabLabel(int i, {required bool showBadge}) {
     final icon = icons != null && i < icons!.length ? icons![i] : null;
     final selected = i == selectedIndex;
-    return Badge(
-      isLabelVisible: badgeIndex == i && badgeCount > 0,
-      label: Text('$badgeCount'),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          if (icon != null)
-            Icon(
-              icon,
-              size: 18,
-              color: _kInk.withValues(alpha: selected ? 0.72 : 0.40),
-            ),
-          if (icon != null) const SizedBox(height: 2),
-          Text(
-            labels[i],
-            style: TextStyle(
-              color: _kInk.withValues(alpha: selected ? 0.88 : 0.55),
-              fontSize: icon == null ? 13 : 10,
-              fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              if (icon != null)
+                Icon(
+                  icon,
+                  size: 18,
+                  color: _kInk.withValues(alpha: selected ? 0.72 : 0.40),
+                ),
+              if (icon != null) const SizedBox(height: 2),
+              Text(
+                labels[i],
+                textAlign: TextAlign.center,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: _kInk.withValues(alpha: selected ? 0.88 : 0.55),
+                  fontSize: icon == null ? 13 : 10,
+                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
+        if (showBadge)
+          Positioned(
+            top: 2,
+            right: 6,
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+              decoration: const BoxDecoration(
+                color: Color(0xFF5E8FBF),
+                borderRadius: BorderRadius.all(Radius.circular(999)),
+              ),
+              child: Text(
+                '$badgeCount',
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 9,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
             ),
           ),
-        ],
-      ),
+      ],
     );
   }
 }
