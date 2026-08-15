@@ -7,6 +7,7 @@ import '../services/api_client.dart';
 import '../theme/app_design_system.dart';
 import '../utils/network_thumbnail_cache.dart';
 import 'app_card.dart';
+import 'glass.dart';
 import 'mixed_math_text.dart';
 import 'parent_tab_scaffold.dart';
 import 'skeleton_box.dart';
@@ -1005,7 +1006,7 @@ class ParentWrongExplainTile extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              TagChip(item.concept, color: AppColors.accent),
+              TagChip(item.concept, color: AppColors.primary),
               if (item.title.trim().isNotEmpty &&
                   !parentExplainTitleIsImageFilename(item.title)) ...[
                 const SizedBox(height: 8),
@@ -1211,41 +1212,24 @@ class ParentCoachingCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      width: double.infinity,
-      padding: const EdgeInsets.all(18),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        gradient: LinearGradient(
-          colors: [accent, accent.withValues(alpha: 0.82)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: accent.withValues(alpha: 0.28),
-            blurRadius: 20,
-            offset: const Offset(0, 10),
-          ),
-        ],
-      ),
+    return GlassPanel(
+      tone: GlassTone.blue,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             card.label,
-            style: TextStyle(
-              color: Colors.white.withValues(alpha: 0.78),
-              fontSize: 11,
+            style: const TextStyle(
+              color: AppColors.textSub,
+              fontSize: 12,
               fontWeight: FontWeight.w800,
-              letterSpacing: 0.4,
             ),
           ),
           const SizedBox(height: 8),
           _ParentBodyText(
             card.question,
             style: const TextStyle(
-              color: Colors.white,
+              color: AppColors.text,
               fontSize: 17,
               fontWeight: FontWeight.w900,
               height: 1.45,
@@ -1255,31 +1239,33 @@ class ParentCoachingCardWidget extends StatelessWidget {
             const SizedBox(height: 10),
             _ParentBodyText(
               card.context,
-              style: TextStyle(
-                color: Colors.white.withValues(alpha: 0.82),
-                fontSize: 12,
+              style: const TextStyle(
+                color: AppColors.textSub,
+                fontSize: 13,
                 height: 1.45,
               ),
             ),
           ],
           const SizedBox(height: 12),
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.14),
-              borderRadius: BorderRadius.circular(AppRadii.sm),
-            ),
+          GlassPanel(
+            tone: GlassTone.sunken,
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+            borderRadius: BorderRadius.circular(AppRadii.pill),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Icon(Icons.flag_outlined, size: 16, color: Colors.white),
+                const Icon(
+                  Icons.flag_outlined,
+                  size: 16,
+                  color: AppColors.primaryDark,
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: _ParentBodyText(
                     '채점 포인트: ${card.gradingPoint}',
                     readableSolutionStep: true,
-                    style: TextStyle(
-                      color: Colors.white.withValues(alpha: 0.95),
+                    style: const TextStyle(
+                      color: AppColors.text,
                       fontSize: 12,
                       height: 1.4,
                     ),
@@ -1376,9 +1362,7 @@ class ParentCompactStats extends StatelessWidget {
               stats.accuracyDelta >= 0
                   ? '+${stats.accuracyDelta}%'
                   : '${stats.accuracyDelta}%',
-              color: stats.accuracyDelta >= 0
-                  ? AppColors.success
-                  : AppColors.accent,
+              color: AppColors.primary,
             ),
         ],
       ),
