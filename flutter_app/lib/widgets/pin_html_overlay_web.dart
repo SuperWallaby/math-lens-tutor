@@ -72,6 +72,9 @@ class _PinHtmlOverlayState extends State<PinHtmlOverlay> {
   }
 
   void _mount() {
+    if (html.document.getElementById('wooyeol-pin') != null) {
+      return;
+    }
     final frame = html.IFrameElement()
       ..src = _srcFor(widget.screen)
       ..style.position = 'fixed'

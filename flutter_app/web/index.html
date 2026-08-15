@@ -58,6 +58,47 @@
   <script>
     // printing 패키지 PDF.js (웹에서 PDF 미리보기/출력용)
     var dartPdfJsBaseUrl = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+    (function () {
+      var q = new URLSearchParams(location.search).get("store_screenshot") || "";
+      var map = {
+        login: "pin/login.html?v=4",
+        signup: "pin/login.html?v=4",
+        "hub-first": "pin/home.html?v=4",
+        "hub-returning": "pin/home.html?v=4",
+        home: "pin/home.html?v=4",
+        "practice-question": "pin/practice.html?v=4",
+        practice: "pin/practice.html?v=4",
+        "analysis-weak": "pin/analysis.html?v=4",
+        "analysis-ok": "pin/analysis.html?v=4",
+        analysis: "pin/analysis.html?v=4"
+      };
+      var src = map[q];
+      if (!src) return;
+      var frame = document.createElement("iframe");
+      frame.id = "wooyeol-pin";
+      frame.src = src;
+      frame.setAttribute(
+        "style",
+        "position:fixed;inset:0;width:100%;height:100%;border:0;z-index:2147483647;background:#F3F3F1"
+      );
+      document.body.appendChild(frame);
+      window.addEventListener("message", function (event) {
+        try {
+          var data = typeof event.data === "string" ? JSON.parse(event.data) : event.data;
+          if (!data || data.source !== "wooyeol-pin") return;
+          var next = {
+            home: "hub-returning",
+            practice: "practice-question",
+            analysis: "analysis-weak",
+            login: "login"
+          }[data.action];
+          if (!next) return;
+          var url = new URL(location.href);
+          url.searchParams.set("store_screenshot", next);
+          location.replace(url.toString());
+        } catch (err) {}
+      });
+    })();
   </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
