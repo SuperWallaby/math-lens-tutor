@@ -272,7 +272,16 @@ class _SignupScreenState extends State<SignupScreen> {
         const SizedBox(height: 18),
         GlassButton(
           label: '시작하기',
-          onPressed: _loading ? null : _sendMagicLink,
+          onPressed: _loading
+              ? null
+              : () {
+                  if (widget.matchPinPreview &&
+                      widget.onContinueAsGuest != null) {
+                    widget.onContinueAsGuest!();
+                    return;
+                  }
+                  _sendMagicLink();
+                },
         ),
       ],
     );

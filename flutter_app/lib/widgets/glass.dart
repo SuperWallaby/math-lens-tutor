@@ -58,17 +58,17 @@ class _GlassSurface extends StatelessWidget {
       GlassTone.blue => const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xB8D6E6F8), Color(0x66A8C0E0)],
+          colors: [Color(0x8AD4E6F8), Color(0x4298B4D8)],
         ),
       GlassTone.sunken => const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0x3DFFFFFF), Color(0x14FFFFFF)],
+          colors: [Color(0x33FFFFFF), Color(0x0FFFFFFF)],
         ),
       GlassTone.clear => const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0x99FFFFFF), Color(0x3DFFFFFF)],
+          colors: [Color(0x66FFFFFF), Color(0x1AFFFFFF)],
         ),
     };
     final rim = switch (tone) {
@@ -156,13 +156,37 @@ class _GlassSurface extends StatelessWidget {
       decoration: BoxDecoration(
         gradient: sheen,
         borderRadius: borderRadius,
-        border: Border.all(color: rim, width: 1.15),
+        border: Border.all(color: rim, width: 1.2),
         boxShadow: shadows,
       ),
-      child: Material(
-        type: MaterialType.transparency,
+      child: ClipRRect(
         borderRadius: borderRadius,
-        child: child,
+        child: Stack(
+          children: [
+            const Positioned(
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 22,
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0xCCFFFFFF), Color(0x00FFFFFF)],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Material(
+              type: MaterialType.transparency,
+              borderRadius: borderRadius,
+              child: child,
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -253,7 +277,7 @@ class GlassAtmosphere extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [Color(0x66C5D8EC), Color(0x00F0F2F5)],
+                    colors: [Color(0x99B7D4F0), Color(0x00F0F2F5)],
                   ),
                 ),
               ),
@@ -271,7 +295,7 @@ class GlassAtmosphere extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [Color(0x55B8C4D8), Color(0x00F0F2F5)],
+                    colors: [Color(0x88A8B8D8), Color(0x00F0F2F5)],
                   ),
                 ),
               ),
@@ -289,7 +313,7 @@ class GlassAtmosphere extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [Color(0x4DD0D8E4), Color(0x00F0F2F5)],
+                    colors: [Color(0x77C8D4E8), Color(0x00F0F2F5)],
                   ),
                 ),
               ),

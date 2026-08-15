@@ -12,7 +12,7 @@ import 'design_review_data.dart';
 import 'store_screenshot_student_shell.dart';
 
 /// `--dart-define=STORE_SCREENSHOT=...` or web `/?store_screenshot=hub-returning`
-class StoreScreenshotShell extends StatelessWidget {
+class StoreScreenshotShell extends StatefulWidget {
   const StoreScreenshotShell({
     super.key,
     required this.screen,
@@ -23,6 +23,15 @@ class StoreScreenshotShell extends StatelessWidget {
   final String screen;
   final ApiClient apiClient;
   final OAuthService oauthService;
+
+  @override
+  State<StoreScreenshotShell> createState() => _StoreScreenshotShellState();
+}
+
+class _StoreScreenshotShellState extends State<StoreScreenshotShell> {
+  String? _next;
+
+  void _openHome() => setState(() => _next = 'hub-returning');
 
   Widget _fullScreen(Widget child) {
     return Scaffold(
@@ -35,7 +44,9 @@ class StoreScreenshotShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final mode = _normalizeMode(screen);
+    final apiClient = widget.apiClient;
+    final oauthService = widget.oauthService;
+    final mode = _normalizeMode(_next ?? widget.screen);
 
     switch (mode) {
       case 'login':
@@ -43,8 +54,8 @@ class StoreScreenshotShell extends StatelessWidget {
         return SignupScreen(
           apiClient: apiClient,
           oauthService: oauthService,
-          onSignedIn: () {},
-          onContinueAsGuest: () {},
+          onSignedIn: _openHome,
+          onContinueAsGuest: _openHome,
           matchPinPreview: true,
         );
       case 'hub-first':

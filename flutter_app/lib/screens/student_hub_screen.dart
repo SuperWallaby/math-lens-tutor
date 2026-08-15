@@ -13,6 +13,7 @@ import '../widgets/glass.dart';
 import '../widgets/learning_profile_widgets.dart';
 import '../widgets/skeleton_box.dart';
 import '../widgets/skeleton_lines.dart';
+import '../dev/design_review_data.dart';
 import 'analysis_screen.dart';
 import 'practice_screen.dart';
 import 'signup_screen.dart';
@@ -99,7 +100,23 @@ class StudentHubScreenState extends State<StudentHubScreen> {
 
   void _refreshAfterLearning() => _reload(forceRefresh: true);
 
+  Future<void> _openPinAnalysis() async {
+    await Navigator.of(context).push(
+      MaterialPageRoute(
+        builder: (_) => AnalysisScreen(
+          apiClient: widget.apiClient,
+          result: designReviewAnalyzeResultWeak(),
+          matchPinPreview: true,
+        ),
+      ),
+    );
+  }
+
   Future<void> _captureAndAnalyze() async {
+    if (widget.matchPinPreview) {
+      await _openPinAnalysis();
+      return;
+    }
     final picked = await pickProblemImage(
       source: primaryProblemImageSource,
       context: context,
@@ -119,6 +136,10 @@ class StudentHubScreenState extends State<StudentHubScreen> {
   }
 
   Future<void> _openGalleryAndAnalyze() async {
+    if (widget.matchPinPreview) {
+      await _openPinAnalysis();
+      return;
+    }
     final picked = await pickProblemImage(
       source: ImageSource.gallery,
       context: context,
