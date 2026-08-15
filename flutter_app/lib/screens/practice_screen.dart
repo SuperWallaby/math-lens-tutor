@@ -1,6 +1,5 @@
 import 'dart:async';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../layout/tablet_layout.dart';
@@ -676,18 +675,6 @@ class _ProblemCard extends StatelessWidget {
                   : (submitting ? '채점 중' : '답안 제출'),
             ),
           ],
-        ],
-        if (kDebugMode) ...[
-          const SizedBox(height: 10),
-          Text(
-            describeProblemRender(problem),
-            style: const TextStyle(
-              fontSize: 10,
-              color: AppColors.textMuted,
-              fontFamily: 'monospace',
-              height: 1.3,
-            ),
-          ),
         ],
       ],
     );

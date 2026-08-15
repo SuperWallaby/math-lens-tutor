@@ -4,7 +4,8 @@ import '../theme/app_design_system.dart';
 
 enum GlassTone { clear, blue, sunken }
 
-/// Painted frosted glass. BackdropFilter is skipped — it does not show on Flutter web.
+/// Soft pin glass: translucent flat fill, white rim, airy shadow.
+/// Flutter web cannot frost via BackdropFilter, so the gray field must show through.
 class GlassPanel extends StatelessWidget {
   const GlassPanel({
     super.key,
@@ -50,9 +51,9 @@ class _GlassSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fill = switch (tone) {
-      GlassTone.blue => const Color(0x8CB7D4F0),
-      GlassTone.sunken => const Color(0x4DFFFFFF),
-      GlassTone.clear => const Color(0x73FFFFFF),
+      GlassTone.blue => const Color(0x8FB7D4F0),
+      GlassTone.sunken => const Color(0x38FFFFFF),
+      GlassTone.clear => const Color(0x52FFFFFF),
     };
     final shadows = switch (tone) {
       GlassTone.blue => const [
@@ -109,7 +110,7 @@ class _GlassSurface extends StatelessWidget {
       decoration: BoxDecoration(
         color: fill,
         borderRadius: borderRadius,
-        border: Border.all(color: const Color(0xE6FFFFFF), width: 1.3),
+        border: Border.all(color: const Color(0xF2FFFFFF), width: 1.5),
         boxShadow: shadows,
       ),
       child: child,
@@ -165,7 +166,7 @@ class GlassAtmosphere extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [Color(0x66C9DCF0), Color(0x00E8EDF3)],
+                    colors: [Color(0xCCB7D4F0), Color(0x00E8EDF3)],
                   ),
                 ),
               ),
@@ -183,7 +184,25 @@ class GlassAtmosphere extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [Color(0x66D5E4F4), Color(0x00E8EDF3)],
+                    colors: [Color(0xAABFD8F0), Color(0x00E8EDF3)],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const Positioned(
+          left: -40,
+          bottom: 80,
+          child: IgnorePointer(
+            child: SizedBox(
+              width: 220,
+              height: 220,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [Color(0x99D0DCEC), Color(0x00E8EDF3)],
                   ),
                 ),
               ),
@@ -201,7 +220,7 @@ class GlassAtmosphere extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [Color(0x66C9D4E4), Color(0x00E8EDF3)],
+                    colors: [Color(0x99C4D0E4), Color(0x00E8EDF3)],
                   ),
                 ),
               ),

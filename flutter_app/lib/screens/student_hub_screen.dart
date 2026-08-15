@@ -276,20 +276,6 @@ class _FirstTimeHome extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.sm),
         const TagChip('중1 맞춤'),
-        const SizedBox(height: AppSpacing.lg),
-        const Text(
-          '오늘 어떤문제를 풀어볼까요?',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            height: 1.22,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        const Text(
-          '풀이 사진을 올리면 오답 원인과 비슷한 문제를 바로 만들어요.',
-          style: TextStyle(color: AppColors.textSub, height: 1.5),
-        ),
         const SizedBox(height: AppSpacing.xl),
         _NewProblemCard(
           onCapture: onCapture,
@@ -350,37 +336,21 @@ class _ReturningHome extends StatelessWidget {
         ),
         const SizedBox(height: AppSpacing.sm),
         TagChip('$grade 맞춤'),
-        const SizedBox(height: AppSpacing.lg),
-        const Text(
-          '오늘 어떤문제를 풀어볼까요?',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            height: 1.22,
-          ),
-        ),
-        const SizedBox(height: AppSpacing.sm),
-        Text(
-          hasMission
-              ? missionTitle
-              : '풀이 사진을 올리면 오답 원인과 비슷한 문제를 바로 만들어요.',
-          style: const TextStyle(color: AppColors.textSub, height: 1.5),
-        ),
         const SizedBox(height: AppSpacing.xl),
-        Row(
-          children: [
-            _StatPill(
-              label: '정답률',
-              value: accuracy > 0 ? '$accuracy%' : '시작 전',
-              caption: '최근 7일',
-            ),
-            const SizedBox(width: AppSpacing.sm),
-            _StatPill(
-              label: '해결한 문제',
-              value: '$totalProblems개',
-              caption: '최근 7일',
-            ),
-          ],
+        GlassPanel(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 18),
+          child: Row(
+            children: [
+              _StatPill(
+                label: '정답률',
+                value: accuracy > 0 ? '$accuracy%' : '시작 전',
+              ),
+              _StatPill(
+                label: '해결한 문제',
+                value: '$totalProblems개',
+              ),
+            ],
+          ),
         ),
         if (hasMission && mission != null) ...[
           const SizedBox(height: AppSpacing.lg),
@@ -431,46 +401,38 @@ class _NewProblemCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(AppSpacing.lg + 2),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            '새 문제',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              height: 1.2,
-            ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '새 문제',
+          style: TextStyle(
+            fontSize: 20,
+            fontWeight: FontWeight.w800,
+            height: 1.2,
           ),
-          const SizedBox(height: AppSpacing.xs),
-          const Text(
-            '새 문제를 올리면 AI가 오답 원인을 분석하고 비슷한 문제로 훈련해요.',
-            style: TextStyle(color: AppColors.textSub, height: 1.5),
+        ),
+        const SizedBox(height: AppSpacing.md),
+        if (supportsProblemImageCamera) ...[
+          GlassButton(
+            onPressed: onCapture,
+            icon: Icons.camera_alt_rounded,
+            label: '촬영하기',
           ),
-          const SizedBox(height: AppSpacing.lg),
-          if (supportsProblemImageCamera) ...[
-            GlassButton(
-              onPressed: onCapture,
-              icon: Icons.camera_alt_rounded,
-              label: '촬영하기',
-            ),
-            const SizedBox(height: AppSpacing.sm),
-            GlassButton(
-              onPressed: onPickGallery,
-              icon: problemImageGalleryIcon,
-              label: '앨범에서 고르기',
-              primary: false,
-            ),
-          ] else
-            GlassButton(
-              onPressed: onPickGallery,
-              icon: problemImageGalleryIcon,
-              label: '새 문제 등록',
-            ),
-        ],
-      ),
+          const SizedBox(height: AppSpacing.sm),
+          GlassButton(
+            onPressed: onPickGallery,
+            icon: problemImageGalleryIcon,
+            label: '앨범에서 고르기',
+            primary: false,
+          ),
+        ] else
+          GlassButton(
+            onPressed: onPickGallery,
+            icon: problemImageGalleryIcon,
+            label: '새 문제 등록',
+          ),
+      ],
     );
   }
 }
@@ -479,53 +441,35 @@ class _StatPill extends StatelessWidget {
   const _StatPill({
     required this.label,
     required this.value,
-    required this.caption,
   });
 
   final String label;
   final String value;
-  final String caption;
 
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: GlassPanel(
-        padding: const EdgeInsets.symmetric(
-          horizontal: AppSpacing.md,
-          vertical: AppSpacing.lg,
-        ),
-        borderRadius: BorderRadius.circular(22),
-        child: Column(
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                color: AppColors.textSub,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
+      child: Column(
+        children: [
+          Text(
+            label,
+            style: const TextStyle(
+              color: AppColors.textSub,
+              fontSize: 12,
+              fontWeight: FontWeight.w700,
             ),
-            const SizedBox(height: 6),
-            Text(
-              value,
-              style: const TextStyle(
-                color: AppColors.primaryDark,
-                fontSize: 28,
-                fontWeight: FontWeight.w800,
-                height: 1.05,
-              ),
+          ),
+          const SizedBox(height: 6),
+          Text(
+            value,
+            style: const TextStyle(
+              color: AppColors.primaryDark,
+              fontSize: 28,
+              fontWeight: FontWeight.w800,
+              height: 1.05,
             ),
-            const SizedBox(height: 4),
-            Text(
-              caption,
-              style: const TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }
