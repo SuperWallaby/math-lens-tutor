@@ -7,7 +7,11 @@ import 'glass_css_layer_stub.dart'
 
 enum GlassTone { clear, blue, sunken }
 
-/// Web: real CSS backdrop-filter. Native: painted glass + inner light.
+const Color _kField = Color(0xFFF0F2F5);
+const Color _kShade = Color(0xFFC5CDD6);
+const Color _kInk = Color(0xFF2C2C2C);
+
+/// Web: CSS frost under a translucent slab. Native: painted glass only.
 class GlassPanel extends StatelessWidget {
   const GlassPanel({
     super.key,
@@ -23,8 +27,6 @@ class GlassPanel extends StatelessWidget {
   final EdgeInsetsGeometry padding;
   final BorderRadius? borderRadius;
   final GlassTone tone;
-
-  /// Kept for call-site compatibility. Visuals come from [tone].
   final double opacity;
   final Color tint;
 
@@ -44,93 +46,92 @@ class _GlassSurface extends StatelessWidget {
     required this.child,
     required this.tone,
     required this.borderRadius,
+    this.tight = false,
   });
 
   final Widget child;
   final GlassTone tone;
   final BorderRadius borderRadius;
+  final bool tight;
 
   @override
   Widget build(BuildContext context) {
-    final fill = switch (tone) {
-      GlassTone.blue => const Color(0x9EB7D4F0),
-      GlassTone.sunken => const Color(0x38FFFFFF),
-      GlassTone.clear => const Color(0x61FFFFFF),
+    final gradient = switch (tone) {
+      GlassTone.blue => const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xC2D4E8F8), Color(0x99B7D4F0)],
+        ),
+      GlassTone.sunken => const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0x38FFFFFF), Color(0x22FFFFFF)],
+        ),
+      GlassTone.clear => const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xA8FFFFFF), Color(0x5CFFFFFF)],
+        ),
     };
     final border = switch (tone) {
-      GlassTone.sunken => const Color(0x73FFFFFF),
+      GlassTone.sunken => const Color(0x66FFFFFF),
       GlassTone.blue => const Color(0xE6FFFFFF),
-      GlassTone.clear => const Color(0xEBFFFFFF),
+      GlassTone.clear => const Color(0xF2FFFFFF),
     };
-    final shadows = switch (tone) {
-      GlassTone.blue => const [
-          BoxShadow(
-            color: Color(0xFFC2CAD6),
-            offset: Offset(10, 10),
-            blurRadius: 20,
-          ),
-          BoxShadow(
-            color: Color(0xFFFFFFFF),
-            offset: Offset(-7, -7),
-            blurRadius: 14,
-          ),
-          BoxShadow(
-            color: Color(0x387EAFD9),
-            offset: Offset(0, 10),
-            blurRadius: 18,
-          ),
-          BoxShadow(
-            color: Color(0xEBFFFFFF),
-            offset: Offset(0, 1),
-            blurRadius: 1,
-            blurStyle: BlurStyle.inner,
-          ),
-          BoxShadow(
-            color: Color(0x1F5E8FBF),
-            offset: Offset(0, -1),
-            blurRadius: 1,
-            blurStyle: BlurStyle.inner,
-          ),
-        ],
-      GlassTone.sunken => const [
-          BoxShadow(
-            color: Color(0xFFC2CAD6),
-            offset: Offset(7, 7),
-            blurRadius: 14,
-            blurStyle: BlurStyle.inner,
-          ),
-          BoxShadow(
-            color: Color(0xFFFFFFFF),
-            offset: Offset(-6, -6),
-            blurRadius: 12,
-            blurStyle: BlurStyle.inner,
-          ),
-        ],
-      GlassTone.clear => const [
-          BoxShadow(
-            color: Color(0xFFC2CAD6),
-            offset: Offset(10, 10),
-            blurRadius: 20,
-          ),
-          BoxShadow(
-            color: Color(0xFFFFFFFF),
-            offset: Offset(-8, -8),
-            blurRadius: 16,
-          ),
-          BoxShadow(
-            color: Color(0xF2FFFFFF),
-            offset: Offset(0, 1),
-            blurRadius: 1,
-            blurStyle: BlurStyle.inner,
-          ),
-          BoxShadow(
-            color: Color(0x29A0ACBC),
-            offset: Offset(0, -1),
-            blurRadius: 1,
-            blurStyle: BlurStyle.inner,
-          ),
-        ],
-    };
+    final shadows = tight
+        ? const <BoxShadow>[]
+        : switch (tone) {
+            GlassTone.sunken => const [
+                BoxShadow(
+                  color: Color(0x66C5CDD6),
+                  offset: Offset(4, 4),
+                  blurRadius: 8,
+                  blurStyle: BlurStyle.inner,
+                ),
+                BoxShadow(
+                  color: Color(0xB3FFFFFF),
+                  offset: Offset(-3, -3),
+                  blurRadius: 6,
+                  blurStyle: BlurStyle.inner,
+                ),
+              ],
+            GlassTone.blue => const [
+                BoxShadow(
+                  color: _kShade,
+                  offset: Offset(8, 8),
+                  blurRadius: 16,
+                ),
+                BoxShadow(
+                  color: Color(0xFFFFFFFF),
+                  offset: Offset(-6, -6),
+                  blurRadius: 12,
+                ),
+                BoxShadow(
+                  color: Color(0xCCFFFFFF),
+                  offset: Offset(0, 1),
+                  blurRadius: 1,
+                  blurStyle: BlurStyle.inner,
+                ),
+              ],
+            GlassTone.clear => const [
+                BoxShadow(
+                  color: _kShade,
+                  offset: Offset(8, 8),
+                  blurRadius: 16,
+                ),
+                BoxShadow(
+                  color: Color(0xFFFFFFFF),
+                  offset: Offset(-6, -6),
+                  blurRadius: 12,
+                ),
+                BoxShadow(
+                  color: Color(0xE6FFFFFF),
+                  offset: Offset(0, 1),
+                  blurRadius: 1,
+                  blurStyle: BlurStyle.inner,
+                ),
+              ],
+          };
 
     final css = kIsWeb
         ? buildCssGlassLayer(
@@ -148,9 +149,9 @@ class _GlassSurface extends StatelessWidget {
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: css == null ? fill : null,
+        gradient: gradient,
         borderRadius: borderRadius,
-        border: css == null ? Border.all(color: border, width: 1) : null,
+        border: Border.all(color: border, width: 1),
         boxShadow: shadows,
       ),
       clipBehavior: Clip.antiAlias,
@@ -162,6 +163,42 @@ class _GlassSurface extends StatelessWidget {
                 content,
               ],
             ),
+    );
+  }
+}
+
+/// One recessed glass well + one translucent glyph. Never nest another icon.
+class GlassGlyph extends StatelessWidget {
+  const GlassGlyph({
+    super.key,
+    required this.icon,
+    this.size = 34,
+    this.iconSize = 17,
+    this.tint = GlassTone.sunken,
+  });
+
+  final IconData icon;
+  final double size;
+  final double iconSize;
+  final GlassTone tint;
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: size,
+      height: size,
+      child: _GlassSurface(
+        tone: tint,
+        tight: true,
+        borderRadius: BorderRadius.circular(size / 2),
+        child: Center(
+          child: Icon(
+            icon,
+            size: iconSize,
+            color: _kInk.withValues(alpha: 0.42),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -202,19 +239,19 @@ class GlassAtmosphere extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        const ColoredBox(color: Color(0xFFE4E9F0)),
+        const ColoredBox(color: _kField),
         const Positioned(
-          top: -90,
-          left: -70,
+          top: -120,
+          left: -80,
           child: IgnorePointer(
             child: SizedBox(
-              width: 360,
-              height: 360,
+              width: 280,
+              height: 280,
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [Color(0xCCB7D4F0), Color(0x00E4E9F0)],
+                    colors: [Color(0x33C5D0DC), Color(0x00F0F2F5)],
                   ),
                 ),
               ),
@@ -222,53 +259,17 @@ class GlassAtmosphere extends StatelessWidget {
           ),
         ),
         const Positioned(
-          top: 220,
-          right: -80,
+          bottom: -90,
+          right: -60,
           child: IgnorePointer(
             child: SizedBox(
-              width: 260,
-              height: 260,
+              width: 240,
+              height: 240,
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [Color(0xAABFD8F0), Color(0x00E4E9F0)],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        const Positioned(
-          left: -40,
-          bottom: 80,
-          child: IgnorePointer(
-            child: SizedBox(
-              width: 220,
-              height: 220,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [Color(0x99D0DCEC), Color(0x00E4E9F0)],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        const Positioned(
-          bottom: -110,
-          right: -30,
-          child: IgnorePointer(
-            child: SizedBox(
-              width: 300,
-              height: 300,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [Color(0x99C4D0E4), Color(0x00E4E9F0)],
+                    colors: [Color(0x29B8C4D0), Color(0x00F0F2F5)],
                   ),
                 ),
               ),
@@ -305,38 +306,23 @@ class GlassTabBar extends StatelessWidget {
     required this.labels,
     required this.selectedIndex,
     required this.onSelected,
+    this.icons,
     this.badgeIndex,
     this.badgeCount = 0,
   });
 
   final List<String> labels;
+  final List<IconData>? icons;
   final int selectedIndex;
   final ValueChanged<int> onSelected;
   final int? badgeIndex;
   final int badgeCount;
 
-  Widget _tabLabel(int i) {
-    return Center(
-      child: Badge(
-        isLabelVisible: badgeIndex == i && badgeCount > 0,
-        label: Text('$badgeCount'),
-        child: Text(
-          labels[i],
-          style: TextStyle(
-            color: AppColors.text,
-            fontSize: 13,
-            fontWeight: i == selectedIndex ? FontWeight.w800 : FontWeight.w600,
-          ),
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return GlassNavBar(
       child: SizedBox(
-        height: 56,
+        height: icons == null ? 56 : 64,
         child: Row(
           children: [
             for (var i = 0; i < labels.length; i++) ...[
@@ -344,11 +330,12 @@ class GlassTabBar extends StatelessWidget {
                 const SizedBox(
                   width: 1,
                   height: 22,
-                  child: ColoredBox(color: Color(0x3390A0B0)),
+                  child: ColoredBox(color: Color(0x2290A0B0)),
                 ),
               Expanded(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 3, vertical: 5),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 3, vertical: 5),
                   child: Material(
                     color: Colors.transparent,
                     child: InkWell(
@@ -359,9 +346,9 @@ class GlassTabBar extends StatelessWidget {
                               tone: GlassTone.blue,
                               borderRadius:
                                   BorderRadius.circular(AppRadii.pill),
-                              child: _tabLabel(i),
+                              child: _tabChild(i),
                             )
-                          : _tabLabel(i),
+                          : _tabChild(i),
                     ),
                   ),
                 ),
@@ -369,6 +356,35 @@ class GlassTabBar extends StatelessWidget {
             ],
           ],
         ),
+      ),
+    );
+  }
+
+  Widget _tabChild(int i) {
+    final icon = icons != null && i < icons!.length ? icons![i] : null;
+    final selected = i == selectedIndex;
+    return Badge(
+      isLabelVisible: badgeIndex == i && badgeCount > 0,
+      label: Text('$badgeCount'),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          if (icon != null)
+            Icon(
+              icon,
+              size: 18,
+              color: _kInk.withValues(alpha: selected ? 0.72 : 0.40),
+            ),
+          if (icon != null) const SizedBox(height: 2),
+          Text(
+            labels[i],
+            style: TextStyle(
+              color: _kInk.withValues(alpha: selected ? 0.88 : 0.55),
+              fontSize: icon == null ? 13 : 10,
+              fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -405,13 +421,24 @@ class GlassButton extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (icon != null) ...[
-                  Icon(icon, size: 20, color: AppColors.onPrimarySoft),
+                  Icon(
+                    icon,
+                    size: 18,
+                    color: _kInk.withValues(alpha: 0.45),
+                    shadows: const [
+                      Shadow(
+                        color: Color(0x66FFFFFF),
+                        offset: Offset(0, 1),
+                        blurRadius: 2,
+                      ),
+                    ],
+                  ),
                   const SizedBox(width: 8),
                 ],
                 Text(
                   label,
-                  style: const TextStyle(
-                    color: AppColors.onPrimarySoft,
+                  style: TextStyle(
+                    color: _kInk.withValues(alpha: 0.88),
                     fontSize: AppTypography.button,
                     fontWeight: FontWeight.w800,
                   ),
@@ -451,14 +478,25 @@ class GlassField extends StatelessWidget {
   Widget build(BuildContext context) {
     return GlassPanel(
       tone: GlassTone.sunken,
-      padding: const EdgeInsets.symmetric(horizontal: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 14),
       borderRadius: BorderRadius.circular(AppRadii.pill),
       child: SizedBox(
         height: AppSizes.buttonHeight,
         child: Row(
           children: [
-            Icon(icon, size: 20, color: AppColors.textMuted),
-            const SizedBox(width: 12),
+            Icon(
+              icon,
+              size: 18,
+              color: _kInk.withValues(alpha: 0.40),
+              shadows: const [
+                Shadow(
+                  color: Color(0x66FFFFFF),
+                  offset: Offset(0, 1),
+                  blurRadius: 2,
+                ),
+              ],
+            ),
+            const SizedBox(width: 10),
             Expanded(
               child: TextField(
                 controller: controller,
@@ -480,8 +518,8 @@ class GlassField extends StatelessWidget {
                   filled: false,
                   isDense: true,
                   contentPadding: EdgeInsets.zero,
-                  hintStyle: const TextStyle(
-                    color: AppColors.textMuted,
+                  hintStyle: TextStyle(
+                    color: _kInk.withValues(alpha: 0.38),
                     fontWeight: FontWeight.w500,
                     fontSize: 16,
                   ),
@@ -521,8 +559,8 @@ class GlassChoice extends StatelessWidget {
           child: Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
             child: DefaultTextStyle.merge(
-              style: const TextStyle(
-                color: AppColors.text,
+              style: TextStyle(
+                color: _kInk.withValues(alpha: 0.88),
                 fontSize: 16,
                 fontWeight: FontWeight.w700,
               ),
@@ -555,14 +593,11 @@ class GlassInfoRow extends StatelessWidget {
       borderRadius: BorderRadius.circular(AppRadii.pill),
       child: Row(
         children: [
-          SizedBox(
-            width: 44,
-            height: 44,
-            child: _GlassSurface(
-              tone: GlassTone.blue,
-              borderRadius: BorderRadius.circular(22),
-              child: Icon(icon, color: AppColors.primaryDark, size: 22),
-            ),
+          GlassGlyph(
+            icon: icon,
+            size: 40,
+            iconSize: 18,
+            tint: GlassTone.blue,
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -615,11 +650,7 @@ class GlassCircleButton extends StatelessWidget {
         child: InkWell(
           onTap: onPressed,
           customBorder: const CircleBorder(),
-          child: _GlassSurface(
-            tone: GlassTone.clear,
-            borderRadius: BorderRadius.circular(22),
-            child: Icon(icon, size: 20, color: AppColors.text),
-          ),
+          child: GlassGlyph(icon: icon, size: 44, iconSize: 20),
         ),
       ),
     );

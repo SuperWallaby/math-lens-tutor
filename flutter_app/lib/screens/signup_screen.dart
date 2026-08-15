@@ -254,7 +254,7 @@ class _SignupScreenState extends State<SignupScreen> {
       children: [
         GlassField(
           hint: '이메일',
-          icon: Icons.mail_outline_rounded,
+          icon: Icons.mail_outline,
           controller: _emailController,
           focusNode: _emailFocusNode,
           keyboardType: TextInputType.emailAddress,
@@ -264,7 +264,7 @@ class _SignupScreenState extends State<SignupScreen> {
         const SizedBox(height: 12),
         GlassField(
           hint: '비밀번호',
-          icon: Icons.lock_outline_rounded,
+          icon: Icons.lock_outline,
           obscureText: true,
           enabled: !_loading,
           onSubmitted: (_) => _sendMagicLink(),

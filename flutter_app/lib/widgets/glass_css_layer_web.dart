@@ -28,9 +28,9 @@ void _ensureRegistered() {
 
 void _style(html.DivElement el, String tone, double radius) {
   final bg = switch (tone) {
-    'blue' => 'rgba(183, 212, 240, 0.55)',
-    'sunken' => 'rgba(255, 255, 255, 0.22)',
-    _ => 'rgba(255, 255, 255, 0.38)',
+    'blue' => 'rgba(183, 212, 240, 0.42)',
+    'sunken' => 'rgba(255, 255, 255, 0.16)',
+    _ => 'rgba(255, 255, 255, 0.28)',
   };
   final blur = tone == 'sunken'
       ? 'blur(12px) saturate(140%)'

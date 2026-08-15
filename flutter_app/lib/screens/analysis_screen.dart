@@ -291,7 +291,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                 ),
                 const SizedBox(height: 18),
                 GlassInfoRow(
-                  icon: Icons.show_chart_rounded,
+                  icon: Icons.show_chart_outlined,
                   title: '약한 유형',
                   subtitle: weakShown.isNotEmpty
                       ? weakShown.first

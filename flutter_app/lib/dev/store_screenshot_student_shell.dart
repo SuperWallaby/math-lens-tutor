@@ -100,6 +100,13 @@ class _StoreScreenshotStudentShellState
         selectedIndex: _index,
         onSelected: (value) => setState(() => _index = value),
         labels: const ['홈', '업로드', '훈련', '성장', '설정'],
+        icons: const [
+          Icons.home_outlined,
+          Icons.photo_camera_outlined,
+          Icons.edit_note_outlined,
+          Icons.menu_book_outlined,
+          Icons.settings_outlined,
+        ],
       ),
     );
   }

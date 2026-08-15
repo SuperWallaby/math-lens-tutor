@@ -101,6 +101,7 @@ class _AppShellState extends State<AppShell> {
           ),
           bottomNavigationBar: GlassTabBar(
             labels: [for (final tab in tabs) tab.label],
+            icons: [for (final tab in tabs) tab.icon],
             selectedIndex: safeIndex,
             badgeIndex: user.role == AppUserRole.student
                 ? _studentTrainingTabIndex
@@ -226,8 +227,8 @@ class _AppShellState extends State<AppShell> {
           ),
           _ShellTab(
             label: '업로드',
-            icon: Icons.camera_alt_outlined,
-            selectedIcon: Icons.camera_alt_rounded,
+            icon: Icons.photo_camera_outlined,
+            selectedIcon: Icons.photo_camera_outlined,
             screen: UploadScreen(
               apiClient: widget.apiClient,
               embeddedInShell: true,

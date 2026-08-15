@@ -437,14 +437,14 @@ class _NewProblemCard extends StatelessWidget {
         if (supportsProblemImageCamera) ...[
           GlassButton(
             onPressed: onCapture,
-            icon: Icons.camera_alt_rounded,
+            icon: Icons.photo_camera_outlined,
             label: '촬영하기',
           ),
           if (!matchPinPreview) ...[
             const SizedBox(height: AppSpacing.sm),
             GlassButton(
               onPressed: onPickGallery,
-              icon: problemImageGalleryIcon,
+              icon: Icons.image_outlined,
               label: '앨범에서 고르기',
               primary: false,
             ),
