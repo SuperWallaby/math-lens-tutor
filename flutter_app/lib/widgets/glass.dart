@@ -1,10 +1,13 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/app_design_system.dart';
+import 'glass_css_layer_stub.dart'
+    if (dart.library.html) 'glass_css_layer_web.dart';
 
 enum GlassTone { clear, blue, sunken }
 
-/// Pin 3D glass: top-left light + bottom-right shade. No face gradient.
+/// Web: real CSS backdrop-filter. Native: painted glass + inner light.
 class GlassPanel extends StatelessWidget {
   const GlassPanel({
     super.key,
@@ -129,19 +132,36 @@ class _GlassSurface extends StatelessWidget {
         ],
     };
 
+    final css = kIsWeb
+        ? buildCssGlassLayer(
+            tone: tone.name,
+            radius: borderRadius.topLeft.x,
+          )
+        : null;
+
+    final content = Material(
+      type: MaterialType.transparency,
+      borderRadius: borderRadius,
+      child: child,
+    );
+
     return Container(
       width: double.infinity,
       decoration: BoxDecoration(
-        color: fill,
+        color: css == null ? fill : null,
         borderRadius: borderRadius,
-        border: Border.all(color: border, width: 1),
+        border: css == null ? Border.all(color: border, width: 1) : null,
         boxShadow: shadows,
       ),
-      child: Material(
-        type: MaterialType.transparency,
-        borderRadius: borderRadius,
-        child: child,
-      ),
+      clipBehavior: Clip.antiAlias,
+      child: css == null
+          ? content
+          : Stack(
+              children: [
+                Positioned.fill(child: IgnorePointer(child: css)),
+                content,
+              ],
+            ),
     );
   }
 }
