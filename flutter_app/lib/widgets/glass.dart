@@ -472,12 +472,10 @@ class GlassButton extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(AppRadii.pill);
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onPressed,
-        borderRadius: radius,
-        child: _GlassSurface(
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: onPressed,
+      child: _GlassSurface(
           tone: primary ? GlassTone.blue : GlassTone.clear,
           borderRadius: radius,
           child: SizedBox(
@@ -512,7 +510,6 @@ class GlassButton extends StatelessWidget {
             ),
           ),
         ),
-      ),
     );
   }
 }

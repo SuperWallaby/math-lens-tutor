@@ -10,6 +10,7 @@ import '../services/auth_session.dart';
 import '../services/oauth_service.dart';
 import '../utils/pending_student_link.dart';
 import '../widgets/brand_splash_view.dart';
+import '../widgets/pin_html_overlay.dart';
 import 'app_shell.dart';
 import 'guardian_link_required_screen.dart';
 import 'teacher_closed_screen.dart';
@@ -152,6 +153,20 @@ class _AuthGateState extends State<AuthGate> {
 
     final session = widget.authSession;
     if (!session.isSignedIn && !session.isGuest) {
+      if (kIsWeb) {
+        return PinHtmlOverlay(
+          screen: 'login',
+          onAction: (action) async {
+            if (action != 'home') return;
+            await session.enterGuestMode(
+              await widget.apiClient.deviceScopedUserId,
+            );
+            if (mounted) {
+              setState(() => _profileOnboardingDismissed = true);
+            }
+          },
+        );
+      }
       return SignupScreen(
         apiClient: widget.apiClient,
         oauthService: widget.oauthService,

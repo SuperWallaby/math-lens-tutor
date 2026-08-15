@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>우열</title>
+  <link rel="stylesheet" href="pin.css" />
+</head>
+<body>
+  <div class="atm">
+    <div class="pad">
+      <div class="hero">오늘 어떤문제를<br />풀어볼까요?</div>
+      <div class="stat-row mt22">
+        <div class="round raised"><span>정답률</span><em>72%</em></div>
+        <div class="round raised"><span>해결한 문제</span><em>18개</em></div>
+      </div>
+      <button type="button" class="btn pill blue mt18" onclick="go('analysis')">촬영하기</button>
+      <div class="grow"></div>
+      <div class="nav pill raised">
+        <button type="button" class="on" onclick="go('home')">홈</button>
+        <button type="button" onclick="go('analysis')">업로드</button>
+        <button type="button" onclick="go('practice')">훈련</button>
+        <button type="button" onclick="go('home')">성장</button>
+      </div>
+    </div>
+  </div>
+  <script src="pin.js"></script>
+</body>
+</html>

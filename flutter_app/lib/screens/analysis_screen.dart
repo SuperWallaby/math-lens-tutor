@@ -12,6 +12,7 @@ import '../widgets/glass.dart';
 import '../widgets/mixed_math_text.dart';
 import '../widgets/skeleton_box.dart';
 import '../widgets/skeleton_lines.dart';
+import '../dev/design_review_data.dart';
 import 'practice_screen.dart';
 import '../theme/app_design_system.dart';
 
@@ -306,25 +307,27 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                       : '같은 유형 5문제',
                 ),
                 const SizedBox(height: 18),
-                if (similarReady)
-                  GlassButton(
-                    label: '비슷한 문제 풀기',
-                    onPressed: () {
-                      final set = _problemSet;
-                      if (set == null) return;
-                      Navigator.of(context).push(
-                        MaterialPageRoute(
-                          builder: (_) => PracticeScreen(
-                            apiClient: widget.apiClient,
-                            problemSet: set,
-                            liteMode: widget.liteMode,
-                          ),
+                GlassButton(
+                  label: '비슷한 문제 풀기',
+                  onPressed: () {
+                    final set = similarReady
+                        ? _problemSet
+                        : (widget.matchPinPreview
+                            ? designReviewProblemSetQuestion()
+                            : null);
+                    if (set == null) return;
+                    Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) => PracticeScreen(
+                          apiClient: widget.apiClient,
+                          problemSet: set,
+                          liteMode: widget.liteMode,
+                          matchPinPreview: widget.matchPinPreview,
                         ),
-                      );
-                    },
-                  )
-                else
-                  const GlassButton(label: '비슷한 문제 풀기', onPressed: null),
+                      ),
+                    );
+                  },
+                ),
                 const SizedBox(height: 10),
                 GlassButton(
                   label: '홈으로',
