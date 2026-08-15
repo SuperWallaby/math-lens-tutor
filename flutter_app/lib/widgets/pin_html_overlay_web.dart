@@ -50,7 +50,7 @@ class _PinHtmlOverlayState extends State<PinHtmlOverlay> {
       'home' => 'home',
       _ => 'login',
     };
-    return 'pin/$name.html?v=4';
+    return 'pin/$name.html?v=3';
   }
 
   void _onMessage(html.Event raw) {
