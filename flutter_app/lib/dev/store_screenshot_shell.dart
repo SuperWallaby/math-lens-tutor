@@ -150,9 +150,11 @@ class StoreScreenshotShell extends StatelessWidget {
           ),
         );
       case 'parent-home':
-        return ParentHomeScreen(
-          apiClient: apiClient,
-          demoProfile: designReviewProfileParent(),
+        return _fullScreen(
+          ParentHomeScreen(
+            apiClient: apiClient,
+            demoProfile: designReviewProfileParent(),
+          ),
         );
       case 'parent-explain':
         return ParentExplainScreen(

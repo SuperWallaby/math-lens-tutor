@@ -137,7 +137,11 @@ class _GlassSurface extends StatelessWidget {
         border: Border.all(color: border, width: 1),
         boxShadow: shadows,
       ),
-      child: child,
+      child: Material(
+        type: MaterialType.transparency,
+        borderRadius: borderRadius,
+        child: child,
+      ),
     );
   }
 }
