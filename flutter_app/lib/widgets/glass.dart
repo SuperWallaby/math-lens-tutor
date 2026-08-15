@@ -4,8 +4,7 @@ import '../theme/app_design_system.dart';
 
 enum GlassTone { clear, blue, sunken }
 
-/// Soft pin glass: translucent flat fill, white rim, airy shadow.
-/// Flutter web cannot frost via BackdropFilter, so the gray field must show through.
+/// Pin 3D glass: top-left light + bottom-right shade. No face gradient.
 class GlassPanel extends StatelessWidget {
   const GlassPanel({
     super.key,
@@ -51,56 +50,81 @@ class _GlassSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final fill = switch (tone) {
-      GlassTone.blue => const Color(0x8FB7D4F0),
+      GlassTone.blue => const Color(0x9EB7D4F0),
       GlassTone.sunken => const Color(0x38FFFFFF),
-      GlassTone.clear => const Color(0x52FFFFFF),
+      GlassTone.clear => const Color(0x61FFFFFF),
+    };
+    final border = switch (tone) {
+      GlassTone.sunken => const Color(0x73FFFFFF),
+      GlassTone.blue => const Color(0xE6FFFFFF),
+      GlassTone.clear => const Color(0xEBFFFFFF),
     };
     final shadows = switch (tone) {
       GlassTone.blue => const [
           BoxShadow(
-            color: Color(0x337EAFD9),
-            offset: Offset(0, 10),
+            color: Color(0xFFC2CAD6),
+            offset: Offset(10, 10),
             blurRadius: 20,
           ),
           BoxShadow(
-            color: Color(0x14000000),
-            offset: Offset(0, 3),
-            blurRadius: 8,
+            color: Color(0xFFFFFFFF),
+            offset: Offset(-7, -7),
+            blurRadius: 14,
           ),
           BoxShadow(
-            color: Color(0xCCFFFFFF),
+            color: Color(0x387EAFD9),
+            offset: Offset(0, 10),
+            blurRadius: 18,
+          ),
+          BoxShadow(
+            color: Color(0xEBFFFFFF),
             offset: Offset(0, 1),
-            blurRadius: 0,
+            blurRadius: 1,
+            blurStyle: BlurStyle.inner,
+          ),
+          BoxShadow(
+            color: Color(0x1F5E8FBF),
+            offset: Offset(0, -1),
+            blurRadius: 1,
+            blurStyle: BlurStyle.inner,
           ),
         ],
       GlassTone.sunken => const [
           BoxShadow(
-            color: Color(0x14000000),
-            offset: Offset(0, 2),
-            blurRadius: 6,
-            spreadRadius: -1,
+            color: Color(0xFFC2CAD6),
+            offset: Offset(7, 7),
+            blurRadius: 14,
+            blurStyle: BlurStyle.inner,
           ),
           BoxShadow(
-            color: Color(0xB3FFFFFF),
-            offset: Offset(0, 1),
-            blurRadius: 0,
+            color: Color(0xFFFFFFFF),
+            offset: Offset(-6, -6),
+            blurRadius: 12,
+            blurStyle: BlurStyle.inner,
           ),
         ],
       GlassTone.clear => const [
           BoxShadow(
-            color: Color(0x1A4F6D7A),
-            offset: Offset(0, 10),
-            blurRadius: 22,
+            color: Color(0xFFC2CAD6),
+            offset: Offset(10, 10),
+            blurRadius: 20,
           ),
           BoxShadow(
-            color: Color(0x147EAFD9),
-            offset: Offset(0, 4),
-            blurRadius: 10,
+            color: Color(0xFFFFFFFF),
+            offset: Offset(-8, -8),
+            blurRadius: 16,
           ),
           BoxShadow(
-            color: Color(0xE6FFFFFF),
+            color: Color(0xF2FFFFFF),
             offset: Offset(0, 1),
-            blurRadius: 0,
+            blurRadius: 1,
+            blurStyle: BlurStyle.inner,
+          ),
+          BoxShadow(
+            color: Color(0x29A0ACBC),
+            offset: Offset(0, -1),
+            blurRadius: 1,
+            blurStyle: BlurStyle.inner,
           ),
         ],
     };
@@ -110,7 +134,7 @@ class _GlassSurface extends StatelessWidget {
       decoration: BoxDecoration(
         color: fill,
         borderRadius: borderRadius,
-        border: Border.all(color: const Color(0xF2FFFFFF), width: 1.5),
+        border: Border.all(color: border, width: 1),
         boxShadow: shadows,
       ),
       child: child,
@@ -154,7 +178,7 @@ class GlassAtmosphere extends StatelessWidget {
     return Stack(
       fit: StackFit.expand,
       children: [
-        const ColoredBox(color: Color(0xFFE8EDF3)),
+        const ColoredBox(color: Color(0xFFE4E9F0)),
         const Positioned(
           top: -90,
           left: -70,
@@ -166,7 +190,7 @@ class GlassAtmosphere extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [Color(0xCCB7D4F0), Color(0x00E8EDF3)],
+                    colors: [Color(0xCCB7D4F0), Color(0x00E4E9F0)],
                   ),
                 ),
               ),
@@ -184,7 +208,7 @@ class GlassAtmosphere extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [Color(0xAABFD8F0), Color(0x00E8EDF3)],
+                    colors: [Color(0xAABFD8F0), Color(0x00E4E9F0)],
                   ),
                 ),
               ),
@@ -202,7 +226,7 @@ class GlassAtmosphere extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [Color(0x99D0DCEC), Color(0x00E8EDF3)],
+                    colors: [Color(0x99D0DCEC), Color(0x00E4E9F0)],
                   ),
                 ),
               ),
@@ -220,7 +244,7 @@ class GlassAtmosphere extends StatelessWidget {
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   gradient: RadialGradient(
-                    colors: [Color(0x99C4D0E4), Color(0x00E8EDF3)],
+                    colors: [Color(0x99C4D0E4), Color(0x00E4E9F0)],
                   ),
                 ),
               ),

@@ -4,6 +4,7 @@ import '../screens/analysis_screen.dart';
 import '../screens/parent_explain_screen.dart';
 import '../screens/parent_screens.dart';
 import '../screens/practice_screen.dart';
+import '../screens/signup_screen.dart';
 import '../services/api_client.dart';
 import '../services/oauth_service.dart';
 import '../theme/app_design_system.dart';
@@ -38,6 +39,14 @@ class StoreScreenshotShell extends StatelessWidget {
     final mode = _normalizeMode(screen);
 
     switch (mode) {
+      case 'login':
+      case 'signup':
+        return SignupScreen(
+          apiClient: apiClient,
+          oauthService: oauthService,
+          onSignedIn: () {},
+          onContinueAsGuest: () {},
+        );
       case 'hub-first':
         return StoreScreenshotStudentShell(
           apiClient: apiClient,

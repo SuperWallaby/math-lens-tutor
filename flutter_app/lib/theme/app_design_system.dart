@@ -23,7 +23,7 @@ TextStyle _appTextStyle({
 }
 abstract final class AppColors {
   /// Soft frosted glass — Pinterest pin 1128714725387731504
-  static const background = Color(0xFFE8EDF3);
+  static const background = Color(0xFFE4E9F0);
   static const surface = Color(0xFFF7F7F7);
   static const surfaceElevated = Color(0xFFFFFFFF);
   static const surfaceMuted = Color(0xFFE4E4E4);
@@ -60,29 +60,46 @@ abstract final class AppColors {
 abstract final class AppShadows {
   static const raised = [
     BoxShadow(
-      color: AppColors.glassShadow,
-      offset: Offset(0, 8),
+      color: Color(0xFFC2CAD6),
+      offset: Offset(10, 10),
       blurRadius: 20,
     ),
     BoxShadow(
-      color: Color(0x0A000000),
-      offset: Offset(0, 2),
-      blurRadius: 6,
+      color: Color(0xFFFFFFFF),
+      offset: Offset(-8, -8),
+      blurRadius: 16,
     ),
   ];
 
   static const sunken = [
     BoxShadow(
-      color: Color(0x0D000000),
-      offset: Offset(0, 2),
-      blurRadius: 8,
+      color: Color(0xFFC2CAD6),
+      offset: Offset(7, 7),
+      blurRadius: 14,
+      blurStyle: BlurStyle.inner,
+    ),
+    BoxShadow(
+      color: Color(0xFFFFFFFF),
+      offset: Offset(-6, -6),
+      blurRadius: 12,
+      blurStyle: BlurStyle.inner,
     ),
   ];
 
   static const gel = [
     BoxShadow(
-      color: Color(0x337EAFD9),
-      offset: Offset(0, 8),
+      color: Color(0xFFC2CAD6),
+      offset: Offset(10, 10),
+      blurRadius: 20,
+    ),
+    BoxShadow(
+      color: Color(0xFFFFFFFF),
+      offset: Offset(-7, -7),
+      blurRadius: 14,
+    ),
+    BoxShadow(
+      color: Color(0x387EAFD9),
+      offset: Offset(0, 10),
       blurRadius: 18,
     ),
     BoxShadow(
