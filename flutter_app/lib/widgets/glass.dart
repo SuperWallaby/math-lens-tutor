@@ -5,10 +5,9 @@ import '../theme/app_design_system.dart';
 enum GlassTone { clear, blue, sunken }
 
 const Color _kField = Color(0xFFF0F2F5);
-const Color _kShade = Color(0xFFC5CDD6);
 const Color _kInk = Color(0xFF2C2C2C);
 
-/// Painted frosted slab. Web HTML glass views are not used — they drift.
+/// Water-drop glass: see-through fill, rim light, thick soft shade.
 class GlassPanel extends StatelessWidget {
   const GlassPanel({
     super.key,
@@ -55,78 +54,99 @@ class _GlassSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Same fill as the field — depth comes only from dual shadows.
-    final fill = switch (tone) {
-      GlassTone.blue => const Color(0xFFB8C8E6),
-      GlassTone.sunken => _kField,
-      GlassTone.clear => _kField,
+    final sheen = switch (tone) {
+      GlassTone.blue => const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0xB8D6E6F8), Color(0x66A8C0E0)],
+        ),
+      GlassTone.sunken => const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0x3DFFFFFF), Color(0x14FFFFFF)],
+        ),
+      GlassTone.clear => const LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [Color(0x99FFFFFF), Color(0x3DFFFFFF)],
+        ),
+    };
+    final rim = switch (tone) {
+      GlassTone.sunken => const Color(0x73FFFFFF),
+      _ => const Color(0xE6FFFFFF),
     };
     final shadows = tight
         ? switch (tone) {
             GlassTone.sunken => const [
                 BoxShadow(
-                  color: Color(0xFFC5CDD6),
+                  color: Color(0x66A8B4C4),
                   offset: Offset(3, 3),
                   blurRadius: 6,
                   blurStyle: BlurStyle.inner,
                 ),
                 BoxShadow(
-                  color: Color(0xFFFFFFFF),
-                  offset: Offset(-3, -3),
-                  blurRadius: 6,
+                  color: Color(0xCCFFFFFF),
+                  offset: Offset(-2, -2),
+                  blurRadius: 4,
                   blurStyle: BlurStyle.inner,
                 ),
               ],
             _ => const [
                 BoxShadow(
-                  color: _kShade,
-                  offset: Offset(4, 4),
-                  blurRadius: 8,
+                  color: Color(0x4DA8B4C4),
+                  offset: Offset(4, 6),
+                  blurRadius: 10,
                 ),
                 BoxShadow(
-                  color: Color(0xFFFFFFFF),
-                  offset: Offset(-4, -4),
-                  blurRadius: 8,
+                  color: Color(0xB3FFFFFF),
+                  offset: Offset(-3, -3),
+                  blurRadius: 6,
+                ),
+                BoxShadow(
+                  color: Color(0xD9FFFFFF),
+                  offset: Offset(0, 1),
+                  blurRadius: 1,
+                  blurStyle: BlurStyle.inner,
                 ),
               ],
           }
         : switch (tone) {
             GlassTone.sunken => const [
                 BoxShadow(
-                  color: Color(0xFFC5CDD6),
+                  color: Color(0x73A8B4C4),
                   offset: Offset(6, 6),
                   blurRadius: 12,
                   blurStyle: BlurStyle.inner,
                 ),
                 BoxShadow(
-                  color: Color(0xFFFFFFFF),
-                  offset: Offset(-6, -6),
-                  blurRadius: 12,
+                  color: Color(0xD9FFFFFF),
+                  offset: Offset(-5, -5),
+                  blurRadius: 10,
                   blurStyle: BlurStyle.inner,
                 ),
               ],
-            GlassTone.blue => const [
+            _ => const [
                 BoxShadow(
-                  color: _kShade,
-                  offset: Offset(8, 8),
+                  color: Color(0x66A0AEC0),
+                  offset: Offset(10, 14),
+                  blurRadius: 24,
+                ),
+                BoxShadow(
+                  color: Color(0xCCFFFFFF),
+                  offset: Offset(-7, -7),
                   blurRadius: 16,
                 ),
                 BoxShadow(
-                  color: Color(0xFFFFFFFF),
-                  offset: Offset(-8, -8),
-                  blurRadius: 16,
-                ),
-              ],
-            GlassTone.clear => const [
-                BoxShadow(
-                  color: _kShade,
-                  offset: Offset(8, 8),
-                  blurRadius: 16,
+                  color: Color(0xF2FFFFFF),
+                  offset: Offset(0, 1),
+                  blurRadius: 2,
+                  blurStyle: BlurStyle.inner,
                 ),
                 BoxShadow(
-                  color: Color(0xFFFFFFFF),
-                  offset: Offset(-8, -8),
-                  blurRadius: 16,
+                  color: Color(0x3390A0B0),
+                  offset: Offset(0, -2),
+                  blurRadius: 4,
+                  blurStyle: BlurStyle.inner,
                 ),
               ],
           };
@@ -134,8 +154,9 @@ class _GlassSurface extends StatelessWidget {
     return Container(
       width: expand ? double.infinity : null,
       decoration: BoxDecoration(
-        color: fill,
+        gradient: sheen,
         borderRadius: borderRadius,
+        border: Border.all(color: rim, width: 1.15),
         boxShadow: shadows,
       ),
       child: Material(
@@ -221,6 +242,60 @@ class GlassAtmosphere extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         const ColoredBox(color: _kField),
+        const Positioned(
+          top: -80,
+          left: -50,
+          child: IgnorePointer(
+            child: SizedBox(
+              width: 280,
+              height: 280,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [Color(0x66C5D8EC), Color(0x00F0F2F5)],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const Positioned(
+          right: -70,
+          top: 180,
+          child: IgnorePointer(
+            child: SizedBox(
+              width: 240,
+              height: 240,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [Color(0x55B8C4D8), Color(0x00F0F2F5)],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const Positioned(
+          left: -40,
+          bottom: 40,
+          child: IgnorePointer(
+            child: SizedBox(
+              width: 220,
+              height: 220,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [Color(0x4DD0D8E4), Color(0x00F0F2F5)],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
         child,
       ],
     );
