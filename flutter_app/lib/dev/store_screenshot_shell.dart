@@ -1,4 +1,3 @@
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../screens/analysis_screen.dart';
@@ -9,7 +8,6 @@ import '../screens/signup_screen.dart';
 import '../services/api_client.dart';
 import '../services/oauth_service.dart';
 import '../widgets/glass.dart';
-import '../widgets/pin_html_overlay.dart';
 import 'design_review_data.dart';
 import 'store_screenshot_student_shell.dart';
 
@@ -35,28 +33,6 @@ class _StoreScreenshotShellState extends State<StoreScreenshotShell> {
 
   void _openHome() => setState(() => _next = 'hub-returning');
 
-  String? _pinHtmlScreen(String mode) {
-    return switch (mode) {
-      'login' || 'signup' => 'login',
-      'hub-first' || 'hub-returning' || 'home' => 'home',
-      'practice-question' || 'practice' => 'practice',
-      'analysis-weak' || 'analysis-ok' || 'analysis' => 'analysis',
-      _ => null,
-    };
-  }
-
-  void _onPinAction(String action) {
-    final next = switch (action) {
-      'home' => 'hub-returning',
-      'practice' => 'practice-question',
-      'analysis' => 'analysis-weak',
-      'login' => 'login',
-      _ => null,
-    };
-    if (next == null) return;
-    setState(() => _next = next);
-  }
-
   Widget _fullScreen(Widget child) {
     return Scaffold(
       backgroundColor: Colors.transparent,
@@ -71,10 +47,6 @@ class _StoreScreenshotShellState extends State<StoreScreenshotShell> {
     final apiClient = widget.apiClient;
     final oauthService = widget.oauthService;
     final mode = _normalizeMode(_next ?? widget.screen);
-    final pinScreen = kIsWeb ? _pinHtmlScreen(mode) : null;
-    if (pinScreen != null) {
-      return PinHtmlOverlay(screen: pinScreen, onAction: _onPinAction);
-    }
 
     switch (mode) {
       case 'login':
