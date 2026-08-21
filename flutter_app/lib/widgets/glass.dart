@@ -1,11 +1,8 @@
 import 'dart:ui';
 
-import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 
 import '../theme/app_design_system.dart';
-import 'glass_css_layer_stub.dart'
-    if (dart.library.html) 'glass_css_layer_web.dart' as css_glass;
 
 enum GlassTone { clear, blue, sunken }
 
@@ -75,7 +72,6 @@ class _GlassSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final radiusValue = borderRadius.topLeft.x;
     final rim = switch (tone) {
       GlassTone.sunken => const Color(0x66FFFFFF),
       _ => const Color(0xE8FFFFFF),
@@ -172,29 +168,19 @@ class _GlassSurface extends StatelessWidget {
               ],
           };
 
-    final toneKey = switch (tone) {
-      GlassTone.blue => 'blue',
-      GlassTone.sunken => 'sunken',
-      GlassTone.clear => 'clear',
-    };
-    final cssLayer = kIsWeb
-        ? css_glass.buildCssGlassLayer(tone: toneKey, radius: radiusValue)
-        : null;
-
+    // HtmlElementView(CSS glass) can leave Flutter web stuck on the loader.
+    // Use BackdropFilter on every platform so first frame actually paints.
     final frosted = ClipRRect(
       borderRadius: borderRadius,
       child: Stack(
         fit: StackFit.passthrough,
         children: [
-          if (cssLayer != null)
-            Positioned.fill(child: cssLayer)
-          else
-            Positioned.fill(
-              child: BackdropFilter(
-                filter: ImageFilter.blur(sigmaX: _sigma, sigmaY: _sigma),
-                child: const ColoredBox(color: Color(0x01FFFFFF)),
-              ),
+          Positioned.fill(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(sigmaX: _sigma, sigmaY: _sigma),
+              child: const ColoredBox(color: Color(0x01FFFFFF)),
             ),
+          ),
           Positioned.fill(
             child: DecoratedBox(
               decoration: BoxDecoration(
