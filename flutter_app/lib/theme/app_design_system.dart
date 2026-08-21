@@ -23,7 +23,7 @@ TextStyle _appTextStyle({
 }
 abstract final class AppColors {
   /// Cool field under Liquid Glass (color blobs show through panels).
-  static const background = Color(0xFFD8E4F2);
+  static const background = Color(0xFFEEF1F5);
   static const surface = Color(0xFFF4F7FB);
   static const surfaceElevated = Color(0xFFFFFFFF);
   static const surfaceMuted = Color(0xFFDDE3EC);

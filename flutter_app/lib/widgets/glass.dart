@@ -6,7 +6,7 @@ import '../theme/app_design_system.dart';
 
 enum GlassTone { clear, blue, sunken }
 
-const Color _kField = Color(0xFFE6EBF2);
+const Color _kField = Color(0xFFEEF1F5);
 const Color _kInk = Color(0xFF2C2C2C);
 
 /// iOS Liquid Glass: real backdrop blur, translucent fill, rim + soft lift.
@@ -17,7 +17,7 @@ class GlassPanel extends StatelessWidget {
     this.padding = const EdgeInsets.all(AppSpacing.lg + 2),
     this.borderRadius,
     this.tone = GlassTone.clear,
-    this.opacity = 0.12,
+    this.opacity = 0.22,
     this.tint = const Color(0xFFD5E4F4),
   });
 
@@ -64,9 +64,9 @@ class _GlassSurface extends StatelessWidget {
   double get _fillAlpha {
     if (fillOpacity != null) return fillOpacity!;
     return switch (tone) {
-      GlassTone.blue => 0.18,
-      GlassTone.sunken => 0.10,
-      GlassTone.clear => 0.10,
+      GlassTone.blue => 0.24,
+      GlassTone.sunken => 0.16,
+      GlassTone.clear => 0.20,
     };
   }
 
@@ -292,13 +292,11 @@ class GlassSunken extends StatelessWidget {
   }
 }
 
-/// Colorful field so frosted glass has something real to blur — like iOS wallpaper.
+/// Quiet classroom light — just enough wash for frost, no busy wallpaper.
 class GlassAtmosphere extends StatelessWidget {
   const GlassAtmosphere({super.key, required this.child});
 
   final Widget child;
-
-  static const _wallpaper = 'assets/glass/wallpaper.png';
 
   @override
   Widget build(BuildContext context) {
@@ -306,19 +304,38 @@ class GlassAtmosphere extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         const ColoredBox(color: _kField),
-        const Positioned.fill(
+        const Positioned(
+          top: -160,
+          left: -80,
           child: IgnorePointer(
-            child: ColorFiltered(
-              colorFilter: ColorFilter.matrix(<double>[
-                1.35, -0.08, -0.08, 0, 8,
-                -0.08, 1.35, -0.08, 0, 8,
-                -0.08, -0.08, 1.35, 0, 8,
-                0, 0, 0, 1, 0,
-              ]),
-              child: Image(
-                image: AssetImage(_wallpaper),
-                fit: BoxFit.cover,
-                filterQuality: FilterQuality.high,
+            child: SizedBox(
+              width: 420,
+              height: 420,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [Color(0x66C5D6E8), Color(0x00EEF1F5)],
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ),
+        const Positioned(
+          right: -120,
+          bottom: -80,
+          child: IgnorePointer(
+            child: SizedBox(
+              width: 380,
+              height: 380,
+              child: DecoratedBox(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  gradient: RadialGradient(
+                    colors: [Color(0x4DD4DCE6), Color(0x00EEF1F5)],
+                  ),
+                ),
               ),
             ),
           ),
@@ -484,7 +501,7 @@ class GlassButton extends StatelessWidget {
         child: _GlassSurface(
           tone: primary ? GlassTone.blue : GlassTone.clear,
           borderRadius: radius,
-          fillOpacity: primary ? 0.18 : 0.10,
+          fillOpacity: primary ? 0.26 : 0.18,
           child: SizedBox(
             height: AppSizes.buttonHeight,
             child: Row(
