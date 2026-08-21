@@ -6,7 +6,7 @@ import '../theme/app_design_system.dart';
 
 enum GlassTone { clear, blue, sunken }
 
-const Color _kField = Color(0xFFEEF1F5);
+const Color _kField = Color(0xFFF4F6F8);
 const Color _kInk = Color(0xFF2C2C2C);
 
 /// iOS Liquid Glass: real backdrop blur, translucent fill, rim + soft lift.
@@ -17,7 +17,7 @@ class GlassPanel extends StatelessWidget {
     this.padding = const EdgeInsets.all(AppSpacing.lg + 2),
     this.borderRadius,
     this.tone = GlassTone.clear,
-    this.opacity = 0.05,
+    this.opacity = 0.22,
     this.tint = const Color(0xFFD5E4F4),
   });
 
@@ -58,15 +58,15 @@ class _GlassSurface extends StatelessWidget {
   final double? fillOpacity;
 
   double get _sigma => tight
-      ? (tone == GlassTone.sunken ? 8 : 12)
-      : (tone == GlassTone.sunken ? 12 : 16);
+      ? (tone == GlassTone.sunken ? 16 : 20)
+      : (tone == GlassTone.sunken ? 22 : 30);
 
   double get _fillAlpha {
     if (fillOpacity != null) return fillOpacity!;
     return switch (tone) {
-      GlassTone.blue => 0.06,
-      GlassTone.sunken => 0.05,
-      GlassTone.clear => 0.04,
+      GlassTone.blue => 0.20,
+      GlassTone.sunken => 0.16,
+      GlassTone.clear => 0.22,
     };
   }
 
@@ -75,178 +75,96 @@ class _GlassSurface extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final rim = switch (tone) {
-      GlassTone.sunken => const Color(0x99FFFFFF),
-      _ => const Color(0xFFFFFFFF),
-    };
-    final sheen = switch (tone) {
-      GlassTone.blue => LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            const Color(0xFFFFFFFF).withValues(alpha: _fillAlpha + 0.03),
-            const Color(0xFFDCECFA).withValues(alpha: _fillAlpha),
-          ],
-        ),
-      GlassTone.sunken => LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.white.withValues(alpha: _fillAlpha),
-            Colors.white.withValues(alpha: _fillAlpha * 0.35),
-          ],
-        ),
-      GlassTone.clear => LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            Colors.white.withValues(alpha: _fillAlpha + 0.03),
-            Colors.white.withValues(alpha: _fillAlpha * 0.25),
-          ],
-        ),
+    // One plate only — iOS folder: clean white frost, thin rim, soft lift.
+    final fill = switch (tone) {
+      GlassTone.blue => const Color(0xFFFFFFFF).withValues(alpha: _fillAlpha),
+      GlassTone.sunken => const Color(0xFFFFFFFF).withValues(alpha: _fillAlpha),
+      GlassTone.clear => const Color(0xFFFFFFFF).withValues(alpha: _fillAlpha),
     };
 
-    final chunky = !tight && tone != GlassTone.sunken;
-    final shadows = tight
-        ? switch (tone) {
-            GlassTone.sunken => const [
-                BoxShadow(
-                  color: Color(0x22A8B4C4),
-                  offset: Offset(1, 1),
-                  blurRadius: 3,
-                  blurStyle: BlurStyle.inner,
-                ),
-                BoxShadow(
-                  color: Color(0x88FFFFFF),
-                  offset: Offset(-1, -1),
-                  blurRadius: 2,
-                  blurStyle: BlurStyle.inner,
-                ),
-              ],
-            _ => const [
-                BoxShadow(
-                  color: Color(0x14000000),
-                  offset: Offset(0, 4),
-                  blurRadius: 8,
-                ),
-              ],
-          }
-        : switch (tone) {
-            GlassTone.sunken => const [
-                BoxShadow(
-                  color: Color(0x228090A0),
-                  offset: Offset(2, 2),
-                  blurRadius: 6,
-                  blurStyle: BlurStyle.inner,
-                ),
-                BoxShadow(
-                  color: Color(0x99FFFFFF),
-                  offset: Offset(-2, -2),
-                  blurRadius: 5,
-                  blurStyle: BlurStyle.inner,
-                ),
-              ],
-            _ => const [
-                BoxShadow(
-                  color: Color(0x14000000),
-                  offset: Offset(0, 18),
-                  blurRadius: 24,
-                  spreadRadius: -6,
-                ),
-              ],
-          };
-
-    // HtmlElementView(CSS glass) can leave Flutter web stuck on the loader.
-    // Use BackdropFilter on every platform so first frame actually paints.
-    final frosted = ClipRRect(
-      borderRadius: borderRadius,
-      child: Stack(
-        fit: StackFit.passthrough,
-        children: [
-          Positioned.fill(
-            child: BackdropFilter(
-              filter: _frost,
-              child: const ColoredBox(color: Color(0x00FFFFFF)),
-            ),
-          ),
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: sheen,
-                borderRadius: borderRadius,
-                border: Border.all(color: rim, width: chunky ? 1.4 : 1.0),
-              ),
-            ),
-          ),
-          const Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            height: 22,
-            child: IgnorePointer(
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                    colors: [Color(0x59FFFFFF), Color(0x00FFFFFF)],
-                  ),
-                ),
-              ),
-            ),
-          ),
-          Material(
-            type: MaterialType.transparency,
-            borderRadius: borderRadius,
-            child: child,
-          ),
-        ],
-      ),
-    );
-
-    final face = Container(
+    return Container(
       width: expand ? double.infinity : null,
       decoration: BoxDecoration(
         borderRadius: borderRadius,
-        boxShadow: shadows,
+        boxShadow: [
+          if (!tight && tone != GlassTone.sunken) ...const [
+            BoxShadow(
+              color: Color(0x66FFFFFF),
+              offset: Offset(0, 1),
+              blurRadius: 0,
+              blurStyle: BlurStyle.inner,
+            ),
+            BoxShadow(
+              color: Color(0x14000000),
+              offset: Offset(0, -2),
+              blurRadius: 3,
+              blurStyle: BlurStyle.inner,
+            ),
+            BoxShadow(
+              color: Color(0x1A000000),
+              offset: Offset(0, 10),
+              blurRadius: 22,
+              spreadRadius: -4,
+            ),
+          ] else if (tone == GlassTone.sunken) ...const [
+            BoxShadow(
+              color: Color(0x14000000),
+              offset: Offset(0, 2),
+              blurRadius: 4,
+              blurStyle: BlurStyle.inner,
+            ),
+            BoxShadow(
+              color: Color(0x88FFFFFF),
+              offset: Offset(0, -1),
+              blurRadius: 2,
+              blurStyle: BlurStyle.inner,
+            ),
+          ] else ...const [
+            BoxShadow(
+              color: Color(0x14000000),
+              offset: Offset(0, 4),
+              blurRadius: 10,
+            ),
+          ],
+        ],
       ),
-      child: frosted,
-    );
-
-    if (!chunky) return face;
-
-    // Clean ice slab: a second clear lip under the face, no muddy gray.
-    return Stack(
-      clipBehavior: Clip.none,
-      children: [
-        Positioned(
-          left: 3,
-          right: 3,
-          top: 10,
-          bottom: -9,
-          child: IgnorePointer(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                borderRadius: borderRadius,
-                color: const Color(0x2EFFFFFF),
-                border: Border.all(color: const Color(0x99FFFFFF)),
-                boxShadow: const [
-                  BoxShadow(
-                    color: Color(0x18000000),
-                    offset: Offset(0, 10),
-                    blurRadius: 16,
-                    spreadRadius: -4,
-                  ),
-                ],
+      child: ClipRRect(
+        borderRadius: borderRadius,
+        child: Stack(
+          fit: StackFit.passthrough,
+          children: [
+            Positioned.fill(
+              child: BackdropFilter(
+                filter: _frost,
+                child: ColoredBox(color: fill),
               ),
             ),
-          ),
+            Positioned.fill(
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    borderRadius: borderRadius,
+                    border: Border.all(
+                      color: const Color(0xE6FFFFFF),
+                      width: 1,
+                    ),
+                    gradient: const LinearGradient(
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                      colors: [Color(0x33FFFFFF), Color(0x00FFFFFF)],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            Material(
+              type: MaterialType.transparency,
+              borderRadius: borderRadius,
+              child: child,
+            ),
+          ],
         ),
-        Padding(
-          padding: const EdgeInsets.only(bottom: 9),
-          child: face,
-        ),
-      ],
+      ),
     );
   }
 }
@@ -379,7 +297,7 @@ class GlassNavBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
       child: GlassPanel(
         padding: EdgeInsets.zero,
-        opacity: 0.05,
+        opacity: 0.22,
         borderRadius: BorderRadius.circular(AppRadii.pill),
         child: child,
       ),
@@ -523,9 +441,9 @@ class GlassButton extends StatelessWidget {
         child: _GlassSurface(
           tone: primary ? GlassTone.blue : GlassTone.clear,
           borderRadius: radius,
-          fillOpacity: primary ? 0.05 : 0.04,
+          fillOpacity: primary ? 0.20 : 0.22,
           child: SizedBox(
-            height: AppSizes.buttonHeight + 8,
+            height: AppSizes.buttonHeight,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
