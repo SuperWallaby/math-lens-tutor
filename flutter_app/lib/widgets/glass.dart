@@ -17,7 +17,7 @@ class GlassPanel extends StatelessWidget {
     this.padding = const EdgeInsets.all(AppSpacing.lg + 2),
     this.borderRadius,
     this.tone = GlassTone.clear,
-    this.opacity = 0.22,
+    this.opacity = 0.12,
     this.tint = const Color(0xFFD5E4F4),
   });
 
@@ -58,17 +58,20 @@ class _GlassSurface extends StatelessWidget {
   final double? fillOpacity;
 
   double get _sigma => tight
-      ? (tone == GlassTone.sunken ? 10 : 16)
-      : (tone == GlassTone.sunken ? 14 : 28);
+      ? (tone == GlassTone.sunken ? 14 : 22)
+      : (tone == GlassTone.sunken ? 22 : 40);
 
   double get _fillAlpha {
     if (fillOpacity != null) return fillOpacity!;
     return switch (tone) {
-      GlassTone.blue => 0.28,
-      GlassTone.sunken => 0.14,
-      GlassTone.clear => 0.20,
+      GlassTone.blue => 0.18,
+      GlassTone.sunken => 0.10,
+      GlassTone.clear => 0.10,
     };
   }
+
+  ImageFilter get _frost =>
+      ImageFilter.blur(sigmaX: _sigma, sigmaY: _sigma, tileMode: TileMode.clamp);
 
   @override
   Widget build(BuildContext context) {
@@ -81,8 +84,8 @@ class _GlassSurface extends StatelessWidget {
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFFB7D4F0).withValues(alpha: _fillAlpha + 0.12),
-            const Color(0xFF8EB4D8).withValues(alpha: _fillAlpha * 0.55),
+            const Color(0xFFB7D4F0).withValues(alpha: _fillAlpha + 0.04),
+            const Color(0xFF8EB4D8).withValues(alpha: _fillAlpha * 0.35),
           ],
         ),
       GlassTone.sunken => LinearGradient(
@@ -90,15 +93,15 @@ class _GlassSurface extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             Colors.white.withValues(alpha: _fillAlpha),
-            Colors.white.withValues(alpha: _fillAlpha * 0.35),
+            Colors.white.withValues(alpha: _fillAlpha * 0.25),
           ],
         ),
       GlassTone.clear => LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.white.withValues(alpha: _fillAlpha + 0.08),
-            Colors.white.withValues(alpha: _fillAlpha * 0.4),
+            Colors.white.withValues(alpha: _fillAlpha + 0.03),
+            Colors.white.withValues(alpha: _fillAlpha * 0.22),
           ],
         ),
     };
@@ -148,22 +151,21 @@ class _GlassSurface extends StatelessWidget {
                 ),
               ],
             _ => const [
-                // Soft lift — like iOS folder
                 BoxShadow(
-                  color: Color(0x2E000000),
-                  offset: Offset(0, 14),
-                  blurRadius: 28,
-                  spreadRadius: -4,
+                  color: Color(0x3D000000),
+                  offset: Offset(0, 18),
+                  blurRadius: 36,
+                  spreadRadius: -6,
                 ),
                 BoxShadow(
-                  color: Color(0x14A0AEC0),
+                  color: Color(0x1A000000),
                   offset: Offset(0, 4),
                   blurRadius: 10,
                 ),
                 BoxShadow(
-                  color: Color(0x88FFFFFF),
-                  offset: Offset(0, -1),
-                  blurRadius: 1,
+                  color: Color(0x99FFFFFF),
+                  offset: Offset(0, 0.6),
+                  blurRadius: 0.6,
                 ),
               ],
           };
@@ -177,8 +179,8 @@ class _GlassSurface extends StatelessWidget {
         children: [
           Positioned.fill(
             child: BackdropFilter(
-              filter: ImageFilter.blur(sigmaX: _sigma, sigmaY: _sigma),
-              child: const ColoredBox(color: Color(0x01FFFFFF)),
+              filter: _frost,
+              child: const ColoredBox(color: Color(0x00FFFFFF)),
             ),
           ),
           Positioned.fill(
@@ -201,7 +203,7 @@ class _GlassSurface extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Color(0xB8FFFFFF), Color(0x00FFFFFF)],
+                    colors: [Color(0x66FFFFFF), Color(0x00FFFFFF)],
                   ),
                 ),
               ),
@@ -290,11 +292,13 @@ class GlassSunken extends StatelessWidget {
   }
 }
 
-/// Soft colorful field so glass transparency / blur actually shows.
+/// Colorful field so frosted glass has something real to blur — like iOS wallpaper.
 class GlassAtmosphere extends StatelessWidget {
   const GlassAtmosphere({super.key, required this.child});
 
   final Widget child;
+
+  static const _wallpaper = 'assets/glass/wallpaper.png';
 
   @override
   Widget build(BuildContext context) {
@@ -302,78 +306,20 @@ class GlassAtmosphere extends StatelessWidget {
       fit: StackFit.expand,
       children: [
         const ColoredBox(color: _kField),
-        // Soft colorful wallpaper — blur the blobs so glass can refract them
-        IgnorePointer(
-          child: ImageFiltered(
-            imageFilter: ImageFilter.blur(sigmaX: 48, sigmaY: 48),
-            child: const Stack(
-              fit: StackFit.expand,
-              children: [
-                Positioned(
-                  top: -120,
-                  left: -80,
-                  child: SizedBox(
-                    width: 340,
-                    height: 340,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [Color(0xE07EB8F0), Color(0x00E6EBF2)],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  right: -90,
-                  top: 120,
-                  child: SizedBox(
-                    width: 300,
-                    height: 300,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [Color(0xD08FCFB0), Color(0x00E6EBF2)],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  left: -60,
-                  bottom: 20,
-                  child: SizedBox(
-                    width: 280,
-                    height: 280,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [Color(0xD0F0B0A8), Color(0x00E6EBF2)],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-                Positioned(
-                  right: 40,
-                  bottom: 160,
-                  child: SizedBox(
-                    width: 200,
-                    height: 200,
-                    child: DecoratedBox(
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        gradient: RadialGradient(
-                          colors: [Color(0xB8C4B0F0), Color(0x00E6EBF2)],
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+        const Positioned.fill(
+          child: IgnorePointer(
+            child: ColorFiltered(
+              colorFilter: ColorFilter.matrix(<double>[
+                1.35, -0.08, -0.08, 0, 8,
+                -0.08, 1.35, -0.08, 0, 8,
+                -0.08, -0.08, 1.35, 0, 8,
+                0, 0, 0, 1, 0,
+              ]),
+              child: Image(
+                image: AssetImage(_wallpaper),
+                fit: BoxFit.cover,
+                filterQuality: FilterQuality.high,
+              ),
             ),
           ),
         ),
@@ -394,7 +340,7 @@ class GlassNavBar extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
       child: GlassPanel(
         padding: EdgeInsets.zero,
-        opacity: 0.26,
+        opacity: 0.14,
         borderRadius: BorderRadius.circular(AppRadii.pill),
         child: child,
       ),
@@ -538,7 +484,7 @@ class GlassButton extends StatelessWidget {
         child: _GlassSurface(
           tone: primary ? GlassTone.blue : GlassTone.clear,
           borderRadius: radius,
-          fillOpacity: primary ? 0.34 : 0.20,
+          fillOpacity: primary ? 0.18 : 0.10,
           child: SizedBox(
             height: AppSizes.buttonHeight,
             child: Row(

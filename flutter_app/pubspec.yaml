@@ -81,6 +81,7 @@ flutter:
     - assets/icons/3d/
     - assets/icons/oauth/
     - assets/splash/
+    - assets/glass/
     - assets/onboarding/student/
     - assets/onboarding/parent/
     - assets/onboarding/teacher/
