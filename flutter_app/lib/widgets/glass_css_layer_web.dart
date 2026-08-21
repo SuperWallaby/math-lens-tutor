@@ -5,7 +5,7 @@ import 'dart:ui_web' as ui_web;
 
 import 'package:flutter/widgets.dart';
 
-const _viewType = 'wooyeol-css-glass';
+const _viewType = 'wooyeol-css-glass-v2';
 
 bool _registered = false;
 final _nodes = <int, html.DivElement>{};
@@ -27,24 +27,25 @@ void _ensureRegistered() {
 }
 
 void _style(html.DivElement el, String tone, double radius) {
+  // Match iOS folder glass: translucent + heavy saturate blur
   final bg = switch (tone) {
-    'blue' => 'rgba(183, 212, 240, 0.42)',
-    'sunken' => 'rgba(255, 255, 255, 0.16)',
-    _ => 'rgba(255, 255, 255, 0.28)',
+    'blue' => 'rgba(183, 212, 240, 0.30)',
+    'sunken' => 'rgba(255, 255, 255, 0.12)',
+    _ => 'rgba(255, 255, 255, 0.18)',
   };
   final blur = tone == 'sunken'
-      ? 'blur(12px) saturate(140%)'
-      : 'blur(22px) saturate(165%)';
+      ? 'blur(14px) saturate(160%)'
+      : 'blur(28px) saturate(185%)';
   el.style
     ..background = bg
-    ..border = '1px solid rgba(255, 255, 255, 0.92)'
+    ..border = '1.15px solid rgba(255, 255, 255, 0.92)'
     ..borderRadius = '${radius}px';
   el.style.setProperty('backdrop-filter', blur);
   el.style.setProperty('-webkit-backdrop-filter', blur);
   el.style.setProperty('background-clip', 'padding-box');
 }
 
-/// Real CSS frosted glass. Painted Flutter fills cannot do this.
+/// Real CSS frosted glass. Painted Flutter fills cannot do this alone on web.
 Widget? buildCssGlassLayer({
   required String tone,
   required double radius,

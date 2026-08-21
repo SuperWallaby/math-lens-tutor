@@ -22,11 +22,11 @@ TextStyle _appTextStyle({
   );
 }
 abstract final class AppColors {
-  /// Soft frosted glass — Pinterest pin 1128714725387731504
-  static const background = Color(0xFFF0F2F5);
-  static const surface = Color(0xFFF7F7F7);
+  /// Cool field under Liquid Glass (color blobs show through panels).
+  static const background = Color(0xFFE6EBF2);
+  static const surface = Color(0xFFF4F7FB);
   static const surfaceElevated = Color(0xFFFFFFFF);
-  static const surfaceMuted = Color(0xFFE4E4E4);
+  static const surfaceMuted = Color(0xFFDDE3EC);
 
   static const primary = Color(0xFF7EAFD9);
   static const primarySoft = Color(0xFFB7D4F0);
@@ -52,9 +52,9 @@ abstract final class AppColors {
   static const border = Color(0xFFE2E2E2);
   static const borderStrong = Color(0xFFD0D0D0);
 
-  static const glassFill = Color(0x73FFFFFF);
-  static const glassStroke = Color(0xB8FFFFFF);
-  static const glassShadow = Color(0x14000000);
+  static const glassFill = Color(0x38FFFFFF);
+  static const glassStroke = Color(0xE8FFFFFF);
+  static const glassShadow = Color(0x2E000000);
 }
 
 abstract final class AppShadows {
