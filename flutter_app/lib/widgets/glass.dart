@@ -17,7 +17,7 @@ class GlassPanel extends StatelessWidget {
     this.padding = const EdgeInsets.all(AppSpacing.lg + 2),
     this.borderRadius,
     this.tone = GlassTone.clear,
-    this.opacity = 0.22,
+    this.opacity = 0.10,
     this.tint = const Color(0xFFD5E4F4),
   });
 
@@ -64,9 +64,9 @@ class _GlassSurface extends StatelessWidget {
   double get _fillAlpha {
     if (fillOpacity != null) return fillOpacity!;
     return switch (tone) {
-      GlassTone.blue => 0.24,
-      GlassTone.sunken => 0.16,
-      GlassTone.clear => 0.20,
+      GlassTone.blue => 0.12,
+      GlassTone.sunken => 0.10,
+      GlassTone.clear => 0.08,
     };
   }
 
@@ -76,16 +76,16 @@ class _GlassSurface extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final rim = switch (tone) {
-      GlassTone.sunken => const Color(0x66FFFFFF),
-      _ => const Color(0xE8FFFFFF),
+      GlassTone.sunken => const Color(0x88FFFFFF),
+      _ => const Color(0xF2FFFFFF),
     };
     final sheen = switch (tone) {
       GlassTone.blue => LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            const Color(0xFFB7D4F0).withValues(alpha: _fillAlpha + 0.04),
-            const Color(0xFF8EB4D8).withValues(alpha: _fillAlpha * 0.35),
+            const Color(0xFFB7D4F0).withValues(alpha: _fillAlpha),
+            const Color(0xFF8EB4D8).withValues(alpha: _fillAlpha * 0.25),
           ],
         ),
       GlassTone.sunken => LinearGradient(
@@ -93,19 +93,20 @@ class _GlassSurface extends StatelessWidget {
           end: Alignment.bottomRight,
           colors: [
             Colors.white.withValues(alpha: _fillAlpha),
-            Colors.white.withValues(alpha: _fillAlpha * 0.25),
+            Colors.white.withValues(alpha: _fillAlpha * 0.2),
           ],
         ),
       GlassTone.clear => LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
           colors: [
-            Colors.white.withValues(alpha: _fillAlpha + 0.03),
-            Colors.white.withValues(alpha: _fillAlpha * 0.22),
+            Colors.white.withValues(alpha: _fillAlpha),
+            Colors.white.withValues(alpha: _fillAlpha * 0.15),
           ],
         ),
     };
 
+    final chunky = !tight && tone != GlassTone.sunken;
     final shadows = tight
         ? switch (tone) {
             GlassTone.sunken => const [
@@ -151,21 +152,27 @@ class _GlassSurface extends StatelessWidget {
                 ),
               ],
             _ => const [
+                // Hard glass edge — reads as thickness
                 BoxShadow(
-                  color: Color(0x3D000000),
-                  offset: Offset(0, 18),
-                  blurRadius: 36,
-                  spreadRadius: -6,
-                ),
-                BoxShadow(
-                  color: Color(0x1A000000),
+                  color: Color(0x4A7A8796),
                   offset: Offset(0, 4),
-                  blurRadius: 10,
+                  blurRadius: 0,
                 ),
                 BoxShadow(
-                  color: Color(0x99FFFFFF),
-                  offset: Offset(0, 0.6),
-                  blurRadius: 0.6,
+                  color: Color(0x337A8796),
+                  offset: Offset(0, 7),
+                  blurRadius: 0,
+                ),
+                BoxShadow(
+                  color: Color(0x2E000000),
+                  offset: Offset(0, 16),
+                  blurRadius: 22,
+                  spreadRadius: -4,
+                ),
+                BoxShadow(
+                  color: Color(0xB3FFFFFF),
+                  offset: Offset(0, 1),
+                  blurRadius: 0,
                 ),
               ],
           };
@@ -188,7 +195,7 @@ class _GlassSurface extends StatelessWidget {
               decoration: BoxDecoration(
                 gradient: sheen,
                 borderRadius: borderRadius,
-                border: Border.all(color: rim, width: 1.15),
+                border: Border.all(color: rim, width: chunky ? 1.8 : 1.2),
               ),
             ),
           ),
@@ -196,19 +203,37 @@ class _GlassSurface extends StatelessWidget {
             top: 0,
             left: 0,
             right: 0,
-            height: 28,
+            height: 22,
             child: IgnorePointer(
               child: DecoratedBox(
                 decoration: BoxDecoration(
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [Color(0x66FFFFFF), Color(0x00FFFFFF)],
+                    colors: [Color(0x88FFFFFF), Color(0x00FFFFFF)],
                   ),
                 ),
               ),
             ),
           ),
+          if (chunky)
+            const Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: 14,
+              child: IgnorePointer(
+                child: DecoratedBox(
+                  decoration: BoxDecoration(
+                    gradient: LinearGradient(
+                      begin: Alignment.bottomCenter,
+                      end: Alignment.topCenter,
+                      colors: [Color(0x2890A0B0), Color(0x00000000)],
+                    ),
+                  ),
+                ),
+              ),
+            ),
           Material(
             type: MaterialType.transparency,
             borderRadius: borderRadius,
@@ -501,9 +526,9 @@ class GlassButton extends StatelessWidget {
         child: _GlassSurface(
           tone: primary ? GlassTone.blue : GlassTone.clear,
           borderRadius: radius,
-          fillOpacity: primary ? 0.26 : 0.18,
+          fillOpacity: primary ? 0.10 : 0.07,
           child: SizedBox(
-            height: AppSizes.buttonHeight,
+            height: AppSizes.buttonHeight + 6,
             child: Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
