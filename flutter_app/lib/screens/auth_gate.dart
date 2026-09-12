@@ -38,8 +38,8 @@ class _AuthGateState extends State<AuthGate> {
   /// API로 profileComplete가 true가 되어도, 온보딩 UI는 onComplete까지 유지
   bool _profileOnboardingDismissed = false;
 
-  /// 첫 프레임 깜빡임만 막는 짧은 최소 시간 (네트워크는 블로킹하지 않음)
-  static const _minSplash = Duration(milliseconds: 350);
+  /// 아이콘 흔들림이 잠깐 보이도록 최소 시간.
+  static const _minSplash = Duration(milliseconds: 900);
 
   @override
   void initState() {

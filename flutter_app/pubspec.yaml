@@ -80,6 +80,7 @@ flutter:
     # WebP (scripts/optimize-flutter-assets-webp.sh). 온보딩은 역할별 서브폴더만 참조.
     - assets/icons/3d/
     - assets/icons/oauth/
+    - assets/brand/
     - assets/splash/
     - assets/onboarding/student/
     - assets/onboarding/parent/

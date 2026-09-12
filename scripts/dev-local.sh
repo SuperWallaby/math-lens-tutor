@@ -164,10 +164,26 @@ run_flutter() {
   local web_port
   web_port="$(bash "$ROOT/scripts/ensure-flutter-web-port.sh")"
   start_flutter_auto_reload
-  echo "=== Flutter web http://localhost:${web_port} ===" >&2
-  flutter run -d "$device" \
-    --web-port="$web_port" \
-    --pid-file="$FLUTTER_PID_FILE" \
+  local lan_ip
+  lan_ip="$(bash "$ROOT/scripts/get-lan-ip.sh")"
+  local flutter_args=(
+    -d "$device"
+    --web-port="$web_port"
+    --pid-file="$FLUTTER_PID_FILE"
+  )
+  case "$device" in
+    chrome|web-server|edge)
+      flutter_args+=(--web-hostname=0.0.0.0)
+      flutter_args+=(--web-launch-url="http://localhost:${web_port}/")
+      echo "=== Flutter web http://localhost:${web_port} ===" >&2
+      echo "=== LAN     http://${lan_ip}:${web_port} ===" >&2
+      ;;
+    *)
+      echo "=== Flutter web http://localhost:${web_port} ===" >&2
+      ;;
+  esac
+  flutter run \
+    "${flutter_args[@]}" \
     "${FLUTTER_DEFINE_ARGS[@]}" \
     "$@"
 }

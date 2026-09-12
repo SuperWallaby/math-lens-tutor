@@ -38,9 +38,12 @@ fi
 cd "$ROOT/flutter_app"
 DEVICE="${FLUTTER_DEVICE:-chrome}"
 WEB_PORT="$(bash "$ROOT/scripts/ensure-flutter-web-port.sh")"
-echo "[flutter] Web http://localhost:${WEB_PORT}  API ${API_BASE}" >&2
+LAN_IP="$(bash "$ROOT/scripts/get-lan-ip.sh")"
+echo "[flutter] Web http://localhost:${WEB_PORT}  LAN http://${LAN_IP}:${WEB_PORT}  API ${API_BASE}" >&2
 flutter run -d "$DEVICE" \
   --web-port="$WEB_PORT" \
+  --web-hostname=0.0.0.0 \
+  --web-launch-url="http://localhost:${WEB_PORT}/" \
   --pid-file="$FLUTTER_PID_FILE" \
   "${FLUTTER_DEFINE_ARGS[@]}" \
   "$@"

@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 
 import '../services/api_client.dart';
 import '../services/auth_session.dart';
+import '../widgets/brand_splash_view.dart';
 import 'lite_home_screen.dart';
 
 /// 로그인·온보딩 없이 게스트 세션만 준비하고 홈으로 보냅니다.
@@ -43,9 +44,7 @@ class _LiteGateState extends State<LiteGate> {
   @override
   Widget build(BuildContext context) {
     if (!_ready) {
-      return const Scaffold(
-        body: Center(child: CircularProgressIndicator()),
-      );
+      return const BrandSplashView();
     }
 
     return LiteHomeScreen(apiClient: widget.apiClient);

@@ -19,7 +19,7 @@
   <meta charset="UTF-8">
   <meta content="IE=Edge" http-equiv="X-UA-Compatible">
   <meta name="description" content="AI math solution analysis and adaptive practice">
-  <meta name="theme-color" content="#007BFF">
+  <meta name="theme-color" content="#7EAFD9">
 
   <!-- iOS meta tags & icons -->
   <meta name="mobile-web-app-capable" content="yes">
@@ -36,16 +36,42 @@
     html, body {
       height: 100%;
       margin: 0;
-      background: #F4F6F8;
+      background: #7EAFD9;
     }
-    body::before {
-      content: "";
+    .flutter-loader {
+      display: none !important;
+    }
+    .boot-splash {
       position: fixed;
       inset: 0;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 28px;
+      padding: 0 32px;
+      background: linear-gradient(155deg, #B7D4F0 0%, #7EAFD9 48%, #5E8FBF 100%);
       pointer-events: none;
-      background:
-        radial-gradient(circle at 16% 12%, rgba(197,216,236,.42), transparent 42%),
-        radial-gradient(circle at 88% 78%, rgba(184,196,216,.32), transparent 46%);
+    }
+    .boot-icon {
+      width: 120px;
+      height: 120px;
+      border-radius: 28px;
+      animation: sway 0.9s ease-in-out infinite alternate;
+    }
+    .boot-line {
+      max-width: 280px;
+      text-align: center;
+      font-family: "Noto Sans KR", system-ui, sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      line-height: 1.45;
+      color: #fff;
+    }
+    @keyframes sway {
+      from { transform: translateX(-18px) rotate(-3deg); }
+      to { transform: translateX(18px) rotate(3deg); }
     }
     flt-glass-pane,
     flt-semantics-host {
@@ -56,6 +82,10 @@
   <link rel="dns-prefetch" href="https://www.desmos.com">
 </head>
 <body>
+  <div class="boot-splash" aria-hidden="true">
+    <img class="boot-icon" src="icons/Icon-192.png" alt="" />
+    <div class="boot-line" id="boot-line"></div>
+  </div>
   <!--
     You can customize the "flutter_bootstrap.js" script.
     This is useful to provide a custom configuration to the Flutter loader
@@ -67,6 +97,36 @@
   <script>
     // printing 패키지 PDF.js (웹에서 PDF 미리보기/출력용)
     var dartPdfJsBaseUrl = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/";
+    var splashLines = [
+      "배우고 때로 익히면, 또한 기쁘지 아니한가.",
+      "시작이 반이다.",
+      "천 리 길도 한 걸음부터.",
+      "노력은 배신하지 않는다.",
+      "실패는 성공의 어머니.",
+      "늦었다고 생각할 때가 가장 빠르다.",
+      "천재는 1%의 영감과 99%의 노력이다.",
+      "아는 것이 힘이다.",
+      "반복은 학습의 어머니다.",
+      "배움에는 왕도가 없다.",
+      "오늘 걷지 않으면 내일은 뛰어야 한다.",
+      "구슬이 서 말이라도 꿰어야 보배.",
+      "티끌 모아 태산.",
+      "독서백편, 뜻이 스스로 드러난다.",
+      "작은 성취가 큰 자신감을 만든다.",
+      "이해한 것만 내 것이다.",
+      "질문은 답을 부른다.",
+      "공부는 남을 따라가는 게 아니라 나를 이기는 일이다.",
+      "로마는 하루아침에 이루어지지 않았다.",
+      "어제보다 나은 오늘이면 된다."
+    ];
+    var line = document.getElementById("boot-line");
+    if (line) {
+      line.textContent = splashLines[Math.floor(Math.random() * splashLines.length)];
+    }
+    window.addEventListener("flutter-first-frame", function () {
+      var splash = document.querySelector(".boot-splash");
+      if (splash) splash.remove();
+    });
   </script>
   <script src="flutter_bootstrap.js" async></script>
 </body>
