@@ -280,6 +280,7 @@ class _ParentExplainDetailScreenState extends State<ParentExplainDetailScreen> {
           const SizedBox(height: 12),
           FilledButton.icon(
             onPressed: _loadingPdf ? null : _openPracticePdf,
+            style: AppButtonStyles.soft(),
             icon: _loadingPdf
                 ? const SizedBox(
                     width: 18,

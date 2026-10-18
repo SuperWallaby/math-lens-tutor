@@ -7,6 +7,7 @@ import 'package:math_lens_tutor/dev/design_review_data.dart';
 import 'package:math_lens_tutor/models/app_models.dart';
 import 'package:math_lens_tutor/screens/loop_result_screen.dart';
 import 'package:math_lens_tutor/screens/open_practice_flow.dart';
+import 'package:math_lens_tutor/screens/parent_explain_screen.dart';
 import 'package:math_lens_tutor/screens/practice_screen.dart';
 import 'package:math_lens_tutor/screens/settings_screen.dart';
 import 'package:math_lens_tutor/screens/signup_screen.dart';
@@ -560,5 +561,39 @@ void main() {
     await tester.tap(find.text('취소'));
     await tester.pumpAndSettle();
     expect(find.byType(GlassDialog), findsNothing);
+  });
+
+  testWidgets('parent explain detail: PDF button is the soft primary and keeps its label', (
+    tester,
+  ) async {
+    final item = designReviewProfileParent().parentWrongExplains.first;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildAppTheme(),
+        home: ParentExplainDetailScreen(
+          apiClient: ApiClient(authSession: AuthSession()),
+          item: item,
+        ),
+      ),
+    );
+    await tester.pump();
+
+    await tester.scrollUntilVisible(
+      find.text('유사문제 PDF 발행'),
+      300,
+      scrollable: find.byType(Scrollable).first,
+    );
+    final button = tester.widget<ButtonStyleButton>(
+      find.ancestor(
+        of: find.text('유사문제 PDF 발행'),
+        matching: find.bySubtype<ButtonStyleButton>(),
+      ),
+    );
+    const none = <WidgetState>{};
+    expect(button.style!.backgroundColor!.resolve(none), AppColors.primarySoft);
+    expect(button.style!.foregroundColor!.resolve(none), AppColors.primaryDark);
+    expect(button.onPressed, isNotNull);
+    expect(find.byIcon(Icons.picture_as_pdf_outlined), findsOneWidget);
+    expect(find.byType(GlassPrimaryButton), findsNothing);
   });
 }

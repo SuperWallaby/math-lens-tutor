@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:math_lens_tutor/theme/app_design_system.dart';
 import 'package:math_lens_tutor/widgets/glass.dart';
@@ -209,5 +210,27 @@ void main() {
     expect(find.text('알림'), findsOneWidget);
     expect(find.byType(GlassSurface), findsOneWidget);
     expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('glass dialog title and content use the app font', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildAppTheme(),
+        home: const GlassDialog(
+          title: Text('계정 탈퇴'),
+          content: Text('정말 탈퇴하시겠습니까?'),
+        ),
+      ),
+    );
+
+    // Text 가 실제로 그리는 스타일(상속된 DefaultTextStyle 와 합친 값)을 읽는다.
+    String? family(String text) =>
+        tester.renderObject<RenderParagraph>(find.text(text)).text.style?.fontFamily;
+    expect(family('계정 탈퇴'), AppFonts.family);
+    expect(family('정말 탈퇴하시겠습니까?'), AppFonts.family);
+    // 크기와 굵기는 팝업 값 그대로다.
+    final title = tester.renderObject<RenderParagraph>(find.text('계정 탈퇴')).text.style!;
+    expect(title.fontSize, 20);
+    expect(title.fontWeight, FontWeight.w800);
   });
 }

@@ -703,7 +703,10 @@ class GlassDialog extends StatelessWidget {
   final Widget? content;
   final List<Widget>? actions;
 
+  // 글꼴은 테마 textTheme 에서만 오므로 직접 적어 두고, 아래에서는
+  // DefaultTextStyle.merge 로 상속된 스타일 위에 얹는다.
   static const _titleStyle = TextStyle(
+    fontFamily: AppFonts.family,
     color: AppColors.text,
     fontSize: 20,
     fontWeight: FontWeight.w800,
@@ -711,6 +714,7 @@ class GlassDialog extends StatelessWidget {
   );
 
   static const _contentStyle = TextStyle(
+    fontFamily: AppFonts.family,
     color: AppColors.textSub,
     fontSize: 15,
     fontWeight: FontWeight.w500,
@@ -761,7 +765,7 @@ class GlassDialog extends StatelessWidget {
                 if (title != null)
                   Padding(
                     padding: EdgeInsets.only(bottom: content != null ? 12 : 8),
-                    child: DefaultTextStyle(
+                    child: DefaultTextStyle.merge(
                       style: _titleStyle,
                       child: title!,
                     ),
@@ -770,7 +774,7 @@ class GlassDialog extends StatelessWidget {
                   Flexible(
                     child: Padding(
                       padding: const EdgeInsets.only(bottom: 8),
-                      child: DefaultTextStyle(
+                      child: DefaultTextStyle.merge(
                         style: _contentStyle,
                         child: content!,
                       ),
