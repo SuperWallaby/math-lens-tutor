@@ -418,13 +418,13 @@ class _FeedTag extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
       decoration: BoxDecoration(
-        color: color.withValues(alpha: 0.1),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(AppRadii.pill),
       ),
       child: Text(
         text,
         style: TextStyle(
-          color: color,
+          color: tagChipTextColor(color),
           fontSize: 11,
           fontWeight: FontWeight.w800,
         ),

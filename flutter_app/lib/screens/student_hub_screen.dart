@@ -1027,7 +1027,7 @@ class _MiniStatusChip extends StatelessWidget {
         maxLines: 1,
         overflow: TextOverflow.ellipsis,
         style: TextStyle(
-          color: Color.lerp(AppColors.accent, AppColors.text, 0.25),
+          color: tagChipTextColor(AppColors.accent),
           fontSize: 11,
           fontWeight: FontWeight.w800,
         ),
