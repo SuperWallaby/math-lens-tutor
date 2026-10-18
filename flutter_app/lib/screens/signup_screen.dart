@@ -26,7 +26,6 @@ class SignupScreen extends StatefulWidget {
     required this.onSignedIn,
     this.onContinueAsGuest,
     this.signupOnly = false,
-    this.matchPinPreview = false,
   });
 
   final ApiClient apiClient;
@@ -34,7 +33,6 @@ class SignupScreen extends StatefulWidget {
   final VoidCallback onSignedIn;
   final VoidCallback? onContinueAsGuest;
   final bool signupOnly;
-  final bool matchPinPreview;
 
   @override
   State<SignupScreen> createState() => _SignupScreenState();
@@ -273,16 +271,7 @@ class _SignupScreenState extends State<SignupScreen> {
         const SizedBox(height: 18),
         GlassPrimaryButton(
           label: '시작하기',
-          onPressed: _loading
-              ? null
-              : () {
-                  if (widget.matchPinPreview &&
-                      widget.onContinueAsGuest != null) {
-                    widget.onContinueAsGuest!();
-                    return;
-                  }
-                  _sendMagicLink();
-                },
+          onPressed: _loading ? null : _sendMagicLink,
         ),
       ],
     );
@@ -391,7 +380,6 @@ class _SignupScreenState extends State<SignupScreen> {
                         child: const Text('게스트로 둘러보기'),
                       ),
                     ],
-                    if (!widget.matchPinPreview) ...[
                     const SizedBox(height: AppSpacing.section),
                     _orDivider(),
                     const SizedBox(height: AppSpacing.lg),
@@ -424,7 +412,6 @@ class _SignupScreenState extends State<SignupScreen> {
                         label: 'Apple로 시작하기',
                       ),
                     ],
-                    ],
                     if (_loading) ...[
                       const SizedBox(height: 24),
                       const Center(child: CircularProgressIndicator()),
@@ -433,15 +420,14 @@ class _SignupScreenState extends State<SignupScreen> {
                   ],
                 ),
               ),
-              if (!widget.matchPinPreview)
-                Positioned(
-                  top: 8,
-                  right: 16,
-                  child: DevOAuthLoginChip(
-                    apiClient: widget.apiClient,
-                    onSignedIn: widget.onSignedIn,
-                  ),
+              Positioned(
+                top: 8,
+                right: 16,
+                child: DevOAuthLoginChip(
+                  apiClient: widget.apiClient,
+                  onSignedIn: widget.onSignedIn,
                 ),
+              ),
             ],
           ),
         ),

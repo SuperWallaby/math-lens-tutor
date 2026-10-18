@@ -57,7 +57,6 @@ class _StoreScreenshotShellState extends State<StoreScreenshotShell> {
           oauthService: oauthService,
           onSignedIn: _openHome,
           onContinueAsGuest: _openHome,
-          matchPinPreview: true,
         );
       case 'hub-first':
         return StoreScreenshotStudentShell(

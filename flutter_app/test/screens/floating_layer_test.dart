@@ -284,7 +284,7 @@ void main() {
   });
 
   group('signup', () {
-    Widget signup({VoidCallback? onGuest, bool pinPreview = false}) {
+    Widget signup({VoidCallback? onGuest}) {
       return MaterialApp(
         theme: buildAppTheme(),
         home: SignupScreen(
@@ -292,7 +292,6 @@ void main() {
           oauthService: OAuthService(),
           onSignedIn: () {},
           onContinueAsGuest: onGuest,
-          matchPinPreview: pinPreview,
         ),
       );
     }
@@ -316,15 +315,6 @@ void main() {
       expect(find.byType(OAuthSignInButton), findsWidgets);
       // 유리는 주 버튼 하나뿐이다.
       expect(find.byType(BackdropFilter), findsOneWidget);
-    });
-
-    testWidgets('시작하기 on the pin preview continues as guest', (tester) async {
-      var guest = 0;
-      await tester.pumpWidget(signup(onGuest: () => guest++, pinPreview: true));
-      await tester.pump();
-      await tester.tap(find.text('시작하기'));
-      await tester.pump();
-      expect(guest, 1);
     });
 
     testWidgets('게스트로 둘러보기 calls back', (tester) async {
