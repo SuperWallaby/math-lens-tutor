@@ -126,7 +126,7 @@ export const sampleProblemSet: GeneratedProblemSet = {
               label: "y = x^2 - 2x - 3",
               data: [5, 0, -3, -4, -3, 0, 5],
               borderColor: "#2A72E5",
-              backgroundColor: "rgba(0, 123, 255, 0.12)",
+              backgroundColor: "rgba(42, 114, 229, 0.12)",
             },
           ],
         },
