@@ -15,6 +15,11 @@ import 'student_training_screen.dart';
 import 'teacher_screens.dart';
 import 'upload_screen.dart';
 
+/// 학부모·교사가 아니면 역할이 비어 있어도 학생 탭을 쓴다(`_tabsFor`의 `default:`).
+/// 카메라·배지·새로고침도 같은 기준이어야 학생 탭에서 사진을 올릴 수 있다.
+bool _isStudentShell(AppUserRole? role) =>
+    role != AppUserRole.parent && role != AppUserRole.teacher;
+
 class AppShell extends StatefulWidget {
   const AppShell({
     super.key,
@@ -53,7 +58,7 @@ class _AppShellState extends State<AppShell> {
         widget.apiClient.getLearningProfile(
           scope: LearningProfileScope.summary,
         );
-        if (user.role == AppUserRole.student) {
+        if (_isStudentShell(user.role)) {
           _loadTrainingBadge();
         }
       }
@@ -95,6 +100,7 @@ class _AppShellState extends State<AppShell> {
           );
         }
 
+        final isStudentShell = _isStudentShell(user.role);
         final tabs = _tabsFor(user.role);
         final safeIndex = _index.clamp(0, tabs.length - 1);
         if (safeIndex != _index) {
@@ -116,18 +122,15 @@ class _AppShellState extends State<AppShell> {
             labels: [for (final tab in tabs) tab.label],
             icons: [for (final tab in tabs) tab.icon],
             selectedIndex: safeIndex,
-            onCenterAction: user.role == AppUserRole.student
-                ? _openUpload
-                : null,
-            badgeIndex: user.role == AppUserRole.student
-                ? _studentTrainingTabIndex
-                : null,
-            badgeCount: _showTrainingBadge(user.role, _studentTrainingTabIndex)
+            onCenterAction: isStudentShell ? _openUpload : null,
+            badgeIndex: isStudentShell ? _studentTrainingTabIndex : null,
+            badgeCount:
+                _showTrainingBadge(isStudentShell, _studentTrainingTabIndex)
                 ? _trainingBadgeCount
                 : 0,
             onSelected: (value) {
               setState(() => _index = value);
-              if (user.role == AppUserRole.student) {
+              if (isStudentShell) {
                 if (value == _studentHomeTabIndex) {
                   _studentHubKey.currentState?.refreshFromTab();
                 } else if (value == _studentTrainingTabIndex) {
@@ -149,8 +152,8 @@ class _AppShellState extends State<AppShell> {
     );
   }
 
-  bool _showTrainingBadge(AppUserRole? role, int tabIndex) {
-    return role == AppUserRole.student &&
+  bool _showTrainingBadge(bool isStudentShell, int tabIndex) {
+    return isStudentShell &&
         tabIndex == _studentTrainingTabIndex &&
         !_trainingTabSeen &&
         _trainingBadgeCount > 0;
