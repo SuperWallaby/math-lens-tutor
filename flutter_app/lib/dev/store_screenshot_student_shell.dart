@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 
 import '../models/app_models.dart';
+import '../screens/settings_screen.dart';
 import '../screens/student_hub_screen.dart';
 import '../screens/student_progress_screen.dart';
 import '../screens/student_training_screen.dart';
-import '../screens/upload_screen.dart';
 import '../services/api_client.dart';
 import '../services/oauth_service.dart';
 import '../widgets/glass.dart';
@@ -68,10 +68,6 @@ class _StoreScreenshotStudentShellState
         demoIsGuest: widget.hubFirstVisit,
         matchPinPreview: true,
       ),
-      UploadScreen(
-        apiClient: widget.apiClient,
-        embeddedInShell: true,
-      ),
       StudentTrainingScreen(
         apiClient: widget.apiClient,
         demoProfile: _returningProfile,
@@ -82,27 +78,31 @@ class _StoreScreenshotStudentShellState
         demoProfile: progressProfile,
         demoInitialGradeTab: progressTab,
       ),
+      SettingsScreen(
+        apiClient: widget.apiClient,
+        oauthService: widget.oauthService,
+      ),
     ];
 
     return Scaffold(
+      extendBody: true,
       backgroundColor: Colors.transparent,
       body: GlassAtmosphere(
-        child: SafeArea(
-          child: IndexedStack(
-            index: _index,
-            children: tabs,
-          ),
+        child: IndexedStack(
+          index: _index,
+          children: tabs,
         ),
       ),
       bottomNavigationBar: GlassTabBar(
         selectedIndex: _index,
         onSelected: (value) => setState(() => _index = value),
-        labels: const ['홈', '업로드', '훈련', '성장'],
+        onCenterAction: () {},
+        labels: const ['홈', '훈련', '성장', '설정'],
         icons: const [
-          Icons.home_outlined,
-          Icons.photo_camera_outlined,
-          Icons.edit_note_outlined,
-          Icons.menu_book_outlined,
+          Icons.home_rounded,
+          Icons.edit_note_rounded,
+          Icons.menu_book_rounded,
+          Icons.settings_rounded,
         ],
       ),
     );

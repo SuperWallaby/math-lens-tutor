@@ -5,6 +5,7 @@ import '../screens/parent_explain_screen.dart';
 import '../screens/parent_screens.dart';
 import '../screens/practice_screen.dart';
 import '../screens/signup_screen.dart';
+import '../screens/upload_screen.dart';
 import '../services/api_client.dart';
 import '../services/oauth_service.dart';
 import '../widgets/glass.dart';
@@ -74,22 +75,19 @@ class _StoreScreenshotShellState extends State<StoreScreenshotShell> {
         );
       case 'tab-upload':
       case 'upload':
+        // 카메라는 탭이 아니라 업로드 흐름을 전체 화면으로 연다.
+        return UploadScreen(apiClient: apiClient);
+      case 'tab-training':
         return StoreScreenshotStudentShell(
           apiClient: apiClient,
           oauthService: oauthService,
           initialTabIndex: 1,
         );
-      case 'tab-training':
-        return StoreScreenshotStudentShell(
-          apiClient: apiClient,
-          oauthService: oauthService,
-          initialTabIndex: 2,
-        );
       case 'tab-progress':
         return StoreScreenshotStudentShell(
           apiClient: apiClient,
           oauthService: oauthService,
-          initialTabIndex: 3,
+          initialTabIndex: 2,
           progressProfile: designReviewProfileGradeM1(),
           progressGradeTab: 3,
         );
@@ -97,7 +95,7 @@ class _StoreScreenshotShellState extends State<StoreScreenshotShell> {
         return StoreScreenshotStudentShell(
           apiClient: apiClient,
           oauthService: oauthService,
-          initialTabIndex: 3,
+          initialTabIndex: 2,
           progressProfile: designReviewProfileChainWarning(),
           progressGradeTab: 3,
         );
@@ -105,7 +103,7 @@ class _StoreScreenshotShellState extends State<StoreScreenshotShell> {
         return StoreScreenshotStudentShell(
           apiClient: apiClient,
           oauthService: oauthService,
-          initialTabIndex: 3,
+          initialTabIndex: 2,
           progressProfile: designReviewProfileGradeE12(),
           progressGradeTab: 0,
         );

@@ -25,17 +25,20 @@ abstract final class TabletLayout {
 
   /// Page insets. Top includes status-bar safe area when the body is full-bleed
   /// (e.g. bottom-nav tabs). Inside [SafeArea] / below [AppBar], adds content-only top air.
+  /// Bottom adds the bottom inset, so content clears a floating tab bar when the
+  /// [Scaffold] uses `extendBody`.
   static EdgeInsets pagePadding(BuildContext context) {
     final safeTop = MediaQuery.paddingOf(context).top;
+    final safeBottom = MediaQuery.paddingOf(context).bottom;
     final top = safeTop > 0 ? safeTop + AppSpacing.lg : AppSpacing.xxl;
 
     if (isWideTablet(context)) {
-      return EdgeInsets.fromLTRB(40, top + AppSpacing.sm, 40, 28);
+      return EdgeInsets.fromLTRB(40, top + AppSpacing.sm, 40, 28 + safeBottom);
     }
     if (isTablet(context)) {
-      return EdgeInsets.fromLTRB(32, top + AppSpacing.xs, 32, 24);
+      return EdgeInsets.fromLTRB(32, top + AppSpacing.xs, 32, 24 + safeBottom);
     }
-    return EdgeInsets.fromLTRB(24, top, 24, 24);
+    return EdgeInsets.fromLTRB(24, top, 24, 24 + safeBottom);
   }
 
   /// [AppBar] 아래 본문 — status bar 중복 패딩 없이 좌우만 [pagePadding] 과 맞춤.

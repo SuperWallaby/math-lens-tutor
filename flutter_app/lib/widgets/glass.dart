@@ -8,7 +8,6 @@ import '../theme/app_design_system.dart';
 
 enum GlassTone { clear, blue, sunken }
 
-const Color _kField = Color(0xFFF4F6F8);
 const Color _kInk = Color(0xFF2C2C2C);
 
 /// iOS Liquid Glass: real backdrop blur, translucent fill, rim + soft lift.
@@ -234,7 +233,7 @@ class GlassSunken extends StatelessWidget {
   }
 }
 
-/// Quiet classroom light — just enough wash for frost, no busy wallpaper.
+/// 평평한 옅은 안개색 바탕. 떠 있는 유리가 이 위의 콘텐츠를 비춰 보이게 한다.
 class GlassAtmosphere extends StatelessWidget {
   const GlassAtmosphere({super.key, required this.child});
 
@@ -242,178 +241,253 @@ class GlassAtmosphere extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        const ColoredBox(color: _kField),
-        const Positioned(
-          top: -160,
-          left: -80,
-          child: IgnorePointer(
-            child: SizedBox(
-              width: 420,
-              height: 420,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [Color(0x66C5D6E8), Color(0x00EEF1F5)],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        const Positioned(
-          right: -120,
-          bottom: -80,
-          child: IgnorePointer(
-            child: SizedBox(
-              width: 380,
-              height: 380,
-              child: DecoratedBox(
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [Color(0x4DD4DCE6), Color(0x00EEF1F5)],
-                  ),
-                ),
-              ),
-            ),
-          ),
-        ),
-        child,
-      ],
+    return ColoredBox(
+      color: AppColors.background,
+      child: SizedBox.expand(child: child),
     );
   }
 }
 
-class GlassNavBar extends StatelessWidget {
-  const GlassNavBar({super.key, required this.child});
-
-  final Widget child;
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 0, 16, 14),
-      child: GlassPanel(
-        padding: EdgeInsets.zero,
-        opacity: 0.22,
-        borderRadius: BorderRadius.circular(AppRadii.pill),
-        child: child,
-      ),
-    );
-  }
-}
-
+/// 떠 있는 맑은 유리 알약 탭바. 높이 64, 좌우 12, 아래 16 + 안전 영역.
+///
+/// [onCenterAction]이 있으면 가운데(`labels.length ~/ 2`)에 파란 유리 카메라가
+/// 30px 솟아오른다. 이때 [labels]는 짝수 개여야 하고, [selectedIndex]와
+/// [onSelected]의 번호는 카메라를 뺀 탭 번호다.
+///
+/// 위젯 높이에 카메라 솟음이 들어 있어서 `Scaffold(extendBody: true)`가
+/// 본문 아래 여백을 정확히 계산한다. 빈 영역은 터치를 통과시킨다.
 class GlassTabBar extends StatelessWidget {
-  const GlassTabBar({
+  GlassTabBar({
     super.key,
     required this.labels,
+    required this.icons,
     required this.selectedIndex,
     required this.onSelected,
-    this.icons,
+    this.onCenterAction,
     this.badgeIndex,
     this.badgeCount = 0,
-  });
+  }) : assert(labels.length == icons.length),
+       assert(
+         onCenterAction == null || labels.length.isEven,
+         'A center action needs an even number of tabs.',
+       );
 
   final List<String> labels;
-  final List<IconData>? icons;
+  final List<IconData> icons;
   final int selectedIndex;
   final ValueChanged<int> onSelected;
+  final VoidCallback? onCenterAction;
   final int? badgeIndex;
   final int badgeCount;
 
+  static const double _barHeight = 64;
+  static const double _sideInset = 12;
+  static const double _bottomInset = 16;
+  static const double _cameraSize = 58;
+  static const double _cameraLift = 30;
+  static const double _cameraRing = 3;
+  static const double _cameraSlotWidth = 64;
+
   @override
   Widget build(BuildContext context) {
-    return GlassNavBar(
+    final hasCamera = onCenterAction != null;
+    final lift = hasCamera ? _cameraLift : 0.0;
+    final safeBottom = MediaQuery.paddingOf(context).bottom;
+    return Padding(
+      padding: EdgeInsets.fromLTRB(
+        _sideInset,
+        0,
+        _sideInset,
+        _bottomInset + safeBottom,
+      ),
       child: SizedBox(
-        height: icons == null ? 56 : 64,
-        child: Row(
+        height: lift + _barHeight,
+        child: Stack(
+          clipBehavior: Clip.none,
           children: [
-            for (var i = 0; i < labels.length; i++)
-              Expanded(child: _tabCell(i)),
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              height: _barHeight,
+              child: GlassSurface(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: _slots(),
+                ),
+              ),
+            ),
+            if (hasCamera)
+              Positioned.fill(
+                child: Align(
+                  alignment: Alignment.topCenter,
+                  child: SizedBox(
+                    width: _cameraSlotWidth,
+                    child: _cameraCell(onCenterAction!),
+                  ),
+                ),
+              ),
           ],
         ),
       ),
     );
   }
 
+  /// 알약 안 칸들. 카메라 칸은 자리만 비워 두고, 카메라는 그 위에 따로 그린다.
+  List<Widget> _slots() {
+    final cameraAt = onCenterAction == null ? null : labels.length ~/ 2;
+    return [
+      for (var i = 0; i < labels.length; i++) ...[
+        if (i == cameraAt) const SizedBox(width: _cameraSlotWidth),
+        Expanded(child: _tabCell(i)),
+      ],
+    ];
+  }
+
   Widget _tabCell(int i) {
     final selected = i == selectedIndex;
     final showBadge = badgeIndex == i && badgeCount > 0;
+    final color = selected ? AppColors.primary : AppColors.textSub;
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: () => onSelected(i),
-          borderRadius: BorderRadius.circular(AppRadii.pill),
-          child: selected
-              ? _GlassSurface(
-                  tone: GlassTone.blue,
-                  borderRadius: BorderRadius.circular(AppRadii.pill),
-                  child: _tabLabel(i, showBadge: showBadge),
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
+      child: Semantics(
+        button: true,
+        selected: selected,
+        onTap: () => onSelected(i),
+        child: Ink(
+          decoration: selected
+              ? BoxDecoration(
+                  color: AppColors.primary.withValues(alpha: 0.12),
+                  borderRadius: _kPillRadius,
                 )
-              : _tabLabel(i, showBadge: showBadge),
+              : null,
+          child: InkWell(
+            onTap: () => onSelected(i),
+            borderRadius: _kPillRadius,
+            excludeFromSemantics: true,
+            child: Stack(
+              alignment: Alignment.center,
+              children: [
+                FittedBox(
+                  fit: BoxFit.scaleDown,
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(icons[i], size: 22, color: color),
+                      const SizedBox(height: 2),
+                      Text(
+                        labels[i],
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        style: TextStyle(
+                          color: color,
+                          fontSize: 10,
+                          fontWeight: selected
+                              ? FontWeight.w800
+                              : FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                if (showBadge)
+                  Positioned(
+                    top: 0,
+                    right: 4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 5,
+                        vertical: 1,
+                      ),
+                      decoration: const BoxDecoration(
+                        color: AppColors.primaryDark,
+                        borderRadius: _kPillRadius,
+                      ),
+                      child: Text(
+                        '$badgeCount',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.w800,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
+            ),
+          ),
         ),
       ),
     );
   }
 
-  Widget _tabLabel(int i, {required bool showBadge}) {
-    final icon = icons != null && i < icons!.length ? icons![i] : null;
-    final selected = i == selectedIndex;
-    return Stack(
-      alignment: Alignment.center,
-      children: [
-        Center(
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              if (icon != null)
-                Icon(
-                  icon,
-                  size: 18,
-                  color: _kInk.withValues(alpha: selected ? 0.72 : 0.40),
-                ),
-              if (icon != null) const SizedBox(height: 2),
-              Text(
-                labels[i],
-                textAlign: TextAlign.center,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: TextStyle(
-                  color: _kInk.withValues(alpha: selected ? 0.88 : 0.55),
-                  fontSize: icon == null ? 13 : 10,
-                  fontWeight: selected ? FontWeight.w800 : FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-        ),
-        if (showBadge)
+  /// 파란 유리 원(흰 테두리 3px) + 아래 「찍기」. 원 위쪽이 알약보다 30px 솟는다.
+  Widget _cameraCell(VoidCallback onTap) {
+    return Semantics(
+      button: true,
+      onTap: onTap,
+      child: Stack(
+        clipBehavior: Clip.none,
+        children: [
           Positioned(
-            top: 2,
-            right: 6,
-            child: Container(
-              padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
+            top: 0,
+            left: (_cameraSlotWidth - _cameraSize) / 2,
+            width: _cameraSize,
+            height: _cameraSize,
+            child: DecoratedBox(
+              position: DecorationPosition.foreground,
               decoration: const BoxDecoration(
-                color: AppColors.primaryDark,
-                borderRadius: BorderRadius.all(Radius.circular(999)),
+                shape: BoxShape.circle,
+                border: Border.fromBorderSide(
+                  BorderSide(color: Colors.white, width: _cameraRing),
+                ),
               ),
-              child: Text(
-                '$badgeCount',
-                style: const TextStyle(
-                  color: Colors.white,
-                  fontSize: 9,
-                  fontWeight: FontWeight.w800,
+              child: GlassSurface(
+                preset: GlassPreset.prominent,
+                child: InkWell(
+                  onTap: onTap,
+                  customBorder: const CircleBorder(),
+                  splashColor: const Color(0x33FFFFFF),
+                  highlightColor: const Color(0x1AFFFFFF),
+                  excludeFromSemantics: true,
+                  child: const Center(
+                    child: Icon(
+                      Icons.photo_camera_rounded,
+                      size: 26,
+                      color: Colors.white,
+                    ),
+                  ),
                 ),
               ),
             ),
           ),
-      ],
+          Positioned(
+            left: 0,
+            right: 0,
+            top: _cameraSize,
+            bottom: 0,
+            child: GestureDetector(
+              behavior: HitTestBehavior.opaque,
+              onTap: onTap,
+              child: const Align(
+                alignment: Alignment.bottomCenter,
+                child: Padding(
+                  padding: EdgeInsets.only(bottom: 14),
+                  child: Text(
+                    '찍기',
+                    maxLines: 1,
+                    style: TextStyle(
+                      color: AppColors.primary,
+                      fontSize: 10.5,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
   }
 }
