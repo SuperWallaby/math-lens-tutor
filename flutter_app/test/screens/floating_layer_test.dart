@@ -420,10 +420,17 @@ void main() {
     );
     await tester.pumpAndSettle();
 
+    // 화면에는 파란 유리 주 버튼(「새 문제로 다시 도전」)이 이미 하나 있다.
+    final onScreen = find.byType(GlassSurface).evaluate().length;
     await tester.tap(find.text('풀이 보기'));
     await tester.pumpAndSettle();
 
-    final sheet = find.byType(GlassSurface);
+    // 시트는 그 위에 맑은 유리 한 장을 더 띄운다.
+    expect(find.byType(GlassSurface), findsNWidgets(onScreen + 1));
+    final sheet = find.ancestor(
+      of: find.textContaining('문제 1번'),
+      matching: find.byType(GlassSurface),
+    );
     expect(sheet, findsOneWidget);
     expect(tester.widget<GlassSurface>(sheet).preset, GlassPreset.clear);
     expect(
@@ -445,7 +452,8 @@ void main() {
     expect(find.descendant(of: sheet, matching: find.byTooltip('닫기')), findsOneWidget);
     await tester.tap(find.descendant(of: sheet, matching: find.byIcon(Icons.close_rounded)));
     await tester.pumpAndSettle();
-    expect(find.byType(GlassSurface), findsNothing);
+    expect(find.textContaining('문제 1번'), findsNothing);
+    expect(find.byType(GlassSurface), findsNWidgets(onScreen));
   });
 
   testWidgets('relabeling a child opens a glass sheet with the name field', (
