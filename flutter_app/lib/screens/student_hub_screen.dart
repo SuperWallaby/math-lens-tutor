@@ -775,33 +775,36 @@ class _StatTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 「정답률, 72%」처럼 이름과 값이 한 번에 읽히게 묶는다.
     return GlassSurface(
       preset: GlassPreset.onBlue,
       borderRadius: BorderRadius.circular(AppRadii.lg),
       padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-      child: Column(
-        children: [
-          Text(
-            label,
-            style: const TextStyle(
-              color: _kStageTextSub,
-              fontSize: 12,
-              fontWeight: FontWeight.w700,
+      child: MergeSemantics(
+        child: Column(
+          children: [
+            Text(
+              label,
+              style: const TextStyle(
+                color: _kStageTextSub,
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            value,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 26,
-              fontWeight: FontWeight.w800,
-              height: 1.05,
+            const SizedBox(height: 6),
+            Text(
+              value,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 26,
+                fontWeight: FontWeight.w800,
+                height: 1.05,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

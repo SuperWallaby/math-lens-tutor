@@ -50,29 +50,34 @@ class AppChoiceTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final radius = BorderRadius.circular(AppRadii.md);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: selected ? AppColors.primarySoft : Colors.white,
-        borderRadius: radius,
-        border: selected
-            ? Border.all(color: AppColors.primary, width: 1.5)
-            : Border.all(color: AppColors.border),
-      ),
-      child: Material(
-        type: MaterialType.transparency,
-        child: InkWell(
-          onTap: onTap,
+    // 선택은 색과 테두리로만 보이므로, 화면 낭독기에도 「선택됨」을 알린다.
+    return Semantics(
+      button: true,
+      selected: selected,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: selected ? AppColors.primarySoft : Colors.white,
           borderRadius: radius,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
-            child: DefaultTextStyle.merge(
-              style: const TextStyle(
-                color: AppColors.text,
-                fontSize: 16,
-                fontWeight: FontWeight.w700,
+          border: selected
+              ? Border.all(color: AppColors.primary, width: 1.5)
+              : Border.all(color: AppColors.border),
+        ),
+        child: Material(
+          type: MaterialType.transparency,
+          child: InkWell(
+            onTap: onTap,
+            borderRadius: radius,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+              child: DefaultTextStyle.merge(
+                style: const TextStyle(
+                  color: AppColors.text,
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                ),
+                textAlign: TextAlign.center,
+                child: Center(child: label),
               ),
-              textAlign: TextAlign.center,
-              child: Center(child: label),
             ),
           ),
         ),
@@ -125,37 +130,40 @@ class AppInfoRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // 제목과 부제는 한 줄로 읽혀야 뜻이 통한다(「약한 유형, 일차방정식」).
     return AppCard(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      child: Row(
-        children: [
-          AppGlyph(icon: icon, size: 40),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 16,
-                    color: AppColors.text,
+      child: MergeSemantics(
+        child: Row(
+          children: [
+            AppGlyph(icon: icon, size: 40),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontWeight: FontWeight.w800,
+                      fontSize: 16,
+                      color: AppColors.text,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: const TextStyle(
-                    color: AppColors.textSub,
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    style: const TextStyle(
+                      color: AppColors.textSub,
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }

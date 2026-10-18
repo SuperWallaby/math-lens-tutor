@@ -63,6 +63,50 @@ void main() {
     expect(taps, 1);
   });
 
+  testWidgets('AppChoiceTile tells screen readers whether it is selected',
+      (tester) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: Column(
+            children: [
+              AppChoiceTile(
+                label: const Text('중1'),
+                selected: true,
+                onTap: () {},
+              ),
+              AppChoiceTile(
+                label: const Text('중2'),
+                selected: false,
+                onTap: () {},
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    expect(
+      find.semantics.byLabel('중1').evaluate().single,
+      containsSemantics(
+        isButton: true,
+        hasSelectedState: true,
+        isSelected: true,
+        hasTapAction: true,
+      ),
+    );
+    expect(
+      find.semantics.byLabel('중2').evaluate().single,
+      containsSemantics(
+        isButton: true,
+        hasSelectedState: true,
+        isSelected: false,
+        hasTapAction: true,
+      ),
+    );
+    semantics.dispose();
+  });
+
   testWidgets('AppGlyph is a soft primary circle with a primary icon',
       (tester) async {
     await tester.pumpWidget(
@@ -95,6 +139,26 @@ void main() {
     expect(find.byType(AppGlyph), findsOneWidget);
     expect(find.byType(AppCard), findsOneWidget);
     expect(find.byType(BackdropFilter), findsNothing);
+  });
+
+  testWidgets('AppInfoRow reads its title and subtitle as one line',
+      (tester) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: AppInfoRow(
+            icon: Icons.show_chart_outlined,
+            title: '약한 유형',
+            subtitle: '일차방정식',
+          ),
+        ),
+      ),
+    );
+    expect(find.semantics.byLabel(RegExp(r'^약한 유형\s+일차방정식$')), findsOne);
+    expect(find.semantics.byLabel('약한 유형'), findsNothing);
+    expect(find.semantics.byLabel('일차방정식'), findsNothing);
+    semantics.dispose();
   });
 
   testWidgets('TagChip is a flat tint pill: 12% fill, no rim or shadow',

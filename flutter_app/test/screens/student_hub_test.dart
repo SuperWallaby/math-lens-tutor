@@ -181,6 +181,24 @@ void main() {
     expect(find.text('우열'), findsNothing);
   });
 
+  testWidgets('returning: each stat reads as one line (정답률, 72%)', (
+    tester,
+  ) async {
+    final semantics = tester.ensureSemantics();
+    await tester.pumpWidget(
+      _hub(
+        profile: designReviewProfileReturning(),
+        subs: designReviewSubmissionsRecent(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    expect(find.semantics.byLabel(RegExp(r'^정답률\s+72%$')), findsOne);
+    expect(find.semantics.byLabel(RegExp(r'^해결한 문제\s+18개$')), findsOne);
+    expect(find.semantics.byLabel('72%'), findsNothing);
+    semantics.dispose();
+  });
+
   testWidgets('returning: each recent row is a white card that is tappable', (
     tester,
   ) async {
