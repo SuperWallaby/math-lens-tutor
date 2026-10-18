@@ -388,6 +388,86 @@ void main() {
       expect(tester.getCenter(find.byType(GlassCoachBubble)).dx, 195);
     });
 
+    double bubbleOpacity(WidgetTester tester) => tester
+        .widget<AnimatedOpacity>(
+          find.ancestor(
+            of: find.byType(GlassCoachBubble),
+            matching: find.byType(AnimatedOpacity),
+          ),
+        )
+        .opacity;
+
+    testWidgets('coach bubble fades out on scroll so it stops hiding = 20', (
+      tester,
+    ) async {
+      phone(tester, 390);
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        _hub(
+          profile: designReviewProfileFirstVisit(),
+          subs: designReviewSubmissionsEmpty(),
+          inset: const EdgeInsets.only(top: 47, bottom: 110),
+        ),
+      );
+      await tester.pumpAndSettle();
+      const coach = '여기를 눌러 숙제 한 장 찍어요';
+
+      // 맨 위에서는 말풍선이 보이고, 이 크기에서는 예시의 빨간 원을 덮는다.
+      expect(bubbleOpacity(tester), 1);
+      expect(find.semantics.byLabel(coach), findsOne);
+      final bubble = tester.getRect(find.byType(GlassCoachBubble));
+      expect(bubble.overlaps(tester.getRect(find.text('= 20'))), isTrue);
+
+      await tester.drag(find.byType(ListView), const Offset(0, -100));
+      await tester.pumpAndSettle();
+      expect(bubbleOpacity(tester), 0);
+      // 사라진 말풍선은 화면 낭독기에도 읽히지 않는다.
+      expect(find.semantics.byLabel(coach), findsNothing);
+
+      await tester.drag(find.byType(ListView), const Offset(0, 400));
+      await tester.pumpAndSettle();
+      expect(bubbleOpacity(tester), 1);
+      semantics.dispose();
+    });
+
+    for (final height in [568.0, 667.0, 740.0, 844.0, 932.0]) {
+      for (final guest in [false, true]) {
+        testWidgets(
+          'whenever the bubble covers the example, it can be scrolled away '
+          '(${height.toInt()}dp${guest ? ', guest' : ''})',
+          (tester) async {
+            tester.view.physicalSize = Size(390 * 3, height * 3);
+            tester.view.devicePixelRatio = 3;
+            addTearDown(tester.view.reset);
+            await tester.pumpWidget(
+              _hub(
+                profile: designReviewProfileFirstVisit(),
+                subs: designReviewSubmissionsEmpty(),
+                guest: guest,
+                inset: const EdgeInsets.only(top: 47, bottom: 110),
+              ),
+            );
+            await tester.pumpAndSettle();
+
+            final bubble = tester.getRect(find.byType(GlassCoachBubble));
+            final example = find.ancestor(
+              of: find.text('이렇게 짚어줘요'),
+              matching: find.byType(AppCard),
+            );
+            // 예시 카드가 아직 안 만들어졌으면 화면 아래에 있으니, 말풍선은 무대를 덮는다.
+            final covers = example.evaluate().isEmpty ||
+                bubble.overlaps(tester.getRect(example.first));
+            if (!covers) return;
+            final position = tester
+                .state<ScrollableState>(find.byType(Scrollable).first)
+                .position;
+            // 「스크롤했다」로 보는 8px보다 더 내려갈 수 있어야 말풍선이 사라진다.
+            expect(position.maxScrollExtent, greaterThan(20));
+          },
+        );
+      }
+    }
+
     for (final first in [true, false]) {
       testWidgets(
         'stage text slides under a blur band, not the clock '

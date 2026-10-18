@@ -261,7 +261,8 @@ const Color _kStageTextSub = Color(0xCCFFFFFF);
 /// 예시 풀이에서 막힌 곳을 표시하는 빨간색.
 const Color _kMarkRed = Color(0xFFE5484D);
 
-/// 이만큼 내려가면 「스크롤했다」로 본다.
+/// 이만큼 내려가면 「스크롤했다」로 본다. 말풍선이 카드를 가릴 때는 아래 여백 덕에
+/// 언제나 이보다 더 내려갈 수 있다(`_FirstTimeHome` 참고).
 const double _kScrolledThreshold = 8;
 
 /// 홈 목록을 감싸 스크롤 여부를 지켜본다. 스크롤하면 맨 위에 상태 표시줄 높이만큼
@@ -328,7 +329,8 @@ class _FirstTimeHome extends StatelessWidget {
     return _HomeScrollFrame(
       list: ListView(
         physics: const AlwaysScrollableScrollPhysics(),
-        // 말풍선(약 46px)이 뜬 자리까지 비워, 끝까지 스크롤해도 카드가 가려지지 않는다.
+        // 말풍선(약 46px)이 뜬 자리까지 비운다. 말풍선이 카드를 조금이라도 가리면
+        // 이 여백 때문에 20px 넘게 스크롤할 수 있어서, 스크롤로 말풍선을 치울 수 있다.
         padding: EdgeInsets.only(bottom: bottomInset + 72),
         children: [
           HomeStage(
@@ -352,14 +354,20 @@ class _FirstTimeHome extends StatelessWidget {
         ],
       ),
       // 가운데 카메라 바로 위. 카메라 탭을 막지 않도록 터치는 통과시킨다.
-      overlay: (_) => Positioned(
+      // 작은 화면에서는 예시 카드(「= 20」)를 가리므로 스크롤하면 사라지고, 맨 위로
+      // 돌아오면 다시 보인다.
+      overlay: (scrolled) => Positioned(
         left: 0,
         right: 0,
         bottom: bottomInset + 8,
-        child: const IgnorePointer(
-          child: Center(
-            heightFactor: 1,
-            child: GlassCoachBubble(text: '여기를 눌러 숙제 한 장 찍어요'),
+        child: IgnorePointer(
+          child: AnimatedOpacity(
+            opacity: scrolled ? 0 : 1,
+            duration: const Duration(milliseconds: 200),
+            child: const Center(
+              heightFactor: 1,
+              child: GlassCoachBubble(text: '여기를 눌러 숙제 한 장 찍어요'),
+            ),
           ),
         ),
       ),
