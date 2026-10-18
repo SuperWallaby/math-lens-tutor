@@ -1,3 +1,6 @@
+import 'dart:io';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -256,5 +259,23 @@ void main() {
     } finally {
       handle.dispose();
     }
+  });
+
+  test('the stage icon ships at 3x of its 108pt size, not 1024px', () {
+    final bytes = File('assets/brand/app_icon_cutout.png').readAsBytesSync();
+    // PNG 머리(IHDR)의 가로·세로: 16번째 바이트부터 4바이트씩.
+    final header = ByteData.sublistView(bytes, 16, 24);
+    expect(header.getUint32(0), 324);
+    expect(header.getUint32(4), 324);
+    expect(bytes.length, lessThan(200 * 1024));
+  });
+
+  testWidgets('the stage icon decodes at the file size it ships at', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_stage(jimin));
+    final icon = tester.widget<Image>(find.byKey(const Key('home-stage-icon')));
+    expect(icon.width, 108);
+    expect((icon.image as ResizeImage).width, 324);
   });
 }
