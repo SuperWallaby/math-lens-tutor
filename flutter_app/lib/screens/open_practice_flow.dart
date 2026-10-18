@@ -5,6 +5,7 @@ import 'package:flutter/material.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
 import '../theme/app_design_system.dart';
+import '../widgets/glass.dart';
 import 'practice_generating_screen.dart';
 import 'practice_screen.dart';
 
@@ -122,23 +123,22 @@ Future<T> withBriefPracticeLoading<T>(
       builder: (dialogContext) => const PopScope(
         canPop: false,
         child: Center(
-          child: Card(
-            child: Padding(
-              padding: EdgeInsets.symmetric(horizontal: 28, vertical: 24),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  CircularProgressIndicator(strokeWidth: 2.5),
-                  SizedBox(height: 16),
-                  Text(
-                    '문제 준비 중…',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w700,
-                      color: AppColors.textSub,
-                    ),
+          child: GlassSurface(
+            borderRadius: BorderRadius.all(Radius.circular(AppRadii.lg)),
+            padding: EdgeInsets.symmetric(horizontal: 28, vertical: 24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(strokeWidth: 2.5),
+                SizedBox(height: 16),
+                Text(
+                  '문제 준비 중…',
+                  style: TextStyle(
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textSub,
                   ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),

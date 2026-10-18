@@ -4,6 +4,7 @@ import '../models/app_models.dart';
 import '../services/api_client.dart';
 import '../services/auth_session.dart';
 import '../theme/app_design_system.dart';
+import 'glass.dart';
 import 'linked_children_panel.dart';
 import 'profile_avatar.dart';
 import 'student_link_guide.dart';
@@ -66,9 +67,8 @@ class StudentPicker extends StatelessWidget {
     List<LinkedStudent> students,
     String selectedId,
   ) async {
-    await showModalBottomSheet<void>(
+    await showGlassSheet<void>(
       context: context,
-      showDragHandle: true,
       builder: (context) {
         return SafeArea(
           child: Padding(
@@ -107,10 +107,9 @@ class StudentPicker extends StatelessWidget {
     final client = apiClient;
     if (client == null) return;
 
-    showModalBottomSheet<void>(
+    showGlassSheet<void>(
       context: context,
       isScrollControlled: true,
-      showDragHandle: true,
       builder: (context) {
         return Padding(
           padding: EdgeInsets.only(

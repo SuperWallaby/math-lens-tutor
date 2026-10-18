@@ -4,6 +4,7 @@ import '../layout/tablet_layout.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
 import '../theme/app_design_system.dart';
+import 'glass.dart';
 import 'student_picker.dart';
 
 /// 학부모 탭 공통 스크롤 — 홈과 동일하게 safe area + StudentPicker 한 번만.
@@ -139,9 +140,8 @@ void showParentUnitGuideSheet(
     _ => AppColors.primary,
   };
 
-  showModalBottomSheet<void>(
+  showGlassSheet<void>(
     context: context,
-    showDragHandle: true,
     builder: (context) {
       return Padding(
         padding: EdgeInsets.fromLTRB(

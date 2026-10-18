@@ -6,6 +6,7 @@ import '../services/api_client.dart';
 import '../utils/choice_label_format.dart';
 import '../utils/problem_answer_format.dart';
 import '../widgets/app_card.dart';
+import '../widgets/glass.dart';
 import '../widgets/hero_icon_3d.dart';
 import '../widgets/learning_profile_widgets.dart';
 import '../widgets/mixed_math_text.dart';
@@ -144,13 +145,11 @@ class _LoopResultScreenState extends State<LoopResultScreen> {
   }
 
   void _openProblemReviewSheet(_ProblemResult item) {
-    showModalBottomSheet<void>(
+    showGlassSheet<void>(
       context: context,
       isScrollControlled: true,
-      backgroundColor: AppColors.surface,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.lg)),
-      ),
+      // 시트 안에서 손잡이를 직접 그린다.
+      showDragHandle: false,
       builder: (ctx) {
         return DraggableScrollableSheet(
           expand: false,

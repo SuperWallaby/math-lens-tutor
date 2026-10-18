@@ -161,6 +161,7 @@ class AppInfoRow extends StatelessWidget {
   }
 }
 
+/// 평평한 색 알약: 자기 색 12% 바탕에 자기 색 글씨. 테두리와 그림자는 없다.
 class TagChip extends StatelessWidget {
   const TagChip(
     this.label, {
@@ -181,21 +182,13 @@ class TagChip extends StatelessWidget {
         vertical: compact ? 4 : 6,
       ),
       decoration: BoxDecoration(
-        color: Color.lerp(Colors.white, color, compact ? 0.18 : 0.22),
+        color: color.withValues(alpha: 0.12),
         borderRadius: BorderRadius.circular(AppRadii.pill),
-        border: Border.all(color: const Color(0xE6FFFFFF), width: 1.2),
-        boxShadow: const [
-          BoxShadow(
-            color: Color(0x142A72E5),
-            offset: Offset(0, 4),
-            blurRadius: 10,
-          ),
-        ],
       ),
       child: Text(
         label,
         style: TextStyle(
-          color: Color.lerp(color, AppColors.text, compact ? 0.25 : 0.15),
+          color: color,
           fontSize: compact ? 11 : 12,
           fontWeight: compact ? FontWeight.w600 : FontWeight.w700,
           height: compact ? 1.2 : null,

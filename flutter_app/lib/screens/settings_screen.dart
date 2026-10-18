@@ -10,6 +10,7 @@ import '../utils/problem_image_picker.dart';
 import '../utils/student_code_format.dart';
 import '../widgets/app_card.dart';
 import '../widgets/edit_profile_sheet.dart';
+import '../widgets/glass.dart';
 import '../widgets/profile_avatar.dart';
 import '../widgets/student_picker.dart';
 import 'link_student_screen.dart';
@@ -165,7 +166,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   Future<void> _confirmDeleteAccount() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => GlassDialog(
         title: const Text('계정 탈퇴'),
         content: const Text(
           '학습 기록과 연결 정보가 모두 삭제되며 되돌릴 수 없습니다.\n정말 탈퇴하시겠습니까?',
@@ -417,6 +418,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         width: double.infinity,
                         child: FilledButton.icon(
                           onPressed: _copyStudentCode,
+                          style: AppButtonStyles.soft(),
                           icon: const Icon(Icons.copy_rounded, size: 18),
                           label: const Text('번호 복사'),
                         ),

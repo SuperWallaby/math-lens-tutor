@@ -96,4 +96,37 @@ void main() {
     expect(find.byType(AppCard), findsOneWidget);
     expect(find.byType(BackdropFilter), findsNothing);
   });
+
+  testWidgets('TagChip is a flat tint pill: 12% fill, own-color text, no rim or shadow',
+      (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: Scaffold(
+          body: Column(
+            children: [
+              TagChip('보완', color: AppColors.accent),
+              TagChip('작게', color: AppColors.success, compact: true),
+            ],
+          ),
+        ),
+      ),
+    );
+    final chips = tester.widgetList<Container>(
+      find.descendant(
+        of: find.byType(TagChip),
+        matching: find.byType(Container),
+      ),
+    ).toList();
+    expect(chips, hasLength(2));
+    final colors = [AppColors.accent, AppColors.success];
+    for (var i = 0; i < chips.length; i++) {
+      final deco = chips[i].decoration! as BoxDecoration;
+      expect(deco.color, colors[i].withValues(alpha: 0.12));
+      expect(deco.border, isNull);
+      expect(deco.boxShadow, anyOf(isNull, isEmpty));
+      expect(deco.borderRadius, BorderRadius.circular(AppRadii.pill));
+    }
+    expect(tester.widget<Text>(find.text('보완')).style!.color, AppColors.accent);
+    expect(tester.widget<Text>(find.text('작게')).style!.color, AppColors.success);
+  });
 }

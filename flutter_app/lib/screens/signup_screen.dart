@@ -11,6 +11,7 @@ import '../services/api_client.dart';
 import '../services/magic_link_auth.dart';
 import '../services/oauth_service.dart';
 import '../dev/dev_oauth_login_chip.dart';
+import '../widgets/app_card.dart';
 import '../widgets/glass.dart';
 import '../widgets/oauth_sign_in_button.dart';
 
@@ -252,7 +253,7 @@ class _SignupScreenState extends State<SignupScreen> {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        GlassField(
+        _field(
           hint: '이메일',
           icon: Icons.mail_outline,
           controller: _emailController,
@@ -262,7 +263,7 @@ class _SignupScreenState extends State<SignupScreen> {
           onSubmitted: (_) => _sendMagicLink(),
         ),
         const SizedBox(height: 12),
-        GlassField(
+        _field(
           hint: '비밀번호',
           icon: Icons.lock_outline,
           obscureText: true,
@@ -270,7 +271,7 @@ class _SignupScreenState extends State<SignupScreen> {
           onSubmitted: (_) => _sendMagicLink(),
         ),
         const SizedBox(height: 18),
-        GlassButton(
+        GlassPrimaryButton(
           label: '시작하기',
           onPressed: _loading
               ? null
@@ -284,6 +285,40 @@ class _SignupScreenState extends State<SignupScreen> {
                 },
         ),
       ],
+    );
+  }
+
+  /// 테마 입력칸(흰 채움, `#EFEFF1` 테두리) 위에 앞 아이콘만 얹은 입력 한 칸.
+  Widget _field({
+    required String hint,
+    required IconData icon,
+    TextEditingController? controller,
+    FocusNode? focusNode,
+    bool obscureText = false,
+    TextInputType? keyboardType,
+    required bool enabled,
+    required ValueChanged<String> onSubmitted,
+  }) {
+    return TextField(
+      controller: controller,
+      focusNode: focusNode,
+      obscureText: obscureText,
+      keyboardType: keyboardType,
+      enabled: enabled,
+      onSubmitted: onSubmitted,
+      style: const TextStyle(
+        color: AppColors.text,
+        fontSize: 16,
+        fontWeight: FontWeight.w600,
+      ),
+      decoration: InputDecoration(
+        hintText: hint,
+        prefixIcon: Icon(icon, size: 20, color: AppColors.textMuted),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: AppSpacing.lg,
+          vertical: 14,
+        ),
+      ),
     );
   }
 
@@ -341,7 +376,7 @@ class _SignupScreenState extends State<SignupScreen> {
                     _heroHeader(),
                     const SizedBox(height: 36),
                     if (_error != null) ...[
-                      GlassPanel(
+                      AppCard(
                         child: Text(
                           _error!,
                           style: const TextStyle(color: AppColors.accent),
@@ -352,10 +387,9 @@ class _SignupScreenState extends State<SignupScreen> {
                     _emailSection(),
                     if (widget.onContinueAsGuest != null) ...[
                       const SizedBox(height: 12),
-                      GlassButton(
-                        label: '게스트로 둘러보기',
-                        primary: false,
+                      OutlinedButton(
                         onPressed: _loading ? null : widget.onContinueAsGuest,
+                        child: const Text('게스트로 둘러보기'),
                       ),
                     ],
                     if (!widget.matchPinPreview) ...[

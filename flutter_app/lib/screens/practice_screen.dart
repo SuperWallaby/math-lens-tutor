@@ -89,7 +89,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
     if (hasProgress) {
       final ok = await showDialog<bool>(
         context: context,
-        builder: (ctx) => AlertDialog(
+        builder: (ctx) => GlassDialog(
           title: Text(harder ? '더 어려운 문제로 바꿀까요?' : '새로운 문제를 받을까요?'),
           content: Text(
             harder

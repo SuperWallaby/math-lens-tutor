@@ -7,7 +7,6 @@ import '../services/api_client.dart';
 import '../theme/app_design_system.dart';
 import '../utils/network_thumbnail_cache.dart';
 import 'app_card.dart';
-import 'glass.dart';
 import 'mixed_math_text.dart';
 import 'parent_tab_scaffold.dart';
 import 'skeleton_box.dart';
@@ -1212,8 +1211,7 @@ class ParentCoachingCardWidget extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return GlassPanel(
-      tone: GlassTone.blue,
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -1247,10 +1245,13 @@ class ParentCoachingCardWidget extends StatelessWidget {
             ),
           ],
           const SizedBox(height: 12),
-          GlassPanel(
-            tone: GlassTone.sunken,
+          // 흰 카드 안의 채점 포인트 상자: 연파랑 평평한 칸.
+          Container(
             padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-            borderRadius: BorderRadius.circular(AppRadii.pill),
+            decoration: BoxDecoration(
+              color: AppColors.primarySoft,
+              borderRadius: BorderRadius.circular(AppRadii.md),
+            ),
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [

@@ -5,6 +5,7 @@ import '../screens/role_select_screen.dart';
 import '../services/api_client.dart';
 import '../theme/app_design_system.dart';
 import '../utils/grade_options.dart';
+import 'glass.dart';
 
 Future<void> showEditProfileSheet({
   required BuildContext context,
@@ -12,14 +13,9 @@ Future<void> showEditProfileSheet({
   required AppUser user,
   required VoidCallback onSaved,
 }) {
-  return showModalBottomSheet<void>(
+  return showGlassSheet<void>(
     context: context,
     isScrollControlled: true,
-    showDragHandle: true,
-    backgroundColor: AppColors.surface,
-    shape: const RoundedRectangleBorder(
-      borderRadius: BorderRadius.vertical(top: Radius.circular(AppRadii.lg)),
-    ),
     builder: (sheetContext) {
       return _EditProfileSheet(
         apiClient: apiClient,
@@ -203,6 +199,10 @@ class _EditProfileSheetState extends State<_EditProfileSheet> {
               const SizedBox(width: AppSpacing.sm),
               OutlinedButton(
                 onPressed: _loading ? null : _openRoleChange,
+                // 테마의 최소 폭이 무한대라, Row 안에서는 폭 제한을 풀어 준다.
+                style: OutlinedButton.styleFrom(
+                  minimumSize: const Size(0, AppSizes.buttonHeight),
+                ),
                 child: const Text('변경'),
               ),
             ],

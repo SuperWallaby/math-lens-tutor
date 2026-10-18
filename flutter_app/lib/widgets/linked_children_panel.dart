@@ -7,6 +7,7 @@ import '../theme/app_design_system.dart';
 import '../utils/pending_student_link.dart';
 import '../utils/student_code_format.dart';
 import 'app_card.dart';
+import 'glass.dart';
 import 'hero_icon_3d.dart';
 import 'profile_avatar.dart';
 import 'student_code_input_field.dart';
@@ -185,10 +186,9 @@ class _LinkedChildrenPanelState extends State<LinkedChildrenPanel> {
     }
 
     final controller = TextEditingController(text: student.guardianLabel ?? '');
-    final saved = await showModalBottomSheet<bool>(
+    final saved = await showGlassSheet<bool>(
       context: context,
       isScrollControlled: true,
-      showDragHandle: true,
       builder: (context) {
         return Padding(
           padding: EdgeInsets.only(

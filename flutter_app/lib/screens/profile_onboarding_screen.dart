@@ -8,6 +8,7 @@ import '../services/oauth_service.dart';
 import '../theme/app_design_system.dart';
 import 'signup_screen.dart';
 import '../utils/default_display_name.dart';
+import '../widgets/glass.dart';
 import '../widgets/hero_icon_3d.dart';
 import '../widgets/linked_children_panel.dart';
 import '../widgets/student_link_guide.dart';
@@ -749,7 +750,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
   Future<void> _restartFromBeginning() async {
     final confirmed = await showDialog<bool>(
       context: context,
-      builder: (context) => AlertDialog(
+      builder: (context) => GlassDialog(
         title: const Text('처음으로'),
         content: const Text(
           '로그아웃하고 시작 화면으로 돌아갑니다.\n진행 중인 설정은 저장되지 않을 수 있습니다.',

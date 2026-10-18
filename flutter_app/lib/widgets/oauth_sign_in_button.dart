@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_design_system.dart';
-import 'glass.dart';
 
 enum OAuthProvider { kakao, google, apple }
 
@@ -49,6 +48,7 @@ class OAuthProviderIcon extends StatelessWidget {
   }
 }
 
+/// 흰 알약 보조 버튼(테마 [OutlinedButton]) 안에 브랜드 마크와 글자를 가운데로.
 class OAuthSignInButton extends StatelessWidget {
   const OAuthSignInButton({
     super.key,
@@ -68,36 +68,31 @@ class OAuthSignInButton extends StatelessWidget {
     final effectiveOnPressed = enabled ? onPressed : null;
     return Opacity(
       opacity: enabled ? 1 : 0.45,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: effectiveOnPressed,
-          borderRadius: BorderRadius.circular(AppRadii.pill),
-          child: GlassPanel(
-            padding: EdgeInsets.zero,
-            borderRadius: BorderRadius.circular(AppRadii.pill),
-            child: SizedBox(
-              height: AppSizes.buttonHeight,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  OAuthProviderIcon(provider, color: AppColors.text),
-                  const SizedBox(width: 10),
-                  Flexible(
-                    child: Text(
-                      label,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w700,
-                        color: AppColors.text,
-                      ),
-                    ),
-                  ),
-                ],
+      child: OutlinedButton(
+        onPressed: effectiveOnPressed,
+        // 꺼져도 흰 바탕과 테두리는 그대로 두고, 흐림은 위의 Opacity가 맡는다.
+        style: OutlinedButton.styleFrom(
+          disabledBackgroundColor: Colors.white,
+          disabledForegroundColor: AppColors.text,
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            OAuthProviderIcon(provider, color: AppColors.text),
+            const SizedBox(width: 10),
+            Flexible(
+              child: Text(
+                label,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w700,
+                  color: AppColors.text,
+                ),
               ),
             ),
-          ),
+          ],
         ),
       ),
     );

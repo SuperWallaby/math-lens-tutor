@@ -6,6 +6,7 @@ import 'package:math_lens_tutor/screens/student_hub_screen.dart';
 import 'package:math_lens_tutor/services/api_client.dart';
 import 'package:math_lens_tutor/services/auth_session.dart';
 import 'package:math_lens_tutor/services/oauth_service.dart';
+import 'package:math_lens_tutor/theme/app_design_system.dart';
 import 'package:math_lens_tutor/widgets/app_card.dart';
 import 'package:math_lens_tutor/widgets/glass.dart';
 import 'package:math_lens_tutor/widgets/home_stage.dart';
@@ -287,8 +288,41 @@ void main() {
           ),
         );
         await tester.pumpAndSettle();
-        expect(find.byType(GlassPanel), findsNothing);
-        expect(find.byType(GlassButton), findsNothing);
+
+        // 유리는 파란 무대 위(onBlue) 아니면 코치 말풍선의 맑은 유리뿐이다.
+        final bubbleSurfaces = find
+            .descendant(
+              of: find.byType(GlassCoachBubble),
+              matching: find.byType(GlassSurface),
+            )
+            .evaluate()
+            .map((e) => e.widget)
+            .toSet();
+        final surfaces = tester.widgetList<GlassSurface>(
+          find.byType(GlassSurface),
+        );
+        expect(surfaces, isNotEmpty);
+        expect(bubbleSurfaces.isNotEmpty, first);
+        for (final surface in surfaces) {
+          expect(
+            surface.preset,
+            bubbleSurfaces.contains(surface)
+                ? GlassPreset.clear
+                : GlassPreset.onBlue,
+          );
+        }
+        // 흐림 레이어는 GlassSurface가 만든 것뿐이고, 흰 카드 안에는 없다.
+        expect(
+          find.byType(BackdropFilter).evaluate().length,
+          surfaces.length,
+        );
+        expect(
+          find.descendant(
+            of: find.byType(AppCard),
+            matching: find.byType(BackdropFilter),
+          ),
+          findsNothing,
+        );
       },
     );
   }

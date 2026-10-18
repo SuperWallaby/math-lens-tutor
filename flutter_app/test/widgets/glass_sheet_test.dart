@@ -1,0 +1,213 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_test/flutter_test.dart';
+import 'package:math_lens_tutor/theme/app_design_system.dart';
+import 'package:math_lens_tutor/widgets/glass.dart';
+
+void main() {
+  testWidgets('glass sheet uses the clear preset', (tester) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => showGlassSheet<void>(
+              context: context,
+              builder: (_) => const Text('시트 내용'),
+            ),
+            child: const Text('열기'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('열기'));
+    await tester.pumpAndSettle();
+    expect(find.text('시트 내용'), findsOneWidget);
+    expect(
+      tester
+          .widget<GlassSurface>(
+            find.ancestor(
+              of: find.text('시트 내용'),
+              matching: find.byType(GlassSurface),
+            ),
+          )
+          .preset,
+      GlassPreset.clear,
+    );
+  });
+
+  testWidgets('glass dialog is one clear glass plate', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(
+        home: GlassDialog(title: Text('삭제할까요?'), content: Text('되돌릴 수 없어요.')),
+      ),
+    );
+    expect(find.text('삭제할까요?'), findsOneWidget);
+    expect(find.byType(GlassSurface), findsOneWidget);
+    expect(
+      tester.widget<GlassSurface>(find.byType(GlassSurface)).preset,
+      GlassPreset.clear,
+    );
+  });
+
+  testWidgets('glass sheet has 26 top corners and a see-through sheet', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => showGlassSheet<void>(
+              context: context,
+              builder: (_) => const SizedBox(height: 120, child: Text('시트 내용')),
+            ),
+            child: const Text('열기'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('열기'));
+    await tester.pumpAndSettle();
+
+    final surface = tester.widget<GlassSurface>(
+      find.ancestor(of: find.text('시트 내용'), matching: find.byType(GlassSurface)),
+    );
+    expect(
+      surface.borderRadius,
+      const BorderRadius.vertical(top: Radius.circular(26)),
+    );
+    // 시트 자체의 Material 은 투명이라 유리 뒤가 비친다.
+    final sheet = tester.widget<BottomSheet>(find.byType(BottomSheet));
+    expect(sheet.backgroundColor, Colors.transparent);
+    expect(sheet.elevation, 0);
+  });
+
+  testWidgets('glass sheet is capped at 9/16 unless scroll controlled', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(390 * 3, 844 * 3);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+
+    Future<double> sheetHeight({required bool scrollControlled}) async {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Builder(
+            builder: (context) => TextButton(
+              onPressed: () => showGlassSheet<void>(
+                context: context,
+                isScrollControlled: scrollControlled,
+                builder: (_) => const SizedBox(height: 800, child: Text('긴 시트')),
+              ),
+              child: const Text('열기'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('열기'));
+      await tester.pumpAndSettle();
+      final height = tester.getSize(find.byType(GlassSurface)).height;
+      Navigator.of(tester.element(find.text('긴 시트'))).pop();
+      await tester.pumpAndSettle();
+      return height;
+    }
+
+    expect(await sheetHeight(scrollControlled: false), lessThanOrEqualTo(844 * 9 / 16));
+    expect(await sheetHeight(scrollControlled: true), greaterThan(844 * 9 / 16));
+  });
+
+  testWidgets('glass sheet pops with a value', (tester) async {
+    bool? result;
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () async {
+              result = await showGlassSheet<bool>(
+                context: context,
+                builder: (ctx) => TextButton(
+                  onPressed: () => Navigator.of(ctx).pop(true),
+                  child: const Text('저장'),
+                ),
+              );
+            },
+            child: const Text('열기'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('열기'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('저장'));
+    await tester.pumpAndSettle();
+    expect(result, isTrue);
+    expect(find.text('저장'), findsNothing);
+  });
+
+  testWidgets('glass dialog is a clear 26 plate that keeps title, content and actions', (
+    tester,
+  ) async {
+    bool? result;
+    await tester.pumpWidget(
+      MaterialApp(
+        theme: buildAppTheme(),
+        home: Builder(
+          builder: (context) => TextButton(
+            onPressed: () async {
+              result = await showDialog<bool>(
+                context: context,
+                builder: (ctx) => GlassDialog(
+                  title: const Text('계정 탈퇴'),
+                  content: const Text('정말 탈퇴하시겠습니까?'),
+                  actions: [
+                    TextButton(
+                      onPressed: () => Navigator.of(ctx).pop(false),
+                      child: const Text('취소'),
+                    ),
+                    FilledButton(
+                      onPressed: () => Navigator.of(ctx).pop(true),
+                      child: const Text('탈퇴'),
+                    ),
+                  ],
+                ),
+              );
+            },
+            child: const Text('열기'),
+          ),
+        ),
+      ),
+    );
+    await tester.tap(find.text('열기'));
+    await tester.pumpAndSettle();
+
+    expect(tester.takeException(), isNull);
+    expect(find.text('계정 탈퇴'), findsOneWidget);
+    expect(find.text('정말 탈퇴하시겠습니까?'), findsOneWidget);
+    final surface = tester.widget<GlassSurface>(find.byType(GlassSurface));
+    expect(surface.preset, GlassPreset.clear);
+    expect(surface.borderRadius, BorderRadius.circular(26));
+    // 판 폭은 안쪽 글자에 맞추되 280 아래로는 줄지 않고, 화면 안에 들어온다.
+    final width = tester.getSize(find.byType(GlassSurface)).width;
+    expect(width, greaterThanOrEqualTo(280));
+    expect(width, lessThanOrEqualTo(390));
+
+    // 두 버튼은 한 줄에 나란히 서고, 판 안에 들어온다.
+    final cancel = tester.getRect(find.widgetWithText(TextButton, '취소'));
+    final confirm = tester.getRect(find.widgetWithText(FilledButton, '탈퇴'));
+    expect(cancel.right, lessThan(confirm.left));
+    expect(cancel.center.dy, closeTo(confirm.center.dy, 0.5));
+    expect(confirm.right, lessThanOrEqualTo(tester.getRect(find.byType(GlassSurface)).right));
+
+    await tester.tap(find.text('탈퇴'));
+    await tester.pumpAndSettle();
+    expect(result, isTrue);
+    expect(find.byType(GlassDialog), findsNothing);
+  });
+
+  testWidgets('glass dialog works without actions or content', (tester) async {
+    await tester.pumpWidget(
+      const MaterialApp(home: GlassDialog(title: Text('알림'))),
+    );
+    expect(find.text('알림'), findsOneWidget);
+    expect(find.byType(GlassSurface), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+}
