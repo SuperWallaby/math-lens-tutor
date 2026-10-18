@@ -1,7 +1,6 @@
-@import "tailwindcss";
-
 @import url("https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2.0/fonts/variable/woff2/SUIT-Variable.css");
 @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@700&display=swap");
+@import "tailwindcss";
 
 :root {
   --background: #eef3f8;

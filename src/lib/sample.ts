@@ -125,7 +125,7 @@ export const sampleProblemSet: GeneratedProblemSet = {
             {
               label: "y = x^2 - 2x - 3",
               data: [5, 0, -3, -4, -3, 0, 5],
-              borderColor: "#007bff",
+              borderColor: "#2A72E5",
               backgroundColor: "rgba(0, 123, 255, 0.12)",
             },
           ],
@@ -162,19 +162,19 @@ export const sampleProblemSet: GeneratedProblemSet = {
             id: "A",
             elType: "point",
             coord: [2, 6],
-            attrs: { name: "A", fixed: true, strokeColor: "#007bff" },
+            attrs: { name: "A", fixed: true, strokeColor: "#2A72E5" },
           },
           {
             id: "B",
             elType: "point",
             coord: [8, 6],
-            attrs: { name: "B", fixed: true, strokeColor: "#007bff" },
+            attrs: { name: "B", fixed: true, strokeColor: "#2A72E5" },
           },
           {
             id: "C",
             elType: "point",
             coord: [5, 2],
-            attrs: { name: "C", fixed: true, strokeColor: "#007bff" },
+            attrs: { name: "C", fixed: true, strokeColor: "#2A72E5" },
           },
           {
             elType: "polygon",
@@ -182,7 +182,7 @@ export const sampleProblemSet: GeneratedProblemSet = {
             attrs: {
               borders: {
                 strokeWidth: 2,
-                strokeColor: "#007bff",
+                strokeColor: "#2A72E5",
               },
             },
           },

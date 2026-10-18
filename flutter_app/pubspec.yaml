@@ -119,9 +119,6 @@ flutter:
       fonts:
         - asset: assets/fonts/IBMPlexSansKR-Bold.ttf
           weight: 700
-    - family: Noto Sans KR
-      fonts:
-        - asset: assets/fonts/NotoSansKR-Variable.ttf
 
 flutter_launcher_icons:
   image_path: assets/brand/app_icon.png

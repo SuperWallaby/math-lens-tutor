@@ -19,14 +19,35 @@ Before generating or editing **any visual UI**, read `DESIGN.md` at the project 
 
 ## Voice
 
-- Home: first visit 「오늘은 한 장만…」 + **숙제 올리기**; returning 「어제 막힌 곳부터…」 + **이어서 풀기**.
+- Home: first visit 「오늘은 한 장만 올려도 돼요」 (본문 버튼 없음, 가운데 카메라가 CTA); returning 「어제 막힌 곳부터 이어가요」 + 흰 주 버튼 **이어서 풀기**.
 - Prefer 숙제 / 찍기 / 막힌 곳 / 이어서 풀기. Avoid AI·인사이트·대시보드 카피.
 
 ## Patterns
 
-- Cards: white surface, light border, elevation 0 (or soft glass only on tab/app bar).
-- One primary filled CTA per screen; secondary actions outlined or text.
-- CTA: solid `{colors.primary}` + white label.
+스펙: `docs/superpowers/specs/2026-10-17-liquid-glass-renewal-design.md` (3·4·5·6.1장)
+
+**유리 규칙: 콘텐츠 위에 떠 있으면 유리, 아니면 흰 카드.** 예외는 홈 파란 무대 하나뿐.
+
+| 요소 | 표면 |
+|------|------|
+| 콘텐츠 카드, 리스트 줄, 통계, 입력칸 | 흰 카드 `#FFFFFF`, 테두리 `#EFEFF1` 1px, 모서리 16~18px, 그림자 없음 |
+| 화면 배경 | 안개색 `#EEF3F8` 단색 |
+| 아래 탭바 | 맑은 유리 |
+| 탭바 가운데 카메라 | 파란 유리 |
+| 스크롤하면 생기는 상단 | 흐림 가장자리 + 가운데 작은 제목 |
+| 시트, 팝업 | 맑은 유리 (`showGlassSheet`, `GlassDialog`) |
+| 사진 위 라벨, 버튼 | 맑은 유리 |
+| 홈 파란 무대 위 카드 | 무대용 유리 |
+
+- 유리 프리셋 3종(맑은 / 무대용 / 파란)은 `GlassPreset`(`app_design_system.dart`)을 쓴다. 흐림 기반이며 굴절 효과는 쓰지 않는다.
+- 화면마다 파란 채움 버튼은 하나.
+- 버튼 3종 + 보조:
+  - 파란 유리 주 버튼: 탭바 없는 전체 화면 흐름(풀이, 분석, 업로드)에서 화면당 하나.
+  - 흰 주 버튼: 홈 파란 무대 위에서만.
+  - 연파랑 주 버튼(`#E8F1FC` + `#1E46AA`): 탭 화면 본문. 탭 화면의 유일한 파란 채움은 가운데 카메라.
+  - 보조: 흰 카드 버튼 또는 글자 링크.
+- 학생 탭바: 홈 · 훈련 · [찍기] · 성장 · 설정. 가운데 카메라는 업로드 흐름을 전체 화면으로 연다. 학부모·선생님은 같은 유리 탭바, 카메라 없음.
+- 홈 무대: 165° 그라데이션 `#5EB7EB` → `#2A72E5` → `#1E46AA`, 아래 모서리 32. 앱 아이콘 + 날짜 + 사용자 줄 + 연속 칩 + 인사 문장. 홈 밖에서 쓰지 않는다.
 
 ## Forbidden
 
@@ -34,3 +55,6 @@ Before generating or editing **any visual UI**, read `DESIGN.md` at the project 
 - Legacy primaries `#7EAFD9`, `#007BFF`, violet `#7C6FF7`, Material `#2563EB`.
 - Noto Sans KR as the default UI face (use SUIT / IBM).
 - Leading home with 「오늘 어떤문제를…」, 「중1 맞춤」, 「최근 분석」.
+- 콘텐츠 위 유리 (카드, 리스트 줄, 통계, 입력칸에 `GlassPanel` 등). `flutter_app/test/design_rules_test.dart`가 막는다.
+- 배경화면 이미지, 큰 색 번짐(blob), 노란색 번짐.
+- 파란 무대를 홈 밖에서 쓰기.
