@@ -735,8 +735,11 @@ class GlassDialog extends StatelessWidget {
         outlinedButtonTheme: OutlinedButtonThemeData(
           style: compact(theme.outlinedButtonTheme.style),
         ),
+        // 맑은 유리 위에서 기본 파랑(primary)은 대비가 모자라 진한 파랑으로 쓴다.
         textButtonTheme: TextButtonThemeData(
-          style: compact(theme.textButtonTheme.style),
+          style: compact(theme.textButtonTheme.style).merge(
+            TextButton.styleFrom(foregroundColor: AppColors.primaryDark),
+          ),
         ),
       ),
       child: child,

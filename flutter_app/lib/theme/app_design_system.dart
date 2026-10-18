@@ -60,6 +60,9 @@ abstract final class AppColors {
 
   static const glassFill = Color(0x38FFFFFF);
   static const glassStroke = Color(0xE8FFFFFF);
+
+  /// 시트·팝업 뒤에 까는 막. 맑은 유리가 회색으로 탁해지지 않을 만큼만 옅다.
+  static const glassBarrier = Color(0x2E112850);
   static const glassShadow = Color(0x2E000000);
 }
 
@@ -596,12 +599,18 @@ ThemeData buildAppTheme() {
       }),
     ),
     dividerTheme: const DividerThemeData(color: AppColors.border),
+    // 시트와 팝업은 맑은 유리(흰색 30%)라, 기본 검정 54% 막 위에서는 회색
+    // (#989A9F)이 되어 글자 대비가 3:1로 떨어진다. 옅은 남색 막을 깐다.
     dialogTheme: DialogThemeData(
       backgroundColor: AppColors.surfaceElevated,
       surfaceTintColor: Colors.transparent,
+      barrierColor: AppColors.glassBarrier,
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadii.lg),
       ),
+    ),
+    bottomSheetTheme: const BottomSheetThemeData(
+      modalBarrierColor: AppColors.glassBarrier,
     ),
   );
 }
