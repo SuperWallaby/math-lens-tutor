@@ -122,6 +122,19 @@ List<CurriculumUnitProgress> _m1Units({bool withProgress = false}) => [
     ];
 
 
+/// 디자인 리뷰 화면에 쓰는 고정 날짜(2026-10-17 토요일).
+final designReviewToday = DateTime(2026, 10, 17);
+
+/// 디자인 리뷰 화면에 쓰는 학생 사용자.
+AppUser designReviewUser() => const AppUser(
+      id: 'design_review_user',
+      displayName: '지민',
+      profileComplete: true,
+      role: AppUserRole.student,
+      grade: '중1',
+      organizationName: '한빛중학교',
+    );
+
 LearningProfile designReviewProfileFirstVisit() {
   final e12 = _e12Units();
   return LearningProfile(
@@ -644,6 +657,7 @@ TrainingFeedResponse designReviewTrainingFeed() {
 const designReviewCaptureKeys = [
   'student_hub__first_visit',
   'student_hub__returning',
+  'student_hub__guest',
   'upload__idle',
   'analysis__analyzing',
   'analysis__result_weak',

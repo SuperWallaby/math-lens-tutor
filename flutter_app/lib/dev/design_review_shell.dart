@@ -35,7 +35,11 @@ class DesignReviewShell extends StatelessWidget {
     final parsed = parseDesignReviewKey(reviewKey);
     switch (parsed.screen) {
       case 'student_hub':
-        return _scaffold(_studentHub(parsed.state));
+        // 파란 무대가 위쪽 안전 영역까지 채우므로 SafeArea로 감싸지 않는다.
+        return Scaffold(
+          backgroundColor: AppColors.background,
+          body: _studentHub(parsed.state),
+        );
       case 'upload':
         return _upload(parsed.state);
       case 'analysis':
@@ -64,6 +68,8 @@ class DesignReviewShell extends StatelessWidget {
   }
 
   Widget _studentHub(String state) {
+    final user = designReviewUser();
+    final today = designReviewToday;
     switch (state) {
       case 'returning':
         return StudentHubScreen(
@@ -71,7 +77,19 @@ class DesignReviewShell extends StatelessWidget {
           oauthService: oauthService,
           demoProfile: designReviewProfileReturning(),
           demoSubmissions: designReviewSubmissionsRecent(),
+          demoIsGuest: false,
+          demoUser: user,
+          demoToday: today,
+        );
+      case 'guest':
+        return StudentHubScreen(
+          apiClient: apiClient,
+          oauthService: oauthService,
+          demoProfile: designReviewProfileReturning(),
+          demoSubmissions: designReviewSubmissionsRecent(),
           demoIsGuest: true,
+          demoUser: user,
+          demoToday: today,
         );
       case 'first_visit':
       default:
@@ -80,6 +98,9 @@ class DesignReviewShell extends StatelessWidget {
           oauthService: oauthService,
           demoProfile: designReviewProfileFirstVisit(),
           demoSubmissions: designReviewSubmissionsEmpty(),
+          demoIsGuest: false,
+          demoUser: user,
+          demoToday: today,
         );
     }
   }

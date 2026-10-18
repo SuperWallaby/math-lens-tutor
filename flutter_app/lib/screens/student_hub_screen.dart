@@ -10,10 +10,10 @@ import '../utils/problem_image_picker.dart';
 import '../utils/network_thumbnail_cache.dart';
 import '../widgets/app_card.dart';
 import '../widgets/glass.dart';
+import '../widgets/home_stage.dart';
 import '../widgets/learning_profile_widgets.dart';
 import '../widgets/skeleton_box.dart';
 import '../widgets/skeleton_lines.dart';
-import '../dev/design_review_data.dart';
 import 'analysis_screen.dart';
 import 'practice_screen.dart';
 import 'signup_screen.dart';
@@ -36,7 +36,8 @@ class StudentHubScreen extends StatefulWidget {
     this.demoProfile,
     this.demoSubmissions,
     this.demoIsGuest,
-    this.matchPinPreview = false,
+    this.demoUser,
+    this.demoToday,
   });
 
   final ApiClient apiClient;
@@ -44,7 +45,12 @@ class StudentHubScreen extends StatefulWidget {
   final LearningProfile? demoProfile;
   final List<SubmissionSummary>? demoSubmissions;
   final bool? demoIsGuest;
-  final bool matchPinPreview;
+
+  /// 디자인 리뷰·테스트용. 없으면 로그인한 사용자를 쓴다.
+  final AppUser? demoUser;
+
+  /// 디자인 리뷰·테스트용. 없으면 오늘 날짜를 쓴다.
+  final DateTime? demoToday;
 
   @override
   State<StudentHubScreen> createState() => StudentHubScreenState();
@@ -100,46 +106,7 @@ class StudentHubScreenState extends State<StudentHubScreen> {
 
   void _refreshAfterLearning() => _reload(forceRefresh: true);
 
-  Future<void> _openPinAnalysis() async {
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => AnalysisScreen(
-          apiClient: widget.apiClient,
-          result: designReviewAnalyzeResultWeak(),
-          matchPinPreview: true,
-        ),
-      ),
-    );
-  }
-
-  Future<void> _captureAndAnalyze() async {
-    if (widget.matchPinPreview) {
-      await _openPinAnalysis();
-      return;
-    }
-    final picked = await pickProblemImage(
-      source: primaryProblemImageSource,
-      context: context,
-    );
-    if (picked == null || !mounted) return;
-
-    await Navigator.of(context).push(
-      MaterialPageRoute(
-        builder: (_) => AnalysisScreen(
-          apiClient: widget.apiClient,
-          imageBytes: picked.bytes,
-          uploadFilename: picked.filename,
-        ),
-      ),
-    );
-    _refreshAfterLearning();
-  }
-
   Future<void> _openGalleryAndAnalyze() async {
-    if (widget.matchPinPreview) {
-      await _openPinAnalysis();
-      return;
-    }
     final picked = await pickProblemImage(
       source: ImageSource.gallery,
       context: context,
@@ -227,6 +194,8 @@ class StudentHubScreenState extends State<StudentHubScreen> {
   @override
   Widget build(BuildContext context) {
     final isGuest = widget.demoIsGuest ?? widget.apiClient.authSession.isGuest;
+    final user = widget.demoUser ?? widget.apiClient.authSession.user;
+    final today = widget.demoToday ?? DateTime.now();
 
     return RefreshIndicator(
       onRefresh: () async => _reload(forceRefresh: true),
@@ -237,9 +206,7 @@ class StudentHubScreenState extends State<StudentHubScreen> {
             return ListView(
               physics: const AlwaysScrollableScrollPhysics(),
               padding: TabletLayout.pagePadding(context),
-              children: const [
-                _HubLoadingSkeleton(),
-              ],
+              children: const [_HubLoadingSkeleton()],
             );
           }
           if (snapshot.hasError) {
@@ -247,29 +214,37 @@ class StudentHubScreenState extends State<StudentHubScreen> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: TabletLayout.pagePadding(context),
               children: [
-                ProfileLoadingError(error: snapshot.error, onRetry: () => _reload(forceRefresh: true)),
+                ProfileLoadingError(
+                  error: snapshot.error,
+                  onRetry: () => _reload(forceRefresh: true),
+                ),
               ],
             );
           }
 
           final data = snapshot.data!;
+          final stageUser = HomeStageUser.from(
+            user,
+            data.profile,
+            isGuest: isGuest,
+          );
           if (!data.hasHistory) {
             return _FirstTimeHome(
-              onCapture: _captureAndAnalyze,
+              stageUser: stageUser,
+              today: today,
               onPickGallery: _openGalleryAndAnalyze,
+              onSignup: _openSignup,
             );
           }
 
           return _ReturningHome(
             data: data,
-            isGuest: isGuest,
+            stageUser: stageUser,
+            today: today,
             apiBaseUrl: widget.apiClient.baseUrl,
-            onCapture: _captureAndAnalyze,
-            onPickGallery: _openGalleryAndAnalyze,
             onSignup: _openSignup,
             onOpenSubmission: _openSubmission,
             onOpenMission: _openMission,
-            matchPinPreview: widget.matchPinPreview,
           );
         },
       ),
@@ -277,30 +252,71 @@ class StudentHubScreenState extends State<StudentHubScreen> {
   }
 }
 
-class _FirstTimeHome extends StatelessWidget {
-  const _FirstTimeHome({required this.onCapture, required this.onPickGallery});
+/// 무대 밑 본문의 좌우 여백. `HomeStage` 안쪽 좌우 여백과 같아서 카드 가장자리가 맞는다.
+const double _kSidePad = 20;
 
-  final VoidCallback onCapture;
+/// 무대 위 보조 글자 — 흰색 80%.
+const Color _kStageTextSub = Color(0xCCFFFFFF);
+
+/// 예시 풀이에서 막힌 곳을 표시하는 빨간색.
+const Color _kMarkRed = Color(0xFFE5484D);
+
+class _FirstTimeHome extends StatelessWidget {
+  const _FirstTimeHome({
+    required this.stageUser,
+    required this.today,
+    required this.onPickGallery,
+    required this.onSignup,
+  });
+
+  final HomeStageUser stageUser;
+  final DateTime today;
   final VoidCallback onPickGallery;
+  final VoidCallback onSignup;
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      padding: TabletLayout.pagePadding(context),
+    // `Scaffold(extendBody: true)` 아래에서는 떠 있는 탭바(솟은 카메라 포함) 높이가 들어 있다.
+    final bottomInset = MediaQuery.paddingOf(context).bottom;
+    return Stack(
       children: [
-        const Text('우열', style: AppTypography.display),
-        const SizedBox(height: AppSpacing.md),
-        const Text(
-          '오늘은 한 장만 올려도 돼요',
-          style: AppTypography.headline,
+        ListView(
+          physics: const AlwaysScrollableScrollPhysics(),
+          // 말풍선(약 46px)이 뜬 자리까지 비워, 끝까지 스크롤해도 카드가 가려지지 않는다.
+          padding: EdgeInsets.only(bottom: bottomInset + 72),
+          children: [
+            HomeStage(
+              mode: HomeStageMode.firstVisit,
+              user: stageUser,
+              today: today,
+              card: _FirstVisitStageCard(onPickGallery: onPickGallery),
+              footer: stageUser.isGuest
+                  ? _GuestSignupRow(onSignup: onSignup)
+                  : null,
+            ),
+            const Padding(
+              padding: EdgeInsets.fromLTRB(
+                _kSidePad,
+                AppSpacing.xxl,
+                _kSidePad,
+                0,
+              ),
+              child: _ExampleCard(),
+            ),
+          ],
         ),
-        const SizedBox(height: AppSpacing.xl),
-        _NewProblemCard(
-          onCapture: onCapture,
-          onPickGallery: onPickGallery,
+        // 가운데 카메라 바로 위. 카메라 탭을 막지 않도록 터치는 통과시킨다.
+        Positioned(
+          left: 0,
+          right: 0,
+          bottom: bottomInset + 8,
+          child: const IgnorePointer(
+            child: Center(
+              heightFactor: 1,
+              child: GlassCoachBubble(text: '여기를 눌러 숙제 한 장 찍어요'),
+            ),
+          ),
         ),
-        const SizedBox(height: AppSpacing.xxl),
       ],
     );
   }
@@ -309,168 +325,497 @@ class _FirstTimeHome extends StatelessWidget {
 class _ReturningHome extends StatelessWidget {
   const _ReturningHome({
     required this.data,
-    required this.isGuest,
+    required this.stageUser,
+    required this.today,
     required this.apiBaseUrl,
-    required this.onCapture,
-    required this.onPickGallery,
     required this.onSignup,
     required this.onOpenSubmission,
     required this.onOpenMission,
-    this.matchPinPreview = false,
   });
 
   final _HubData data;
-  final bool isGuest;
+  final HomeStageUser stageUser;
+  final DateTime today;
   final String apiBaseUrl;
-  final VoidCallback onCapture;
-  final VoidCallback onPickGallery;
   final VoidCallback onSignup;
   final ValueChanged<SubmissionSummary> onOpenSubmission;
   final ValueChanged<TodayMission> onOpenMission;
-  final bool matchPinPreview;
 
   @override
   Widget build(BuildContext context) {
     final recent = data.submissions.take(5).toList();
     final mission = data.profile.mission;
-
-    final missionTitle = mission?.title.trim();
-    final hasMission = missionTitle != null && missionTitle.isNotEmpty;
     final accuracy = data.profile.stats.accuracy;
     final totalProblems = data.profile.stats.totalProblems;
 
     return ListView(
       physics: const AlwaysScrollableScrollPhysics(),
-      padding: TabletLayout.pagePadding(context),
+      // 위쪽 안전 영역은 무대가 직접 채운다. 아래는 떠 있는 탭바 위로 스크롤되게 비운다.
+      padding: EdgeInsets.only(
+        bottom: MediaQuery.paddingOf(context).bottom + AppSpacing.xxl,
+      ),
       children: [
-        if (!matchPinPreview) ...[
-          const Text('우열', style: AppTypography.display),
-          const SizedBox(height: AppSpacing.lg),
-        ],
-        const Text(
-          '어제 막힌 곳부터 이어가요',
-          style: AppTypography.headline,
-        ),
-        const SizedBox(height: AppSpacing.xl),
-        Row(
-          children: [
-            Expanded(
-              child: GlassPanel(
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                child: _StatPill(
-                  label: '정답률',
-                  value: accuracy > 0 ? '$accuracy%' : '시작 전',
+        HomeStage(
+          mode: HomeStageMode.returning,
+          user: stageUser,
+          today: today,
+          card: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              if (mission != null && mission.title.trim().isNotEmpty) ...[
+                _MissionCard(
+                  mission: mission,
+                  progress: _missionProgress(data.profile.training),
+                  onContinue: () => onOpenMission(mission),
                 ),
+                const SizedBox(height: AppSpacing.md),
+              ],
+              Row(
+                children: [
+                  Expanded(
+                    child: _StatTile(
+                      label: '정답률',
+                      value: accuracy > 0 ? '$accuracy%' : '시작 전',
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: _StatTile(label: '해결한 문제', value: '$totalProblems개'),
+                  ),
+                ],
               ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: GlassPanel(
-                padding: const EdgeInsets.symmetric(vertical: 18),
-                child: _StatPill(
-                  label: '해결한 문제',
-                  value: '$totalProblems개',
-                ),
-              ),
-            ),
-          ],
-        ),
-        if (!matchPinPreview && hasMission && mission != null) ...[
-          const SizedBox(height: AppSpacing.lg),
-          GlassButton(
-            onPressed: () => onOpenMission(mission),
-            icon: Icons.play_arrow_rounded,
-            label: '이어서 풀기',
+            ],
           ),
-        ],
-        const SizedBox(height: AppSpacing.lg),
-        _NewProblemCard(
-          onCapture: onCapture,
-          onPickGallery: onPickGallery,
-          matchPinPreview: matchPinPreview,
+          footer: stageUser.isGuest
+              ? _GuestSignupRow(onSignup: onSignup)
+              : null,
         ),
-        if (!matchPinPreview && isGuest) ...[
-          const SizedBox(height: AppSpacing.lg),
-          _GuestSaveBanner(onSignup: onSignup),
-        ],
-        if (!matchPinPreview && recent.isNotEmpty) ...[
-          const SizedBox(height: AppSpacing.section),
-          _SectionHeader(title: '최근', caption: '${recent.length}장'),
-          const SizedBox(height: AppSpacing.md),
-          for (final item in recent) ...[
-            _RecentSubmissionTile(
-              item: item,
-              apiBaseUrl: apiBaseUrl,
-              onTap: () => onOpenSubmission(item),
+        if (recent.isNotEmpty)
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              _kSidePad,
+              AppSpacing.section,
+              _kSidePad,
+              0,
             ),
-            const SizedBox(height: AppSpacing.sm),
-          ],
-        ],
-        const SizedBox(height: AppSpacing.xxl),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _SectionHeader(title: '최근', caption: '${recent.length}장'),
+                const SizedBox(height: AppSpacing.md),
+                for (final item in recent) ...[
+                  _RecentSubmissionTile(
+                    item: item,
+                    apiBaseUrl: apiBaseUrl,
+                    onTap: () => onOpenSubmission(item),
+                  ),
+                  const SizedBox(height: AppSpacing.sm),
+                ],
+              ],
+            ),
+          ),
       ],
     );
   }
 }
 
-class _NewProblemCard extends StatelessWidget {
-  const _NewProblemCard({
-    required this.onCapture,
-    required this.onPickGallery,
-    this.matchPinPreview = false,
+/// 미션 카드의 진행 막대 값. `TodayMission`에는 전체 문제 수가 없어서, 막힌 개념 중
+/// 다시 익힌 비율(다시 익힘 ÷ (다시 익힘 + 아직 막힘))을 쓴다. 계산할 수 없으면 `null`.
+double? _missionProgress(TrainingSnapshot training) {
+  final total = training.relearnedCount + training.totalMisses;
+  if (total <= 0) return null;
+  return (training.relearnedCount / total).clamp(0.0, 1.0);
+}
+
+/// 흰 카드: 흰 바탕 + 옅은 테두리, 그림자 없음. [onTap]이 있으면 눌림 효과가 카드 안에 그려진다.
+class _WhiteCard extends StatelessWidget {
+  const _WhiteCard({
+    required this.child,
+    this.onTap,
+    this.padding = const EdgeInsets.all(AppSpacing.lg + 2),
   });
 
-  final VoidCallback onCapture;
+  final Widget child;
+  final VoidCallback? onTap;
+  final EdgeInsetsGeometry padding;
+
+  @override
+  Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(AppRadii.md);
+    final content = Padding(padding: padding, child: child);
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: radius,
+        border: Border.all(color: AppColors.border),
+      ),
+      child: Material(
+        type: MaterialType.transparency,
+        child: onTap == null
+            ? content
+            : InkWell(onTap: onTap, borderRadius: radius, child: content),
+      ),
+    );
+  }
+}
+
+/// 처음 화면 무대 카드: 3단계 안내 + 아래 「앨범에서 사진 고르기」 링크.
+class _FirstVisitStageCard extends StatelessWidget {
+  const _FirstVisitStageCard({required this.onPickGallery});
+
   final VoidCallback onPickGallery;
-  final bool matchPinPreview;
 
   @override
   Widget build(BuildContext context) {
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (supportsProblemImageCamera) ...[
-          GlassButton(
-            onPressed: onCapture,
-            icon: Icons.photo_camera_outlined,
-            label: '숙제 올리기',
+        GlassSurface(
+          preset: GlassPreset.onBlue,
+          borderRadius: BorderRadius.circular(AppRadii.lg),
+          padding: const EdgeInsets.all(18),
+          child: const Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _StageStep(
+                number: 1,
+                title: '숙제 한 장 찍기',
+                caption: '풀다가 막힌 문제 그대로',
+              ),
+              SizedBox(height: 14),
+              _StageStep(number: 2, title: '막힌 곳 짚기', caption: '어디서 틀렸는지 한 줄로'),
+              SizedBox(height: 14),
+              _StageStep(number: 3, title: '이어서 풀기', caption: '비슷한 문제로 다시 확인'),
+            ],
           ),
-          if (!matchPinPreview) ...[
-            const SizedBox(height: AppSpacing.sm),
-            GlassButton(
-              onPressed: onPickGallery,
-              icon: Icons.image_outlined,
-              label: '앨범에서 고르기',
-              primary: false,
+        ),
+        const SizedBox(height: AppSpacing.xs),
+        TextButton(
+          onPressed: onPickGallery,
+          style: TextButton.styleFrom(foregroundColor: Colors.white),
+          // 글꼴(SUIT)은 버튼 기본 글자 스타일에서 이어받고, 모양만 여기서 덮는다.
+          child: const Text(
+            '앨범에서 사진 고르기',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              decoration: TextDecoration.underline,
+              decorationColor: Colors.white,
             ),
-          ],
-        ] else
-          GlassButton(
-            onPressed: onPickGallery,
-            icon: problemImageGalleryIcon,
-            label: '숙제 올리기',
           ),
+        ),
       ],
     );
   }
 }
 
-class _StatPill extends StatelessWidget {
-  const _StatPill({
-    required this.label,
-    required this.value,
+class _StageStep extends StatelessWidget {
+  const _StageStep({
+    required this.number,
+    required this.title,
+    required this.caption,
   });
+
+  final int number;
+  final String title;
+  final String caption;
+
+  @override
+  Widget build(BuildContext context) {
+    return MergeSemantics(
+      child: Row(
+        children: [
+          Container(
+            width: 28,
+            height: 28,
+            alignment: Alignment.center,
+            decoration: const BoxDecoration(
+              color: Colors.white,
+              shape: BoxShape.circle,
+            ),
+            child: Text(
+              '$number',
+              style: const TextStyle(
+                color: AppColors.primary,
+                fontSize: 14,
+                fontWeight: FontWeight.w800,
+              ),
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  caption,
+                  style: const TextStyle(
+                    color: _kStageTextSub,
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 무대 밑 「이렇게 짚어줘요 · 예시」: 분과 시간 단위를 섞은 풀이에 빨간 원을 친 예시.
+class _ExampleCard extends StatelessWidget {
+  const _ExampleCard();
+
+  static const _formulaStyle = TextStyle(
+    fontFamily: AppFonts.family,
+    color: AppColors.text,
+    fontSize: 22,
+    fontWeight: FontWeight.w600,
+  );
+
+  @override
+  Widget build(BuildContext context) {
+    return _WhiteCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Row(
+            children: [
+              Text(
+                '이렇게 짚어줘요',
+                style: TextStyle(fontWeight: FontWeight.w900, fontSize: 16),
+              ),
+              Text(
+                ' · 예시',
+                style: TextStyle(
+                  color: AppColors.textMuted,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.md),
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: AppColors.background,
+              borderRadius: BorderRadius.circular(AppRadii.sm),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.symmetric(
+                horizontal: AppSpacing.lg,
+                vertical: AppSpacing.xl,
+              ),
+              child: SizedBox(
+                width: double.infinity,
+                child: Wrap(
+                  alignment: WrapAlignment.center,
+                  crossAxisAlignment: WrapCrossAlignment.center,
+                  spacing: AppSpacing.sm,
+                  runSpacing: AppSpacing.sm,
+                  children: [
+                    const Text('x/4 − x/12', style: _formulaStyle),
+                    DecoratedBox(
+                      decoration: BoxDecoration(
+                        borderRadius: BorderRadius.circular(AppRadii.pill),
+                        border: Border.all(color: _kMarkRed, width: 2.5),
+                      ),
+                      child: const Padding(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: AppSpacing.md,
+                          vertical: AppSpacing.xs,
+                        ),
+                        child: Text('= 20', style: _formulaStyle),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Padding(
+                padding: const EdgeInsets.only(top: 6),
+                child: Container(
+                  width: 8,
+                  height: 8,
+                  decoration: const BoxDecoration(
+                    color: _kMarkRed,
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+              const SizedBox(width: AppSpacing.sm),
+              const Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      '여기서 막혔어요',
+                      style: TextStyle(
+                        color: AppColors.text,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                    SizedBox(height: 2),
+                    Text(
+                      '분과 시간 단위를 섞었어요. 20분은 1/3시간이에요.',
+                      style: TextStyle(
+                        color: AppColors.textSub,
+                        fontSize: 13,
+                        height: 1.45,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 다시 온 화면 무대 카드: 단원 · 남은 문제 수, 제목, 진행 막대, 흰 「이어서 풀기」.
+class _MissionCard extends StatelessWidget {
+  const _MissionCard({
+    required this.mission,
+    required this.progress,
+    required this.onContinue,
+  });
+
+  final TodayMission mission;
+
+  /// 0~1. `null`이면 막대를 그리지 않는다.
+  final double? progress;
+  final VoidCallback onContinue;
+
+  @override
+  Widget build(BuildContext context) {
+    final concept = mission.conceptTags
+        .map((tag) => tag.trim())
+        .firstWhere((tag) => tag.isNotEmpty, orElse: () => '');
+    final eyebrow = [
+      concept,
+      if (mission.remainingCount > 0) '${mission.remainingCount}문제 남음',
+    ].where((part) => part.isNotEmpty).join(' · ');
+    final value = progress;
+
+    return GlassSurface(
+      preset: GlassPreset.onBlue,
+      borderRadius: BorderRadius.circular(AppRadii.lg),
+      padding: const EdgeInsets.all(18),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (eyebrow.isNotEmpty) ...[
+            Text(
+              eyebrow,
+              style: const TextStyle(
+                color: _kStageTextSub,
+                fontSize: 12.5,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+            const SizedBox(height: AppSpacing.xs + 2),
+          ],
+          Text(
+            mission.title.trim(),
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: const TextStyle(
+              color: Colors.white,
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              height: 1.35,
+            ),
+          ),
+          if (value != null) ...[
+            const SizedBox(height: AppSpacing.md + 2),
+            _StageProgressBar(value: value),
+          ],
+          const SizedBox(height: AppSpacing.lg),
+          FilledButton(
+            onPressed: onContinue,
+            style: AppButtonStyles.white(),
+            child: const Text('이어서 풀기'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _StageProgressBar extends StatelessWidget {
+  const _StageProgressBar({required this.value});
+
+  final double value;
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: '진행률',
+      value: '${(value * 100).round()}%',
+      child: ExcludeSemantics(
+        child: ClipRRect(
+          borderRadius: BorderRadius.circular(AppRadii.pill),
+          child: SizedBox(
+            height: 6,
+            child: Stack(
+              fit: StackFit.expand,
+              children: [
+                const ColoredBox(color: Color(0x40FFFFFF)),
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: FractionallySizedBox(
+                    widthFactor: value,
+                    heightFactor: 1,
+                    child: const ColoredBox(color: Colors.white),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _StatTile extends StatelessWidget {
+  const _StatTile({required this.label, required this.value});
 
   final String label;
   final String value;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
+    return GlassSurface(
+      preset: GlassPreset.onBlue,
+      borderRadius: BorderRadius.circular(AppRadii.lg),
+      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
+      child: Column(
         children: [
           Text(
             label,
             style: const TextStyle(
-              color: AppColors.textSub,
+              color: _kStageTextSub,
               fontSize: 12,
               fontWeight: FontWeight.w700,
             ),
@@ -478,62 +823,59 @@ class _StatPill extends StatelessWidget {
           const SizedBox(height: 6),
           Text(
             value,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
             style: const TextStyle(
-              color: AppColors.primaryDark,
-              fontSize: 28,
+              color: Colors.white,
+              fontSize: 26,
               fontWeight: FontWeight.w800,
               height: 1.05,
             ),
           ),
         ],
+      ),
     );
   }
 }
 
-class _GuestSaveBanner extends StatelessWidget {
-  const _GuestSaveBanner({required this.onSignup});
+/// 게스트일 때 무대 카드 아래에 붙는 가입 안내 줄.
+class _GuestSignupRow extends StatelessWidget {
+  const _GuestSignupRow({required this.onSignup});
 
   final VoidCallback onSignup;
 
   @override
   Widget build(BuildContext context) {
-    return GlassPanel(
-      padding: const EdgeInsets.symmetric(
-        horizontal: AppSpacing.lg,
-        vertical: AppSpacing.md,
-      ),
-      borderRadius: BorderRadius.circular(AppRadii.md),
+    return GlassSurface(
+      preset: GlassPreset.onBlue,
+      borderRadius: BorderRadius.circular(AppRadii.lg),
+      padding: const EdgeInsets.fromLTRB(18, 8, 8, 8),
       child: Row(
         children: [
-          Container(
-            width: 34,
-            height: 34,
-            alignment: Alignment.center,
-            decoration: BoxDecoration(
-              color: AppColors.success.withValues(alpha: 0.1),
-              borderRadius: BorderRadius.circular(AppRadii.sm),
-            ),
-            child: const Icon(
-              Icons.lock_outline_rounded,
-              color: AppColors.success,
-              size: 20,
-            ),
-          ),
-          const SizedBox(width: AppSpacing.md),
           const Expanded(
             child: Text(
-              '로그인하면 분석 기록과 훈련 데이터를 이어갈 수 있어요.',
+              '둘러보는 중이에요. 가입하면 기록이 남아요.',
               style: TextStyle(
-                color: AppColors.textSub,
-                height: 1.4,
+                color: Colors.white,
                 fontSize: 13,
+                fontWeight: FontWeight.w600,
+                height: 1.4,
               ),
             ),
           ),
+          const SizedBox(width: AppSpacing.sm),
           TextButton(
             onPressed: onSignup,
-            style: TextButton.styleFrom(foregroundColor: AppColors.success),
-            child: const Text('로그인'),
+            style: TextButton.styleFrom(
+              foregroundColor: Colors.white,
+              backgroundColor: const Color(0x33FFFFFF),
+              padding: const EdgeInsets.symmetric(horizontal: 14),
+              shape: const StadiumBorder(),
+            ),
+            child: const Text(
+              '가입하기',
+              style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800),
+            ),
           ),
         ],
       ),
@@ -594,57 +936,47 @@ class _RecentSubmissionTile extends StatelessWidget {
         .toList();
     final primaryConcept = weakConcepts.isNotEmpty ? weakConcepts.first : null;
 
-    return GlassPanel(
-      padding: EdgeInsets.zero,
-      borderRadius: BorderRadius.circular(AppRadii.md),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadii.md),
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.md),
-          child: Row(
-            children: [
-              _SubmissionThumbnail(imageUrl: imageUrl),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      item.displayTitle,
-                      maxLines: 2,
-                      overflow: TextOverflow.ellipsis,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.w800,
-                        fontSize: 15,
-                        height: 1.35,
-                      ),
-                    ),
-                    if (item.createdAt.isNotEmpty) ...[
-                      const SizedBox(height: AppSpacing.xs),
-                      Text(
-                        _formatSubmissionDate(item.createdAt),
-                        style: const TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                    if (primaryConcept != null) ...[
-                      const SizedBox(height: AppSpacing.sm),
-                      _MiniStatusChip(primaryConcept),
-                    ],
-                  ],
+    return _WhiteCard(
+      onTap: onTap,
+      padding: const EdgeInsets.all(AppSpacing.md),
+      child: Row(
+        children: [
+          _SubmissionThumbnail(imageUrl: imageUrl),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  item.displayTitle,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                    height: 1.35,
+                  ),
                 ),
-              ),
-              const Icon(
-                Icons.chevron_right_rounded,
-                color: AppColors.textMuted,
-              ),
-            ],
+                if (item.createdAt.isNotEmpty) ...[
+                  const SizedBox(height: AppSpacing.xs),
+                  Text(
+                    _formatSubmissionDate(item.createdAt),
+                    style: const TextStyle(
+                      color: AppColors.textMuted,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ],
+                if (primaryConcept != null) ...[
+                  const SizedBox(height: AppSpacing.sm),
+                  _MiniStatusChip(primaryConcept),
+                ],
+              ],
+            ),
           ),
-        ),
+          const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
+        ],
       ),
     );
   }

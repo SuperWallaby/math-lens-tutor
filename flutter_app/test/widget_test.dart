@@ -25,6 +25,6 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 500));
 
-    expect(find.text('우열'), findsOneWidget);
+    expect(find.text('오늘은 한 장만\n올려도 돼요'), findsOneWidget);
   });
 }

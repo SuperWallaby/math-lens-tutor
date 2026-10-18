@@ -65,8 +65,7 @@ class _StoreScreenshotStudentShellState
         oauthService: widget.oauthService,
         demoProfile: hubProfile,
         demoSubmissions: hubSubmissions,
-        demoIsGuest: widget.hubFirstVisit,
-        matchPinPreview: true,
+        demoIsGuest: false,
       ),
       StudentTrainingScreen(
         apiClient: widget.apiClient,
