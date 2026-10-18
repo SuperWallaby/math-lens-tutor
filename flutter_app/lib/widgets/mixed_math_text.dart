@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_math_fork/flutter_math.dart';
 
+import '../theme/app_design_system.dart';
 import '../utils/augment_math_delimiters.dart';
 import '../utils/format_readable_solution_text.dart';
 import '../utils/math_mixed_segments.dart';
@@ -23,6 +24,7 @@ String _mixedMathCacheKey({
     readableSolutionStep,
     preserveWhitespace,
     textAlign.toString(),
+    style.fontFamily,
     style.fontSize,
     style.fontWeight?.index,
     style.height,
@@ -169,6 +171,13 @@ class MixedMathText extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // RichText 는 DefaultTextStyle 을 읽지 않는다. 색이 없는 스타일은 네이티브
+    // 엔진에서 흰색(CanvasKit 은 검정)으로 그려져 글자가 사라지므로, 앱 기본
+    // 글꼴과 글자색을 바닥에 깔고 호출한 쪽 스타일을 그 위에 얹는다.
+    final style = const TextStyle(
+      fontFamily: AppFonts.family,
+      color: AppColors.text,
+    ).merge(this.style);
     final key = _mixedMathCacheKey(
       text: text,
       style: style,
