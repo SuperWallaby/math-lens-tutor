@@ -563,18 +563,23 @@ ThemeData buildAppTheme() {
         borderRadius: BorderRadius.circular(AppRadii.pill),
       ),
     ),
+    // 스위치는 흰 카드 위에 놓인다. 꺼짐은 흰 손잡이·흰 트랙이면 보이지 않으므로 회색.
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith((states) {
         return states.contains(WidgetState.selected)
             ? AppColors.primary
-            : Colors.white;
+            : AppColors.textMuted;
       }),
       trackColor: WidgetStateProperty.resolveWith((states) {
         return states.contains(WidgetState.selected)
             ? AppColors.primarySoft
-            : const Color(0x66FFFFFF);
+            : AppColors.borderStrong;
       }),
-      trackOutlineColor: WidgetStateProperty.all(AppColors.glassStroke),
+      trackOutlineColor: WidgetStateProperty.resolveWith((states) {
+        return states.contains(WidgetState.selected)
+            ? Colors.transparent
+            : AppColors.borderStrong;
+      }),
     ),
     navigationBarTheme: NavigationBarThemeData(
       backgroundColor: Colors.transparent,

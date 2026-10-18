@@ -41,4 +41,20 @@ void main() {
     expect(chip.side!.width, 1);
     expect(chip.selectedColor, AppColors.primarySoft);
   });
+
+  test('switch is visible on a white card both off and on', () {
+    final sw = theme.switchTheme;
+    const off = <WidgetState>{};
+    const on = {WidgetState.selected};
+
+    // 꺼짐: 흰 카드 위에서 보이는 회색 트랙·손잡이.
+    expect(sw.trackColor!.resolve(off), AppColors.borderStrong);
+    expect(sw.thumbColor!.resolve(off), AppColors.textMuted);
+    expect(sw.trackOutlineColor!.resolve(off), AppColors.borderStrong);
+
+    // 켜짐: 기존 파랑은 그대로, 테두리만 투명.
+    expect(sw.trackColor!.resolve(on), AppColors.primarySoft);
+    expect(sw.thumbColor!.resolve(on), AppColors.primary);
+    expect(sw.trackOutlineColor!.resolve(on), Colors.transparent);
+  });
 }
