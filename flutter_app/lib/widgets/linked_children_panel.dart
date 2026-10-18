@@ -21,7 +21,6 @@ class LinkedChildrenPanel extends StatefulWidget {
     this.onAutoLinked,
     this.compact = false,
     this.autoSubmitOnValidCode = true,
-    this.showConnectButton = false,
     this.showInlineGuide = false,
   });
 
@@ -31,7 +30,6 @@ class LinkedChildrenPanel extends StatefulWidget {
   final VoidCallback? onAutoLinked;
   final bool compact;
   final bool autoSubmitOnValidCode;
-  final bool showConnectButton;
   final bool showInlineGuide;
 
   @override
@@ -400,20 +398,6 @@ class _LinkedChildrenPanelState extends State<LinkedChildrenPanel> {
               _error!,
               style: const TextStyle(color: AppColors.accent, height: 1.45),
             ),
-          ),
-        ],
-        if (widget.showConnectButton) ...[
-          const SizedBox(height: AppSpacing.lg),
-          FilledButton.icon(
-            onPressed: _loading ? null : () => _link(),
-            style: FilledButton.styleFrom(
-              minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
-              backgroundColor: AppColors.success,
-            ),
-            icon: _loading
-                ? const SizedBox.shrink()
-                : const Icon(Icons.add_link_rounded),
-            label: Text(students.isEmpty ? '학생 연결하기' : '자녀 추가'),
           ),
         ],
         if (widget.showInlineGuide && !widget.compact) ...[

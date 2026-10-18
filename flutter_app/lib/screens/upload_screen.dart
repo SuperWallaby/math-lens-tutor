@@ -61,14 +61,9 @@ bool _isImageDropItem(DropItem item) {
 }
 
 class UploadScreen extends StatefulWidget {
-  const UploadScreen({
-    super.key,
-    required this.apiClient,
-    this.embeddedInShell = false,
-  });
+  const UploadScreen({super.key, required this.apiClient});
 
   final ApiClient apiClient;
-  final bool embeddedInShell;
 
   @override
   State<UploadScreen> createState() => _UploadScreenState();
@@ -171,21 +166,6 @@ class _UploadScreenState extends State<UploadScreen> {
       child: ListView(
         padding: TabletLayout.pagePadding(context),
         children: [
-          if (widget.embeddedInShell) ...[
-            Text(
-              '문제지 업로드',
-              style: TextStyle(
-                fontSize: TabletLayout.titleSection(context),
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 6),
-            const Text(
-              'AI가 왜 틀렸는지 분석해드려요',
-              style: TextStyle(color: AppColors.textSub),
-            ),
-            const SizedBox(height: 16),
-          ],
           Text(
               supportsProblemImageCamera
                   ? '풀이 과정과 선택 답안이 보이도록 사진을 찍거나 앨범에서 선택하세요.'
@@ -222,10 +202,6 @@ class _UploadScreenState extends State<UploadScreen> {
         ],
       ),
     );
-
-    if (widget.embeddedInShell) {
-      return SafeArea(child: content);
-    }
 
     return Scaffold(
       appBar: AppBar(title: const Text('풀이 사진 분석')),

@@ -269,33 +269,6 @@ class GlassTabBar extends StatelessWidget {
   }
 }
 
-/// 사진 위에 떠 있는 맑은 유리 동그라미 버튼 (44 x 44).
-class GlassCircleButton extends StatelessWidget {
-  const GlassCircleButton({
-    super.key,
-    required this.icon,
-    required this.onPressed,
-  });
-
-  final IconData icon;
-  final VoidCallback onPressed;
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      width: 44,
-      height: 44,
-      child: GlassSurface(
-        child: InkWell(
-          onTap: onPressed,
-          customBorder: const CircleBorder(),
-          child: Center(child: Icon(icon, size: 20, color: AppColors.text)),
-        ),
-      ),
-    );
-  }
-}
-
 // ---------------------------------------------------------------------------
 // 떠 있는 층: 탭바, 카메라, 흐림 가장자리, 시트, 팝업, 사진 위 라벨에만 쓴다.
 // 콘텐츠는 흰 카드. 아래 위젯들은 GlassPreset / GlassSpec(app_design_system)을 따른다.

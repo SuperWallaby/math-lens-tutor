@@ -62,65 +62,8 @@ abstract final class AppColors {
   /// 위 3.4:1로 WCAG 비텍스트 대비(3:1)를 넘는다.
   static const controlOff = Color(0xFF72767E);
 
-  static const glassFill = Color(0x38FFFFFF);
-  static const glassStroke = Color(0xE8FFFFFF);
-
   /// 시트·팝업 뒤에 까는 막. 맑은 유리가 회색으로 탁해지지 않을 만큼만 옅다.
   static const glassBarrier = Color(0x2E112850);
-  static const glassShadow = Color(0x2E000000);
-}
-
-abstract final class AppShadows {
-  static const raised = [
-    BoxShadow(
-      color: Color(0xFFC2CAD6),
-      offset: Offset(10, 10),
-      blurRadius: 20,
-    ),
-    BoxShadow(
-      color: Color(0xFFFFFFFF),
-      offset: Offset(-8, -8),
-      blurRadius: 16,
-    ),
-  ];
-
-  static const sunken = [
-    BoxShadow(
-      color: Color(0xFFC2CAD6),
-      offset: Offset(7, 7),
-      blurRadius: 14,
-      blurStyle: BlurStyle.inner,
-    ),
-    BoxShadow(
-      color: Color(0xFFFFFFFF),
-      offset: Offset(-6, -6),
-      blurRadius: 12,
-      blurStyle: BlurStyle.inner,
-    ),
-  ];
-
-  static const gel = [
-    BoxShadow(
-      color: Color(0xFFC2CAD6),
-      offset: Offset(10, 10),
-      blurRadius: 20,
-    ),
-    BoxShadow(
-      color: Color(0xFFFFFFFF),
-      offset: Offset(-7, -7),
-      blurRadius: 14,
-    ),
-    BoxShadow(
-      color: Color(0x382A72E5),
-      offset: Offset(0, 10),
-      blurRadius: 18,
-    ),
-    BoxShadow(
-      color: Color(0x14000000),
-      offset: Offset(0, 2),
-      blurRadius: 6,
-    ),
-  ];
 }
 
 /// 홈 파란 무대 배경 — 165° 하늘색에서 코발트로.
