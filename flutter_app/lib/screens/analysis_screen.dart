@@ -201,7 +201,6 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
   Widget build(BuildContext context) {
     if (_error != null) {
       return Scaffold(
-        backgroundColor: Colors.transparent,
         appBar: AppBar(title: const Text('AI 풀이 분석')),
         body: GlassAtmosphere(
           child: SafeArea(
@@ -252,7 +251,6 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
     final networkImageUrl = _resolveSubmissionImageUrl();
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
       appBar: widget.matchPinPreview
           ? null
           : AppBar(

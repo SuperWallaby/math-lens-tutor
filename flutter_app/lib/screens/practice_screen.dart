@@ -347,7 +347,6 @@ class _PracticeScreenState extends State<PracticeScreen> {
         !widget.reviewMode && current != null && !hasSubmittedCurrent;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
       appBar: widget.matchPinPreview
           ? null
           : AppBar(

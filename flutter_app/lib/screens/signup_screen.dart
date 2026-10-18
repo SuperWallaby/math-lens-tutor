@@ -362,7 +362,6 @@ class _SignupScreenState extends State<SignupScreen> {
     final appleEnabled = isAppleSignInAvailable;
 
     return Scaffold(
-      backgroundColor: Colors.transparent,
       body: GlassAtmosphere(
         child: SafeArea(
           child: Stack(
