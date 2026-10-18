@@ -211,9 +211,9 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                 children: [
                   Text(_error!, style: const TextStyle(color: AppColors.accent)),
                   const SizedBox(height: 16),
-                  FilledButton(
+                  GlassPrimaryButton(
+                    label: '돌아가기',
                     onPressed: () => Navigator.of(context).pop(),
-                    child: const Text('돌아가기'),
                   ),
                 ],
               ),

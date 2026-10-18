@@ -1,7 +1,13 @@
+import 'dart:async';
+import 'dart:convert';
+import 'dart:typed_data';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:math_lens_tutor/dev/design_review_data.dart';
+import 'package:math_lens_tutor/models/app_models.dart';
 import 'package:math_lens_tutor/screens/analysis_screen.dart';
+import 'package:math_lens_tutor/screens/loop_result_screen.dart';
 import 'package:math_lens_tutor/screens/practice_screen.dart';
 import 'package:math_lens_tutor/screens/student_training_screen.dart';
 import 'package:math_lens_tutor/screens/upload_screen.dart';
@@ -14,6 +20,34 @@ import 'package:math_lens_tutor/widgets/glass.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 ApiClient _api() => ApiClient(authSession: AuthSession());
+
+/// 새 세트 요청을 [retry]가 끝낼 때까지 붙잡아 두는 가짜 서버.
+class _SlowRetryApi extends ApiClient {
+  _SlowRetryApi() : super(authSession: AuthSession());
+
+  final retry = Completer<GeneratedProblemSet>();
+
+  @override
+  Future<GeneratedProblemSet> retryPractice({
+    required String submissionId,
+    String? previousSetId,
+    bool harder = false,
+  }) => retry.future;
+}
+
+/// 분석 요청이 바로 실패하는 가짜 서버.
+class _FailingAnalyzeApi extends ApiClient {
+  _FailingAnalyzeApi() : super(authSession: AuthSession());
+
+  @override
+  Future<AnalyzeResult> analyzeImageBytes(
+    Uint8List bytes, {
+    required String filename,
+    AnalyzeQualityMode qualityMode = AnalyzeQualityMode.balanced,
+    void Function(String progressMessage)? onProgress,
+    void Function(Map<String, dynamic> event)? onStreamEvent,
+  }) async => throw Exception('네트워크에 연결할 수 없어요');
+}
 
 Widget _app(Widget home) => MaterialApp(theme: buildAppTheme(), home: home);
 
@@ -265,6 +299,84 @@ void main() {
       expect(button.style!.backgroundColor!.resolve({}), AppColors.primarySoft);
       expect(button.style!.foregroundColor!.resolve({}), AppColors.primaryDark);
       expect(_primaryButtons, findsNothing);
+    });
+  });
+
+  group('loop result', () {
+    testWidgets('새 문제로 다시 도전 is the one blue glass primary', (tester) async {
+      _tallPhone(tester);
+      final api = _SlowRetryApi();
+      final set = designReviewProblemSetCompact();
+      await tester.pumpWidget(
+        _app(
+          LoopResultScreen(
+            apiClient: api,
+            problemSet: set,
+            feedback: {set.problems.first.id: designReviewAttemptWrong()},
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(_primaryButtons, findsOneWidget);
+      expect(find.byType(FilledButton), findsNothing);
+      GlassPrimaryButton primary() =>
+          tester.widget<GlassPrimaryButton>(_primaryButtons);
+      expect(primary().label, '새 문제로 다시 도전');
+      expect(primary().icon, Icons.refresh_rounded);
+      expect(primary().onPressed, isNotNull);
+      expect(_outlined('나중에 하기'), findsOneWidget);
+
+      // 불러오는 동안은 꺼지고 「불러오는 중…」을 보여 두 번 눌리지 않는다.
+      await tester.tap(_primaryButtons);
+      await tester.pump();
+      expect(primary().onPressed, isNull);
+      expect(primary().label, contains('불러오는 중…'));
+
+      api.retry.completeError(Exception('잠시 후 다시 시도해 주세요'));
+      await tester.pumpAndSettle();
+      expect(primary().onPressed, isNotNull);
+      expect(primary().label, '새 문제로 다시 도전');
+      expect(find.textContaining('잠시 후 다시 시도해 주세요'), findsOneWidget);
+    });
+  });
+
+  group('analysis error', () {
+    testWidgets('돌아가기 is a blue glass primary that pops', (tester) async {
+      final navigator = GlobalKey<NavigatorState>();
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorKey: navigator,
+          theme: buildAppTheme(),
+          home: const Scaffold(body: Text('업로드')),
+        ),
+      );
+      navigator.currentState!.push(
+        MaterialPageRoute<void>(
+          builder: (_) => AnalysisScreen(
+            apiClient: _FailingAnalyzeApi(),
+            // 분석 중 화면이 사진을 그리므로 진짜 PNG(1x1)를 넘긴다.
+            imageBytes: base64Decode(
+              'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk'
+              'YPhfDwAChwGA60e6kgAAAABJRU5ErkJggg==',
+            ),
+          ),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.textContaining('네트워크에 연결할 수 없어요'), findsOneWidget);
+      expect(_primaryButtons, findsOneWidget);
+      expect(find.byType(FilledButton), findsNothing);
+      expect(
+        find.descendant(of: _primaryButtons, matching: find.text('돌아가기')),
+        findsOneWidget,
+      );
+
+      await tester.tap(_primaryButtons);
+      await tester.pumpAndSettle();
+      expect(find.byType(AnalysisScreen), findsNothing);
+      expect(find.text('업로드'), findsOneWidget);
     });
   });
 }

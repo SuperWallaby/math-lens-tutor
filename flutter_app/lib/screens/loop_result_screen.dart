@@ -249,22 +249,14 @@ class _LoopResultScreenState extends State<LoopResultScreen> {
                 ),
               ],
               const SizedBox(height: AppSpacing.lg),
+              // 탭바 없는 전체 화면 흐름의 주 버튼은 파란 유리 하나. 불러오는 동안은
+              // 꺼 두어 두 번 눌리지 않게 한다.
               SizedBox(
                 width: double.infinity,
-                child: FilledButton.icon(
+                child: GlassPrimaryButton(
                   onPressed: _retryLoading ? null : _retry,
-                  icon: _retryLoading
-                      ? const SizedBox(
-                          width: 20,
-                          height: 20,
-                          child: CircularProgressIndicator(strokeWidth: 2),
-                        )
-                      : const Icon(Icons.refresh_rounded),
-                  label: Text(_retryLoading ? '새 문제 불러오는 중…' : '새 문제로 다시 도전'),
-                  style: FilledButton.styleFrom(
-                    minimumSize:
-                        const Size.fromHeight(AppSizes.buttonHeightKeyAction),
-                  ),
+                  icon: _retryLoading ? null : Icons.refresh_rounded,
+                  label: _retryLoading ? '새 문제 불러오는 중…' : '새 문제로 다시 도전',
                 ),
               ),
               const SizedBox(height: AppSpacing.sm),
