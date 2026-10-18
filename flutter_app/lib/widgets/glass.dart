@@ -423,9 +423,13 @@ class GlassTabBar extends StatelessWidget {
 
   /// 파란 유리 원(흰 테두리 3px) + 아래 「찍기」. 원 위쪽이 알약보다 30px 솟는다.
   Widget _cameraCell(VoidCallback onTap) {
+    // 화면 낭독기에는 「찍기」 버튼 하나만 보인다. 안쪽 InkWell, 글자, 글자 칸
+    // GestureDetector의 의미는 모두 이 노드로 대신한다.
     return Semantics(
       button: true,
+      label: '찍기',
       onTap: onTap,
+      excludeSemantics: true,
       child: Stack(
         clipBehavior: Clip.none,
         children: [

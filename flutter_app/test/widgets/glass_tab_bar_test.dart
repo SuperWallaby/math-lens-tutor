@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:math_lens_tutor/widgets/glass.dart';
 
@@ -155,6 +156,49 @@ void main() {
       ),
     );
     expect(find.text('3'), findsOneWidget);
+  });
+
+  testWidgets('camera is a single labeled button node that taps', (
+    tester,
+  ) async {
+    var camera = 0;
+    final handle = tester.ensureSemantics();
+    try {
+      await tester.pumpWidget(
+        _bar(onSelected: (_) {}, onCamera: () => camera++),
+      );
+
+      final cameraNodes = find.semantics.byLabel('찍기').evaluate().toList();
+      expect(cameraNodes, hasLength(1));
+      final data = cameraNodes.single.getSemanticsData();
+      expect(data.flagsCollection.isButton, isTrue);
+      expect(data.hasAction(SemanticsAction.tap), isTrue);
+      // Nothing is nested under it: no second 찍기 stop for screen readers.
+      expect(cameraNodes.single.childrenCount, 0);
+
+      // Every button in the bar (4 tabs + camera) carries a label.
+      final buttons = <SemanticsNode>[];
+      void collect(SemanticsNode node) {
+        if (node.getSemanticsData().flagsCollection.isButton) {
+          buttons.add(node);
+        }
+        node.visitChildren((child) {
+          collect(child);
+          return true;
+        });
+      }
+
+      collect(tester.binding.pipelineOwner.semanticsOwner!.rootSemanticsNode!);
+      expect(buttons, hasLength(5));
+      for (final button in buttons) {
+        expect(button.getSemanticsData().label, isNotEmpty);
+      }
+
+      tester.semantics.tap(find.semantics.byLabel('찍기'));
+      expect(camera, 1);
+    } finally {
+      handle.dispose();
+    }
   });
 
   test('center action needs an even number of tabs', () {
