@@ -492,8 +492,8 @@ ThemeData buildAppTheme() {
     outlinedButtonTheme: OutlinedButtonThemeData(
       style: OutlinedButton.styleFrom(
         foregroundColor: AppColors.text,
-        side: const BorderSide(color: AppColors.glassStroke),
-        backgroundColor: const Color(0x66FFFFFF),
+        side: const BorderSide(color: AppColors.border),
+        backgroundColor: Colors.white,
         elevation: 0,
         minimumSize: const Size.fromHeight(AppSizes.buttonHeight),
         padding: const EdgeInsets.symmetric(horizontal: AppSpacing.xl),
@@ -506,14 +506,14 @@ ThemeData buildAppTheme() {
     ),
     inputDecorationTheme: InputDecorationTheme(
       filled: true,
-      fillColor: const Color(0x66FFFFFF),
+      fillColor: Colors.white,
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadii.pill),
-        borderSide: const BorderSide(color: AppColors.glassStroke),
+        borderSide: const BorderSide(color: AppColors.border),
       ),
       enabledBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadii.pill),
-        borderSide: const BorderSide(color: AppColors.glassStroke),
+        borderSide: const BorderSide(color: AppColors.border),
       ),
       focusedBorder: OutlineInputBorder(
         borderRadius: BorderRadius.circular(AppRadii.pill),
@@ -548,14 +548,14 @@ ThemeData buildAppTheme() {
       linearTrackColor: AppColors.surfaceMuted,
     ),
     chipTheme: ChipThemeData(
-      backgroundColor: Colors.white.withValues(alpha: 0.55),
+      backgroundColor: Colors.white,
       selectedColor: AppColors.primarySoft,
       labelStyle: _appTextStyle(
         color: AppColors.text,
         fontWeight: FontWeight.w600,
         fontSize: 12,
       ),
-      side: const BorderSide(color: AppColors.glassStroke),
+      side: const BorderSide(color: AppColors.border),
       shape: RoundedRectangleBorder(
         borderRadius: BorderRadius.circular(AppRadii.pill),
       ),
