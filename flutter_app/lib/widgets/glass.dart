@@ -638,6 +638,41 @@ class GlassScrollEdge extends StatelessWidget {
   }
 }
 
+/// 제목 없이 콘텐츠가 화면 맨 위에 닿는 홈에서, 스크롤하면 상태 표시줄 높이만큼
+/// 깔리는 흐림 띠. 채움 없이 아래를 흐리기만 해서 파란 무대 위든 안개색 위든
+/// 이음매 없이 시계 뒤로 지나가는 글자를 지운다. 터치는 통과시킨다.
+class GlassStatusBarBand extends StatelessWidget {
+  const GlassStatusBarBand({super.key, required this.visible});
+
+  final bool visible;
+
+  @override
+  Widget build(BuildContext context) {
+    final height = MediaQuery.paddingOf(context).top;
+    if (height <= 0) return const SizedBox.shrink();
+    return IgnorePointer(
+      child: AnimatedOpacity(
+        opacity: visible ? 1 : 0,
+        duration: const Duration(milliseconds: 200),
+        child: SizedBox(
+          height: height,
+          width: double.infinity,
+          child: ClipRect(
+            child: BackdropFilter(
+              filter: ImageFilter.blur(
+                sigmaX: 14,
+                sigmaY: 14,
+                tileMode: TileMode.clamp,
+              ),
+              child: const SizedBox.expand(),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
 /// 위쪽 모서리 26의 맑은 유리 시트를 띄운다.
 ///
 /// [showModalBottomSheet]에 투명 배경과 그림자 0을 주고, 내용을

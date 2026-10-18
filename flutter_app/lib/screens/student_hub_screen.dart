@@ -261,6 +261,53 @@ const Color _kStageTextSub = Color(0xCCFFFFFF);
 /// 예시 풀이에서 막힌 곳을 표시하는 빨간색.
 const Color _kMarkRed = Color(0xFFE5484D);
 
+/// 이만큼 내려가면 「스크롤했다」로 본다.
+const double _kScrolledThreshold = 8;
+
+/// 홈 목록을 감싸 스크롤 여부를 지켜본다. 스크롤하면 맨 위에 상태 표시줄 높이만큼
+/// 흐림 띠를 깔아 무대 글자가 시계와 겹치지 않게 하고, [overlay]에도 스크롤 여부를 넘긴다.
+class _HomeScrollFrame extends StatefulWidget {
+  const _HomeScrollFrame({required this.list, this.overlay});
+
+  final Widget list;
+  final Widget Function(bool scrolled)? overlay;
+
+  @override
+  State<_HomeScrollFrame> createState() => _HomeScrollFrameState();
+}
+
+class _HomeScrollFrameState extends State<_HomeScrollFrame> {
+  bool _scrolled = false;
+
+  bool _onScroll(ScrollNotification notification) {
+    if (notification.depth != 0 || notification.metrics.axis != Axis.vertical) {
+      return false;
+    }
+    final scrolled = notification.metrics.pixels > _kScrolledThreshold;
+    if (scrolled != _scrolled) setState(() => _scrolled = scrolled);
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Stack(
+      children: [
+        NotificationListener<ScrollNotification>(
+          onNotification: _onScroll,
+          child: widget.list,
+        ),
+        if (widget.overlay != null) widget.overlay!(_scrolled),
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: GlassStatusBarBand(visible: _scrolled),
+        ),
+      ],
+    );
+  }
+}
+
 class _FirstTimeHome extends StatelessWidget {
   const _FirstTimeHome({
     required this.stageUser,
@@ -278,46 +325,44 @@ class _FirstTimeHome extends StatelessWidget {
   Widget build(BuildContext context) {
     // `Scaffold(extendBody: true)` 아래에서는 떠 있는 탭바(솟은 카메라 포함) 높이가 들어 있다.
     final bottomInset = MediaQuery.paddingOf(context).bottom;
-    return Stack(
-      children: [
-        ListView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          // 말풍선(약 46px)이 뜬 자리까지 비워, 끝까지 스크롤해도 카드가 가려지지 않는다.
-          padding: EdgeInsets.only(bottom: bottomInset + 72),
-          children: [
-            HomeStage(
-              mode: HomeStageMode.firstVisit,
-              user: stageUser,
-              today: today,
-              card: _FirstVisitStageCard(onPickGallery: onPickGallery),
-              footer: stageUser.isGuest
-                  ? _GuestSignupRow(onSignup: onSignup)
-                  : null,
+    return _HomeScrollFrame(
+      list: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        // 말풍선(약 46px)이 뜬 자리까지 비워, 끝까지 스크롤해도 카드가 가려지지 않는다.
+        padding: EdgeInsets.only(bottom: bottomInset + 72),
+        children: [
+          HomeStage(
+            mode: HomeStageMode.firstVisit,
+            user: stageUser,
+            today: today,
+            card: _FirstVisitStageCard(onPickGallery: onPickGallery),
+            footer: stageUser.isGuest
+                ? _GuestSignupRow(onSignup: onSignup)
+                : null,
+          ),
+          const Padding(
+            padding: EdgeInsets.fromLTRB(
+              _kSidePad,
+              AppSpacing.xxl,
+              _kSidePad,
+              0,
             ),
-            const Padding(
-              padding: EdgeInsets.fromLTRB(
-                _kSidePad,
-                AppSpacing.xxl,
-                _kSidePad,
-                0,
-              ),
-              child: _ExampleCard(),
-            ),
-          ],
-        ),
-        // 가운데 카메라 바로 위. 카메라 탭을 막지 않도록 터치는 통과시킨다.
-        Positioned(
-          left: 0,
-          right: 0,
-          bottom: bottomInset + 8,
-          child: const IgnorePointer(
-            child: Center(
-              heightFactor: 1,
-              child: GlassCoachBubble(text: '여기를 눌러 숙제 한 장 찍어요'),
-            ),
+            child: _ExampleCard(),
+          ),
+        ],
+      ),
+      // 가운데 카메라 바로 위. 카메라 탭을 막지 않도록 터치는 통과시킨다.
+      overlay: (_) => Positioned(
+        left: 0,
+        right: 0,
+        bottom: bottomInset + 8,
+        child: const IgnorePointer(
+          child: Center(
+            heightFactor: 1,
+            child: GlassCoachBubble(text: '여기를 눌러 숙제 한 장 찍어요'),
           ),
         ),
-      ],
+      ),
     );
   }
 }
@@ -348,72 +393,77 @@ class _ReturningHome extends StatelessWidget {
     final accuracy = data.profile.stats.accuracy;
     final totalProblems = data.profile.stats.totalProblems;
 
-    return ListView(
-      physics: const AlwaysScrollableScrollPhysics(),
-      // 위쪽 안전 영역은 무대가 직접 채운다. 아래는 떠 있는 탭바 위로 스크롤되게 비운다.
-      padding: EdgeInsets.only(
-        bottom: MediaQuery.paddingOf(context).bottom + AppSpacing.xxl,
-      ),
-      children: [
-        HomeStage(
-          mode: HomeStageMode.returning,
-          user: stageUser,
-          today: today,
-          card: Column(
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              if (mission != null && mission.title.trim().isNotEmpty) ...[
-                _MissionCard(
-                  mission: mission,
-                  onContinue: () => onOpenMission(mission),
-                ),
-                const SizedBox(height: AppSpacing.md),
-              ],
-              Row(
-                children: [
-                  Expanded(
-                    child: _StatTile(
-                      label: '정답률',
-                      value: accuracy > 0 ? '$accuracy%' : '시작 전',
-                    ),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
-                  Expanded(
-                    child: _StatTile(label: '해결한 문제', value: '$totalProblems개'),
-                  ),
-                ],
-              ),
-            ],
-          ),
-          footer: stageUser.isGuest
-              ? _GuestSignupRow(onSignup: onSignup)
-              : null,
+    return _HomeScrollFrame(
+      list: ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        // 위쪽 안전 영역은 무대가 직접 채운다. 아래는 떠 있는 탭바 위로 스크롤되게 비운다.
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.paddingOf(context).bottom + AppSpacing.xxl,
         ),
-        if (recent.isNotEmpty)
-          Padding(
-            padding: const EdgeInsets.fromLTRB(
-              _kSidePad,
-              AppSpacing.section,
-              _kSidePad,
-              0,
-            ),
-            child: Column(
+        children: [
+          HomeStage(
+            mode: HomeStageMode.returning,
+            user: stageUser,
+            today: today,
+            card: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                _SectionHeader(title: '최근', caption: '${recent.length}장'),
-                const SizedBox(height: AppSpacing.md),
-                for (final item in recent) ...[
-                  _RecentSubmissionTile(
-                    item: item,
-                    apiBaseUrl: apiBaseUrl,
-                    onTap: () => onOpenSubmission(item),
+                if (mission != null && mission.title.trim().isNotEmpty) ...[
+                  _MissionCard(
+                    mission: mission,
+                    onContinue: () => onOpenMission(mission),
                   ),
-                  const SizedBox(height: AppSpacing.sm),
+                  const SizedBox(height: AppSpacing.md),
                 ],
+                Row(
+                  children: [
+                    Expanded(
+                      child: _StatTile(
+                        label: '정답률',
+                        value: accuracy > 0 ? '$accuracy%' : '시작 전',
+                      ),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
+                    Expanded(
+                      child: _StatTile(
+                        label: '해결한 문제',
+                        value: '$totalProblems개',
+                      ),
+                    ),
+                  ],
+                ),
               ],
             ),
+            footer: stageUser.isGuest
+                ? _GuestSignupRow(onSignup: onSignup)
+                : null,
           ),
-      ],
+          if (recent.isNotEmpty)
+            Padding(
+              padding: const EdgeInsets.fromLTRB(
+                _kSidePad,
+                AppSpacing.section,
+                _kSidePad,
+                0,
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  _SectionHeader(title: '최근', caption: '${recent.length}장'),
+                  const SizedBox(height: AppSpacing.md),
+                  for (final item in recent) ...[
+                    _RecentSubmissionTile(
+                      item: item,
+                      apiBaseUrl: apiBaseUrl,
+                      onTap: () => onOpenSubmission(item),
+                    ),
+                    const SizedBox(height: AppSpacing.sm),
+                  ],
+                ],
+              ),
+            ),
+        ],
+      ),
     );
   }
 }

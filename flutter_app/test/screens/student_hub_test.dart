@@ -388,6 +388,63 @@ void main() {
       expect(tester.getCenter(find.byType(GlassCoachBubble)).dx, 195);
     });
 
+    for (final first in [true, false]) {
+      testWidgets(
+        'stage text slides under a blur band, not the clock '
+        '(${first ? 'first visit' : 'returning'})',
+        (tester) async {
+          phone(tester, 390);
+          await tester.pumpWidget(
+            _hub(
+              profile: first
+                  ? designReviewProfileFirstVisit()
+                  : designReviewProfileReturning(),
+              subs: first
+                  ? designReviewSubmissionsEmpty()
+                  : designReviewSubmissionsRecent(),
+              inset: const EdgeInsets.only(top: 47, bottom: 110),
+            ),
+          );
+          await tester.pumpAndSettle();
+
+          GlassStatusBarBand band() =>
+              tester.widget<GlassStatusBarBand>(find.byType(GlassStatusBarBand));
+          expect(band().visible, isFalse);
+
+          await tester.drag(find.byType(ListView), const Offset(0, -120));
+          await tester.pumpAndSettle();
+          expect(band().visible, isTrue);
+          // 상태 표시줄 높이만큼만 덮고, 아래를 흐리는 띠다.
+          expect(
+            tester.getRect(find.byType(GlassStatusBarBand)),
+            const Rect.fromLTWH(0, 0, 390, 47),
+          );
+          expect(
+            find.descendant(
+              of: find.byType(GlassStatusBarBand),
+              matching: find.byType(BackdropFilter),
+            ),
+            findsOneWidget,
+          );
+          // 탭은 그대로 아래 목록으로 간다.
+          expect(
+            find
+                .ancestor(
+                  of: find.byType(BackdropFilter).last,
+                  matching: find.byType(IgnorePointer),
+                )
+                .evaluate()
+                .map((e) => (e.widget as IgnorePointer).ignoring),
+            contains(true),
+          );
+
+          await tester.drag(find.byType(ListView), const Offset(0, 400));
+          await tester.pumpAndSettle();
+          expect(band().visible, isFalse);
+        },
+      );
+    }
+
     testWidgets('last recent row scrolls above the floating bar', (
       tester,
     ) async {
