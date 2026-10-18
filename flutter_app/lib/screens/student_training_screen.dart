@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 
 import '../dev/design_review_data.dart';
@@ -5,12 +7,15 @@ import '../layout/tablet_layout.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
 import '../widgets/app_card.dart';
+import '../widgets/glass.dart';
 import '../widgets/learning_profile_widgets.dart';
 import '../widgets/mixed_math_text.dart';
 import '../widgets/skeleton_box.dart';
 import '../widgets/skeleton_lines.dart';
 import 'open_practice_flow.dart';
 import '../theme/app_design_system.dart';
+
+const _scrollEdgeThreshold = 30.0;
 
 class _TrainingScreenData {
   const _TrainingScreenData({
@@ -41,6 +46,9 @@ class StudentTrainingScreen extends StatefulWidget {
 class StudentTrainingScreenState extends State<StudentTrainingScreen> {
   Future<_TrainingScreenData>? _screenFuture;
 
+  /// 본문이 [_scrollEdgeThreshold]보다 아래로 스크롤되면 위쪽 흐림을 보인다.
+  bool _scrolled = false;
+
   /// 하단 탭 전환 시 — TTL 내면 캐시 재사용.
   void refreshFromTab({bool forceRefresh = false}) {
     if (!forceRefresh &&
@@ -59,8 +67,21 @@ class StudentTrainingScreenState extends State<StudentTrainingScreen> {
 
   void _reload({bool forceRefresh = false}) {
     setState(() {
+      // 다시 불러오는 동안 스크롤 위치가 사라지므로 흐림도 함께 끈다.
+      _scrolled = false;
       _screenFuture = _loadScreen(forceRefresh: forceRefresh);
     });
+  }
+
+  bool _onScroll(ScrollNotification notification) {
+    if (notification.depth != 0 || notification.metrics.axis != Axis.vertical) {
+      return false;
+    }
+    final scrolled = notification.metrics.pixels > _scrollEdgeThreshold;
+    if (scrolled != _scrolled && mounted) {
+      setState(() => _scrolled = scrolled);
+    }
+    return false;
   }
 
   Future<_TrainingScreenData> _loadScreen({bool forceRefresh = false}) async {
@@ -118,6 +139,24 @@ class StudentTrainingScreenState extends State<StudentTrainingScreen> {
 
   @override
   Widget build(BuildContext context) {
+    return Stack(
+      fit: StackFit.expand,
+      children: [
+        NotificationListener<ScrollNotification>(
+          onNotification: _onScroll,
+          child: _buildBody(context),
+        ),
+        Positioned(
+          top: 0,
+          left: 0,
+          right: 0,
+          child: GlassScrollEdge(visible: _scrolled, title: '훈련'),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildBody(BuildContext context) {
     return FutureBuilder<_TrainingScreenData>(
       future: _screenFuture,
       builder: (context, snapshot) {
@@ -139,95 +178,101 @@ class StudentTrainingScreenState extends State<StudentTrainingScreen> {
 
         return RefreshIndicator(
           onRefresh: () async => _reload(forceRefresh: true),
-          child: LayoutBuilder(
-            builder: (context, constraints) {
-              if (!showContent) {
-                return SingleChildScrollView(
+          child: showContent
+              ? _buildFeed(context, profile, feed)
+              : CustomScrollView(
                   physics: const AlwaysScrollableScrollPhysics(),
-                  child: ConstrainedBox(
-                    constraints: BoxConstraints(minHeight: constraints.maxHeight),
-                    child: Padding(
+                  slivers: [
+                    SliverPadding(
                       padding: TabletLayout.pagePadding(context),
-                      child: _TrainingEmptyState(
-                        hasLearningData: training.hasLearningData,
-                      ),
-                    ),
-                  ),
-                );
-              }
-
-              return ListView(
-                padding: TabletLayout.pagePadding(context),
-                children: [
-                  Text(
-                    '맞춤 훈련',
-                    style: TextStyle(
-                      fontSize: TabletLayout.titleSection(context),
-                      fontWeight: FontWeight.w900,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  const Text(
-                    '당신을 위한 문제를 추천합니다.',
-                    style: TextStyle(
-                      color: AppColors.textSub,
-                      height: 1.45,
-                      fontSize: 14,
-                    ),
-                  ),
-                  if (feed.refreshPending) ...[
-                    const SizedBox(height: 10),
-                    _FeedStatusChip(
-                      label: feed.isPrecomputed
-                          ? '추천 목록 업데이트 중'
-                          : '기본 추천 표시 · 분석 후 더 맞춤',
-                    ),
-                  ],
-                  const SizedBox(height: 20),
-                  if (training.available) ...[
-                    _TrainingHeroCard(
-                      training: training,
-                      displayName: widget.apiClient.authSession.user?.displayName,
-                    ),
-                    const SizedBox(height: 16),
-                    if (training.activeSetId != null && training.remainingCount > 0)
-                      _ContinueTrainingCard(
-                        remainingCount: training.remainingCount,
-                        onTap: () => _startTraining(training),
-                      )
-                    else
-                      FilledButton.icon(
-                        onPressed: () => _startTraining(training),
-                        icon: const Icon(Icons.play_arrow_rounded),
-                        label: const Text('5문제 세트로 복습'),
-                      ),
-                    const SizedBox(height: 24),
-                  ],
-                  if (hasFeed) ...[
-                    const SectionLabel('맞춤 문제'),
-                    const SizedBox(height: 10),
-                    ...feed.items.map(
-                      (item) => Padding(
-                        padding: const EdgeInsets.only(bottom: 12),
-                        child: _TrainingFeedCard(
-                          item: item,
-                          onTap: () => _startFeedItem(item),
+                      sliver: SliverFillRemaining(
+                        hasScrollBody: false,
+                        child: _TrainingEmptyState(
+                          hasLearningData: training.hasLearningData,
                         ),
                       ),
                     ),
-                    const SizedBox(height: 12),
                   ],
-                  if (training.focusItems.isNotEmpty) ...[
-                    const SectionLabel('훈련 대상'),
-                    _TrainingFocusList(items: training.focusItems),
-                  ],
-                  const SizedBox(height: 24),
-                ],
-              );
-            },
-          ),
+                ),
         );
       },
+    );
+  }
+
+  Widget _buildFeed(
+    BuildContext context,
+    LearningProfile profile,
+    TrainingFeedResponse feed,
+  ) {
+    final training = profile.training;
+    final hasFeed = feed.items.isNotEmpty;
+    return ListView(
+      padding: TabletLayout.pagePadding(context),
+      children: [
+        Text(
+          '맞춤 훈련',
+          style: TextStyle(
+            fontSize: TabletLayout.titleSection(context),
+            fontWeight: FontWeight.w900,
+          ),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          '당신을 위한 문제를 추천합니다.',
+          style: TextStyle(
+            color: AppColors.textSub,
+            height: 1.45,
+            fontSize: 14,
+          ),
+        ),
+        if (feed.refreshPending) ...[
+          const SizedBox(height: 10),
+          _FeedStatusChip(
+            label: feed.isPrecomputed
+                ? '추천 목록 업데이트 중'
+                : '기본 추천 표시 · 분석 후 더 맞춤',
+          ),
+        ],
+        const SizedBox(height: 20),
+        if (training.available) ...[
+          _TrainingHeroCard(
+            training: training,
+            displayName: widget.apiClient.authSession.user?.displayName,
+          ),
+          const SizedBox(height: 16),
+          if (training.activeSetId != null && training.remainingCount > 0)
+            _ContinueTrainingCard(
+              remainingCount: training.remainingCount,
+              onTap: () => _startTraining(training),
+            )
+          else
+            FilledButton.icon(
+              onPressed: () => _startTraining(training),
+              icon: const Icon(Icons.play_arrow_rounded),
+              label: const Text('5문제 세트로 복습'),
+            ),
+          const SizedBox(height: 24),
+        ],
+        if (hasFeed) ...[
+          const SectionLabel('맞춤 문제'),
+          const SizedBox(height: 10),
+          ...feed.items.map(
+            (item) => Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+              child: _TrainingFeedCard(
+                item: item,
+                onTap: () => _startFeedItem(item),
+              ),
+            ),
+          ),
+          const SizedBox(height: 12),
+        ],
+        if (training.focusItems.isNotEmpty) ...[
+          const SectionLabel('훈련 대상'),
+          _TrainingFocusList(items: training.focusItems),
+        ],
+        const SizedBox(height: 24),
+      ],
     );
   }
 }
@@ -402,69 +447,225 @@ class _FeedTag extends StatelessWidget {
   }
 }
 
+/// 첫 로그인 직후(기록 없음)와 막힌 문제를 다 푼 뒤에 보이는 훈련 탭.
+///
+/// [hasLearningData]가 true면 빈 카드 문구만 바뀌고, 예시 줄과 카메라 안내는 숨긴다.
 class _TrainingEmptyState extends StatelessWidget {
   const _TrainingEmptyState({required this.hasLearningData});
 
   final bool hasLearningData;
 
+  static const _examples = [
+    '단위 바꾸기 (분 → 시간) · 일차방정식의 활용 · 3문제',
+    '분배법칙 부호 · 문자와 식 · 2문제',
+  ];
+
   @override
   Widget build(BuildContext context) {
-    final accent = hasLearningData ? AppColors.success : AppColors.primary;
-    final icon = hasLearningData
-        ? Icons.task_alt_rounded
-        : Icons.replay_circle_filled_outlined;
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          '훈련',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            color: AppColors.text,
+          ),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          '막힌 개념만 모아서 다시 풀어보는 곳이에요.',
+          style: TextStyle(color: AppColors.textSub, height: 1.45, fontSize: 14),
+        ),
+        const SizedBox(height: 20),
+        AppCard(
+          padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
+          child: SizedBox(
+            width: double.infinity,
+            child: Column(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: const BoxDecoration(
+                    color: AppColors.primarySoft,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.edit_note_rounded,
+                    size: 28,
+                    color: AppColors.primary,
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  hasLearningData ? '막힌 문제를 다 풀었어요.' : '아직 훈련할 문제가 없어요',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 17,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.text,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  hasLearningData
+                      ? '새로 막히면 여기에 모여요.'
+                      : '숙제를 찍으면 막힌 개념이 여기에 모여요.',
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    height: 1.45,
+                    color: AppColors.textSub,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        if (!hasLearningData) ...[
+          const SizedBox(height: 24),
+          const _ExampleHeader(),
+          const SizedBox(height: 10),
+          for (final example in _examples)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 8),
+              child: _ExampleRow(text: example),
+            ),
+        ],
+        const Spacer(),
+        if (!hasLearningData) ...[
+          const SizedBox(height: 20),
+          const _CameraHint(),
+        ],
+      ],
+    );
+  }
+}
 
-    return Center(
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(maxWidth: 320),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Container(
-              width: 112,
-              height: 112,
-              alignment: Alignment.center,
-              decoration: BoxDecoration(
-                color: accent.withValues(alpha: 0.1),
-                shape: BoxShape.circle,
-              ),
-              child: Icon(icon, size: 56, color: accent),
-            ),
-            const SizedBox(height: 28),
+class _ExampleHeader extends StatelessWidget {
+  const _ExampleHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: '이런 식으로 쌓여요 · 예시',
+      child: ExcludeSemantics(
+        child: Row(
+          children: const [
             Text(
-              '아직 훈련할 항목이 없습니다',
+              '이런 식으로 쌓여요',
               style: TextStyle(
-                fontWeight: FontWeight.w900,
-                fontSize: TabletLayout.isTablet(context) ? 22 : 20,
-                height: 1.35,
-                color: AppColors.text,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 12),
-            Text(
-              hasLearningData
-                  ? '최근 틀린 기록이 없거나 모두 재학습에 성공했어요.\n새로 틀린 문제가 쌓이면 맞춤 추천이 올라와요.'
-                  : '풀이 사진 분석이나 단원 연습을 시작하면\n틀린 개념이 쌓이고, 맞춤 복습 문제를 제공해요.',
-              textAlign: TextAlign.center,
-              style: const TextStyle(
-                color: AppColors.textSub,
-                height: 1.6,
-                fontSize: 15,
-              ),
-            ),
-            const SizedBox(height: 20),
-            Text(
-              hasLearningData ? '잘하고 있어요' : '홈에서 첫 문제를 풀어보세요',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: accent,
+                fontSize: 14,
                 fontWeight: FontWeight.w700,
-                fontSize: 13,
+                color: AppColors.textSub,
+              ),
+            ),
+            Text(
+              ' · 예시',
+              style: TextStyle(
+                fontSize: 14,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textMuted,
               ),
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// 실제 항목이 아니라 보여주기용이라 55% 투명도에 점선 테두리로 흐리게 둔다.
+class _ExampleRow extends StatelessWidget {
+  const _ExampleRow({required this.text});
+
+  final String text;
+
+  @override
+  Widget build(BuildContext context) {
+    return Opacity(
+      opacity: 0.55,
+      child: CustomPaint(
+        painter: const _DashedRRectPainter(
+          color: AppColors.textMuted,
+          radius: AppRadii.md,
+        ),
+        child: Container(
+          width: double.infinity,
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Text(
+            text,
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              height: 1.4,
+              color: AppColors.textSub,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _DashedRRectPainter extends CustomPainter {
+  const _DashedRRectPainter({required this.color, required this.radius});
+
+  final Color color;
+  final double radius;
+
+  static const _strokeWidth = 1.5;
+  static const _dash = 6.0;
+  static const _gap = 4.0;
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = (Offset.zero & size).deflate(_strokeWidth / 2);
+    final path = Path()
+      ..addRRect(RRect.fromRectAndRadius(rect, Radius.circular(radius)));
+    final paint = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = _strokeWidth;
+    for (final metric in path.computeMetrics()) {
+      for (var start = 0.0; start < metric.length; start += _dash + _gap) {
+        final end = math.min(start + _dash, metric.length);
+        canvas.drawPath(metric.extractPath(start, end), paint);
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DashedRRectPainter oldDelegate) =>
+      oldDelegate.color != color || oldDelegate.radius != radius;
+}
+
+class _CameraHint extends StatelessWidget {
+  const _CameraHint();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Center(
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(
+            '가운데 카메라로 시작해요',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: AppColors.primary,
+            ),
+          ),
+          SizedBox(width: 4),
+          Icon(
+            Icons.keyboard_arrow_down_rounded,
+            size: 20,
+            color: AppColors.primary,
+          ),
+        ],
       ),
     );
   }

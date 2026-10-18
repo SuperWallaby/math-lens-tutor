@@ -12,6 +12,11 @@
       "file": "design-review/captures/student_hub/returning.png"
     },
     {
+      "key": "student_hub__guest",
+      "url": "http://127.0.0.1:8080/?design_review=student_hub__guest",
+      "file": "design-review/captures/student_hub/guest.png"
+    },
+    {
       "key": "upload__idle",
       "url": "http://127.0.0.1:8080/?design_review=upload__idle",
       "file": "design-review/captures/upload/idle.png"
@@ -60,6 +65,16 @@
       "key": "student_progress__chain_warning",
       "url": "http://127.0.0.1:8080/?design_review=student_progress__chain_warning",
       "file": "design-review/captures/student_progress/chain_warning.png"
+    },
+    {
+      "key": "student_progress__empty",
+      "url": "http://127.0.0.1:8080/?design_review=student_progress__empty",
+      "file": "design-review/captures/student_progress/empty.png"
+    },
+    {
+      "key": "student_training__empty",
+      "url": "http://127.0.0.1:8080/?design_review=student_training__empty",
+      "file": "design-review/captures/student_training/empty.png"
     }
   ]
 }

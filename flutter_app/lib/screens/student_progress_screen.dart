@@ -3,6 +3,8 @@ import 'package:flutter/material.dart';
 import '../layout/tablet_layout.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
+import '../widgets/app_card.dart';
+import '../widgets/glass.dart';
 import '../widgets/guardian_learning_gate.dart';
 import '../widgets/learning_profile_widgets.dart';
 import '../widgets/parent_tab_scaffold.dart';
@@ -10,6 +12,9 @@ import 'open_practice_flow.dart';
 import 'practice_screen.dart';
 import 'dashboard_screen.dart';
 import '../theme/app_design_system.dart';
+
+/// 본문이 이만큼 아래로 스크롤되면 위쪽 흐림(제목)이 나타난다.
+const _scrollEdgeThreshold = 30.0;
 
 class StudentProgressScreen extends StatefulWidget {
   const StudentProgressScreen({
@@ -33,12 +38,15 @@ class StudentProgressScreenState extends State<StudentProgressScreen> {
   Future<LearningProfile>? _profileFuture;
   late int _gradeTab;
   bool _gradeTabTouched = false;
+  bool _scrolled = false;
 
   @override
   void initState() {
     super.initState();
     _gradeTab = widget.demoInitialGradeTab ??
         gradeBandTabIndex(widget.apiClient.authSession.user?.grade);
+    // 데모에서 구간을 직접 정했으면 프로필의 학년이 그 구간을 덮어쓰지 않는다.
+    _gradeTabTouched = widget.demoInitialGradeTab != null;
     _reload();
   }
 
@@ -56,20 +64,38 @@ class StudentProgressScreenState extends State<StudentProgressScreen> {
   void _reload({bool forceRefresh = false}) {
     if (widget.demoProfile != null) {
       setState(() {
+        _scrolled = false;
         _profileFuture = Future.value(widget.demoProfile);
       });
       return;
     }
     if (widget.viewAsGuardian &&
         widget.apiClient.authSession.linkedStudents.isEmpty) {
-      setState(() => _profileFuture = null);
+      setState(() {
+        _scrolled = false;
+        _profileFuture = null;
+      });
       return;
     }
     setState(() {
+      // 다시 불러오는 동안 스크롤 위치가 사라지므로 흐림도 함께 끈다.
+      _scrolled = false;
       _profileFuture = widget.apiClient.getLearningProfile(
         forceRefresh: forceRefresh,
       );
     });
+  }
+
+  bool _onScroll(ScrollNotification notification) {
+    // 구간 선택처럼 안쪽에서 가로로 스크롤되는 목록은 건너뛴다.
+    if (notification.depth != 0 || notification.metrics.axis != Axis.vertical) {
+      return false;
+    }
+    final scrolled = notification.metrics.pixels > _scrollEdgeThreshold;
+    if (scrolled != _scrolled && mounted) {
+      setState(() => _scrolled = scrolled);
+    }
+    return false;
   }
 
   void _onGradeTabChanged(int index) {
@@ -122,7 +148,21 @@ class StudentProgressScreenState extends State<StudentProgressScreen> {
     );
 
     if (!widget.viewAsGuardian) {
-      return body;
+      return Stack(
+        fit: StackFit.expand,
+        children: [
+          NotificationListener<ScrollNotification>(
+            onNotification: _onScroll,
+            child: body,
+          ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: GlassScrollEdge(visible: _scrolled, title: '내 진도'),
+          ),
+        ],
+      );
     }
 
     return GuardianLearningGate(
@@ -169,7 +209,7 @@ class _ProgressContent extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  viewAsGuardian ? '교육과정 진도' : '내 진도 현황',
+                  viewAsGuardian ? '교육과정 진도' : '내 진도',
                   style: TextStyle(
                     fontSize: TabletLayout.titleSection(context),
                     fontWeight: FontWeight.w900,
@@ -200,6 +240,12 @@ class _ProgressContent extends StatelessWidget {
         onSelected: onGradeTabChanged,
       ),
       const SizedBox(height: 12),
+      if (!viewAsGuardian &&
+          units.isNotEmpty &&
+          units.every((unit) => unit.percent <= 0)) ...[
+        _ProgressIntroCard(unitCount: units.length),
+        const SizedBox(height: 12),
+      ],
       CurriculumProgressList(
         units: units,
         gradeLabel: gradeBandLabels[gradeTab],
@@ -269,6 +315,44 @@ class _ProgressContent extends StatelessWidget {
       child: ListView(
         padding: TabletLayout.pagePadding(context),
         children: scrollChildren,
+      ),
+    );
+  }
+}
+
+/// 아직 시작한 단원이 하나도 없을 때, 구간 선택 아래에 두는 안내 카드.
+class _ProgressIntroCard extends StatelessWidget {
+  const _ProgressIntroCard({required this.unitCount});
+
+  final int unitCount;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: SizedBox(
+        width: double.infinity,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '0 / $unitCount 단원',
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w700,
+                color: AppColors.text,
+              ),
+            ),
+            const SizedBox(height: 4),
+            const Text(
+              '숙제를 찍으면 그 단원부터 채워져요.',
+              style: TextStyle(
+                fontSize: 14,
+                height: 1.45,
+                color: AppColors.textSub,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }

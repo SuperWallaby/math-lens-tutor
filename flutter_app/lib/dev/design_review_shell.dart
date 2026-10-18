@@ -4,6 +4,7 @@ import '../screens/analysis_screen.dart';
 import '../screens/practice_screen.dart';
 import '../screens/student_hub_screen.dart';
 import '../screens/student_progress_screen.dart';
+import '../screens/student_training_screen.dart';
 import '../screens/upload_screen.dart';
 import '../services/api_client.dart';
 import '../services/oauth_service.dart';
@@ -48,6 +49,8 @@ class DesignReviewShell extends StatelessWidget {
         return _practice(parsed.state);
       case 'student_progress':
         return _scaffold(_studentProgress(parsed.state));
+      case 'student_training':
+        return _scaffold(_studentTraining(parsed.state));
       default:
         return Scaffold(
           body: Center(
@@ -161,8 +164,26 @@ class DesignReviewShell extends StatelessWidget {
     }
   }
 
+  Widget _studentTraining(String state) {
+    switch (state) {
+      case 'empty':
+      default:
+        return StudentTrainingScreen(
+          apiClient: apiClient,
+          demoProfile: designReviewProfileFirstVisit(),
+          demoFeed: designReviewTrainingFeedEmpty(),
+        );
+    }
+  }
+
   Widget _studentProgress(String state) {
     switch (state) {
+      case 'empty':
+        return StudentProgressScreen(
+          apiClient: apiClient,
+          demoProfile: designReviewProfileFirstVisit(),
+          demoInitialGradeTab: 3,
+        );
       case 'grade_e12':
         return StudentProgressScreen(
           apiClient: apiClient,

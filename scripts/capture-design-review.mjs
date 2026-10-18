@@ -19,6 +19,7 @@ const outRoot = join(root, "design-review", "captures");
 const keys = [
   "student_hub__first_visit",
   "student_hub__returning",
+  "student_hub__guest",
   "upload__idle",
   "analysis__analyzing",
   "analysis__result_weak",
@@ -29,6 +30,8 @@ const keys = [
   "student_progress__grade_e12",
   "student_progress__grade_m1",
   "student_progress__chain_warning",
+  "student_progress__empty",
+  "student_training__empty",
 ];
 
 const baseUrl = (process.env.FLUTTER_WEB_URL ?? "http://127.0.0.1:8080").replace(

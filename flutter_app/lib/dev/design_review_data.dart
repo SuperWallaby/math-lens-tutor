@@ -137,6 +137,7 @@ AppUser designReviewUser() => const AppUser(
 
 LearningProfile designReviewProfileFirstVisit() {
   final e12 = _e12Units();
+  final m1 = _m1Units();
   return LearningProfile(
     grade: '초1',
     insight: const LearningInsight(
@@ -158,7 +159,7 @@ LearningProfile designReviewProfileFirstVisit() {
     strongConcepts: const [],
     weeklyTrend: const [],
     curriculumUnits: e12,
-    curriculumByBand: {'e12': e12},
+    curriculumByBand: {'e12': e12, 'm1': m1},
     chainWarning: null,
     parentActions: const [],
     weeklyReport: const WeeklyReport(
@@ -613,6 +614,16 @@ ProblemAttempt designReviewAttemptWrong() {
   );
 }
 
+/// 첫 로그인 직후처럼 추천 문제가 하나도 없는 훈련 피드.
+TrainingFeedResponse designReviewTrainingFeedEmpty() {
+  return const TrainingFeedResponse(
+    source: 'precomputed',
+    updatedAt: '2026-10-17T00:00:00Z',
+    refreshPending: false,
+    items: [],
+  );
+}
+
 TrainingFeedResponse designReviewTrainingFeed() {
   return const TrainingFeedResponse(
     source: 'precomputed',
@@ -668,4 +679,6 @@ const designReviewCaptureKeys = [
   'student_progress__grade_e12',
   'student_progress__grade_m1',
   'student_progress__chain_warning',
+  'student_progress__empty',
+  'student_training__empty',
 ];

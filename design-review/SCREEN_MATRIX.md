@@ -9,6 +9,7 @@ Query param (web): `http://localhost:8080/?design_review={screenId}__{state}`
 |----------|----------|-------|-------------------|------|
 | P0 | student_hub | first_visit | `student_hub__first_visit` | student_hub/first_visit.png |
 | P0 | student_hub | returning | `student_hub__returning` | student_hub/returning.png |
+| P0 | student_hub | guest | `student_hub__guest` | student_hub/guest.png |
 | P0 | upload | idle | `upload__idle` | upload/idle.png |
 | P0 | upload | analyzing | `analysis__analyzing` | upload/analyzing.png |
 | P0 | analysis | result_weak | `analysis__result_weak` | analysis/result_weak.png |
@@ -19,5 +20,7 @@ Query param (web): `http://localhost:8080/?design_review={screenId}__{state}`
 | P0 | student_progress | grade_e12 | `student_progress__grade_e12` | student_progress/grade_e12.png |
 | P0 | student_progress | grade_m1 | `student_progress__grade_m1` | student_progress/grade_m1.png |
 | P0 | student_progress | chain_warning | `student_progress__chain_warning` | student_progress/chain_warning.png |
+| P0 | student_progress | empty | `student_progress__empty` | student_progress/empty.png |
+| P0 | student_training | empty | `student_training__empty` | student_training/empty.png |
 
 P1/P2 captures can be added to this matrix later.

@@ -685,7 +685,7 @@ _UnitStatusStyle _unitStatusStyle(String status) {
     _ => (
         icon: Icons.play_arrow_rounded,
         color: AppColors.primary,
-        label: '미시작',
+        label: '시작 전',
       ),
   };
 }
@@ -772,7 +772,7 @@ class _UnitCard extends StatelessWidget {
                 child: ClipRRect(
                   borderRadius: BorderRadius.circular(AppRadii.pill),
                   child: LinearProgressIndicator(
-                    value: progressValue > 0 ? progressValue : null,
+                    value: progressValue,
                     minHeight: 8,
                     backgroundColor: AppColors.surfaceMuted,
                     color: style.color,
