@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:math_lens_tutor/dev/design_review_data.dart';
@@ -5,8 +7,10 @@ import 'package:math_lens_tutor/models/app_models.dart';
 import 'package:math_lens_tutor/screens/student_progress_screen.dart';
 import 'package:math_lens_tutor/screens/student_training_screen.dart';
 import 'package:math_lens_tutor/services/api_client.dart';
+import 'package:math_lens_tutor/services/app_prefs.dart';
 import 'package:math_lens_tutor/services/auth_session.dart';
 import 'package:math_lens_tutor/widgets/glass.dart';
+import 'package:math_lens_tutor/widgets/learning_profile_widgets.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 /// Title as the screen draws it inside the scroll view. [GlassScrollEdge]
@@ -37,11 +41,11 @@ Widget _training({
   );
 }
 
-Widget _progress({bool viewAsGuardian = false}) {
+Widget _progress({bool viewAsGuardian = false, AuthSession? session}) {
   return MaterialApp(
     home: Scaffold(
       body: StudentProgressScreen(
-        apiClient: ApiClient(authSession: AuthSession()),
+        apiClient: ApiClient(authSession: session ?? AuthSession()),
         viewAsGuardian: viewAsGuardian,
         demoProfile: designReviewProfileFirstVisit(),
         demoInitialGradeTab: 3,
@@ -50,8 +54,32 @@ Widget _progress({bool viewAsGuardian = false}) {
   );
 }
 
+/// A session with one linked child, loaded the way the app does (from prefs).
+///
+/// Without a linked child `GuardianLearningGate` shows its "link a child"
+/// screen and never builds the progress content, so the guardian view needs this.
+Future<AuthSession> _guardianSession(WidgetTester tester) async {
+  SharedPreferences.setMockInitialValues({
+    'linked_students': jsonEncode([
+      const LinkedStudent(
+        id: 'student-1',
+        displayName: '지민',
+        studentCode: '123456',
+      ).toJson(),
+    ]),
+  });
+  resetAppPrefsCache();
+  final session = AuthSession();
+  await tester.runAsync(session.load);
+  expect(session.linkedStudents, hasLength(1));
+  return session;
+}
+
 void main() {
-  setUp(() => SharedPreferences.setMockInitialValues({}));
+  setUp(() {
+    SharedPreferences.setMockInitialValues({});
+    resetAppPrefsCache();
+  });
 
   testWidgets('training empty state, no learning data', (tester) async {
     await tester.pumpWidget(_training(profile: designReviewProfileFirstVisit()));
@@ -211,11 +239,31 @@ void main() {
 
   testWidgets('guardian view keeps its own title and has no student intro',
       (tester) async {
-    await tester.pumpWidget(_progress(viewAsGuardian: true));
+    final session = await _guardianSession(tester);
+    await tester.pumpWidget(_progress(viewAsGuardian: true, session: session));
     await tester.pumpAndSettle();
 
+    // 진도 본문이 실제로 그려졌는지부터 확인한다. 연결된 자녀가 없을 때의
+    // 안내 화면에는 구간 선택도 단원 줄도 없다.
+    expect(find.byType(GradeBandTabBar), findsOneWidget);
+    expect(find.text('① 소인수분해'), findsOneWidget);
+    expect(find.text('단원을 눌러 자녀에게 어떻게 도와줄지 확인하세요'), findsOneWidget);
+    expect(find.text('지민'), findsWidgets);
+
+    expect(_titleInScroll('교육과정 진도'), findsOneWidget);
     expect(find.text('내 진도'), findsNothing);
+    expect(find.text('내 진도 현황'), findsNothing);
     expect(find.textContaining('숙제를 찍으면 그 단원부터 채워져요.'), findsNothing);
+    expect(find.textContaining(RegExp(r'^0 / \d+ 단원$')), findsNothing);
+    expect(find.byType(GlassScrollEdge), findsNothing);
+
+    // 시작 전인 단원은 빈 진행 막대로 보인다.
+    expect(find.text('시작 전'), findsWidgets);
+    final bars = tester
+        .widgetList<LinearProgressIndicator>(find.byType(LinearProgressIndicator))
+        .toList();
+    expect(bars, isNotEmpty);
+    expect(bars.every((bar) => bar.value == 0), isTrue);
   });
 
   testWidgets('scroll edge appears after scrolling the progress tab',
