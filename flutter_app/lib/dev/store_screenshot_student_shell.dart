@@ -9,6 +9,7 @@ import '../services/api_client.dart';
 import '../services/oauth_service.dart';
 import '../widgets/glass.dart';
 import 'design_review_data.dart';
+import '../theme/app_icons.dart';
 
 /// 학생 AppShell + 하단 탭 — 스토어 스크린샷용.
 class StoreScreenshotStudentShell extends StatefulWidget {
@@ -87,10 +88,7 @@ class _StoreScreenshotStudentShellState
       extendBody: true,
       backgroundColor: Colors.transparent,
       body: GlassAtmosphere(
-        child: IndexedStack(
-          index: _index,
-          children: tabs,
-        ),
+        child: IndexedStack(index: _index, children: tabs),
       ),
       bottomNavigationBar: GlassTabBar(
         selectedIndex: _index,
@@ -98,10 +96,16 @@ class _StoreScreenshotStudentShellState
         onCenterAction: () {},
         labels: const ['홈', '훈련', '성장', '설정'],
         icons: const [
-          Icons.home_rounded,
-          Icons.edit_note_rounded,
-          Icons.menu_book_rounded,
-          Icons.settings_rounded,
+          AppIcons.home,
+          AppIcons.training,
+          AppIcons.growth,
+          AppIcons.settings,
+        ],
+        selectedIcons: const [
+          AppIcons.homeFill,
+          AppIcons.trainingFill,
+          AppIcons.growthFill,
+          AppIcons.settingsFill,
         ],
       ),
     );

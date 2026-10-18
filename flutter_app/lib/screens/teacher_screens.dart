@@ -8,6 +8,7 @@ import '../widgets/learning_profile_widgets.dart';
 import 'link_student_screen.dart';
 import 'student_progress_screen.dart';
 import '../theme/app_design_system.dart';
+import '../theme/app_icons.dart';
 
 class TeacherHomeScreen extends StatefulWidget {
   const TeacherHomeScreen({super.key, required this.apiClient});
@@ -185,7 +186,7 @@ class _TeacherHomeScreenState extends State<TeacherHomeScreen> {
                   child: Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Icon(Icons.warning_amber_rounded,
+                      Icon(AppIcons.warning,
                           size: 22, color: AppColors.accent),
                       const SizedBox(width: 10),
                       Expanded(

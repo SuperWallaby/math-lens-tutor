@@ -7,6 +7,7 @@ import '../theme/app_design_system.dart';
 import '../widgets/bouncing_ellipsis_text.dart';
 import '../widgets/hero_icon_3d.dart';
 import 'practice_screen.dart';
+import '../theme/app_icons.dart';
 
 /// 단원·훈련 시작 시 AI 문제 생성 대기 — 즉시 푸시해 멈춘 화면 대신 피드백을 줍니다.
 class PracticeGeneratingScreen extends StatefulWidget {
@@ -112,7 +113,7 @@ class _PracticeGeneratingScreenState extends State<PracticeGeneratingScreen>
       appBar: AppBar(
         title: const Text('연습 준비'),
         leading: IconButton(
-          icon: const Icon(Icons.close_rounded),
+          icon: const Icon(AppIcons.close),
           onPressed: () => Navigator.of(context).pop(),
         ),
       ),

@@ -2,13 +2,14 @@ import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:math_lens_tutor/widgets/glass.dart';
+import 'package:math_lens_tutor/theme/app_icons.dart';
 
 const _labels = ['홈', '훈련', '성장', '설정'];
 const _icons = [
-  Icons.home_rounded,
-  Icons.edit_note_rounded,
-  Icons.menu_book_rounded,
-  Icons.settings_rounded,
+  AppIcons.home,
+  AppIcons.pencil,
+  AppIcons.book,
+  AppIcons.settings,
 ];
 
 GlassTabBar _tabBar({
@@ -110,10 +111,26 @@ void main() {
         ),
       ),
     );
-    // 30 (camera lift) + 64 (pill) + 16 (gap) + 34 (safe area)
-    expect(tester.getSize(find.byType(GlassTabBar)).height, 30 + 64 + 16 + 34);
+    // 30 (camera lift) + 72 (pill) + 24 (sits 10 into the 34 home-indicator area)
+    expect(tester.getSize(find.byType(GlassTabBar)).height, 30 + 72 + 24);
     // extendBody hands that height to the body as bottom padding.
-    expect(find.text('144.0'), findsOneWidget);
+    expect(find.text('126.0'), findsOneWidget);
+  });
+
+  testWidgets('without a home indicator the bar keeps a 12pt gap', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      MaterialApp(
+        home: MediaQuery(
+          data: const MediaQueryData(size: Size(390, 800)),
+          child: Scaffold(
+            bottomNavigationBar: _tabBar(onSelected: (_) {}, onCamera: () {}),
+          ),
+        ),
+      ),
+    );
+    expect(tester.getSize(find.byType(GlassTabBar)).height, 30 + 72 + 12);
   });
 
   testWidgets('empty space around the bar lets touches through', (
@@ -205,11 +222,7 @@ void main() {
     expect(
       () => GlassTabBar(
         labels: const ['홈', '훈련', '설정'],
-        icons: const [
-          Icons.home_rounded,
-          Icons.edit_note_rounded,
-          Icons.settings_rounded,
-        ],
+        icons: const [AppIcons.home, AppIcons.pencil, AppIcons.settings],
         selectedIndex: 0,
         onSelected: (_) {},
         onCenterAction: () {},
@@ -217,4 +230,78 @@ void main() {
       throwsAssertionError,
     );
   });
+
+  testWidgets('selected tab shows the filled icon, others the line icon', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_motionBar(2));
+    expect(find.byIcon(AppIcons.growthFill), findsOneWidget);
+    expect(find.byIcon(AppIcons.growth), findsNothing);
+    expect(find.byIcon(AppIcons.home), findsOneWidget);
+    expect(find.byIcon(AppIcons.homeFill), findsNothing);
+  });
+
+  testWidgets('the drop slides to the new tab and settles under it', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_motionBar(0));
+    final homeX = tester.getCenter(find.text('홈')).dx;
+    expect(_dropCenterX(tester), moreOrLessEquals(homeX, epsilon: 1));
+
+    await tester.pumpWidget(_motionBar(2));
+    await tester.pump(const Duration(milliseconds: 120));
+    final growthX = tester.getCenter(find.text('성장')).dx;
+    final midX = _dropCenterX(tester);
+    expect(midX, greaterThan(homeX + 1));
+    expect(midX, lessThan(growthX - 1));
+
+    await tester.pumpAndSettle();
+    expect(_dropCenterX(tester), moreOrLessEquals(growthX, epsilon: 1));
+  });
+
+  testWidgets('with reduce motion the drop jumps without sliding', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_motionBar(0, reduceMotion: true));
+    await tester.pumpWidget(_motionBar(3, reduceMotion: true));
+    await tester.pump();
+    final settingsX = tester.getCenter(find.text('설정')).dx;
+    expect(_dropCenterX(tester), moreOrLessEquals(settingsX, epsilon: 1));
+  });
 }
+
+const _selectedIcons = [
+  AppIcons.homeFill,
+  AppIcons.trainingFill,
+  AppIcons.growthFill,
+  AppIcons.settingsFill,
+];
+
+Widget _motionBar(int selected, {bool reduceMotion = false}) {
+  return MaterialApp(
+    home: MediaQuery(
+      data: MediaQueryData(
+        size: const Size(390, 800),
+        disableAnimations: reduceMotion,
+      ),
+      child: Scaffold(
+        bottomNavigationBar: GlassTabBar(
+          labels: _labels,
+          icons: const [
+            AppIcons.home,
+            AppIcons.training,
+            AppIcons.growth,
+            AppIcons.settings,
+          ],
+          selectedIcons: _selectedIcons,
+          selectedIndex: selected,
+          onSelected: (_) {},
+          onCenterAction: () {},
+        ),
+      ),
+    ),
+  );
+}
+
+double _dropCenterX(WidgetTester tester) =>
+    tester.getCenter(find.byKey(const Key('glass-tab-drop'))).dx;

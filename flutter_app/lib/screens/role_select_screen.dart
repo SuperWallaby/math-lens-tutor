@@ -4,6 +4,7 @@ import '../layout/tablet_layout.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
 import '../theme/app_design_system.dart';
+import '../theme/app_icons.dart';
 
 class RoleSelectScreen extends StatefulWidget {
   const RoleSelectScreen({
@@ -137,7 +138,7 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
               _RoleCard(
                 title: '학생',
                 body: '풀이 사진 분석, 유사 문제 연습, 내 학습 대시보드',
-                icon: Icons.school_rounded,
+                icon: AppIcons.school,
                 selected: _pendingRole == AppUserRole.student,
                 onTap: () => setState(() => _pendingRole = AppUserRole.student),
               ),
@@ -145,7 +146,7 @@ class _RoleSelectScreenState extends State<RoleSelectScreen> {
               _RoleCard(
                 title: '학부모',
                 body: '오늘의 코칭 질문·틀린 문제 설명으로 자녀 학습 돕기',
-                icon: Icons.family_restroom_rounded,
+                icon: AppIcons.group,
                 selected: _pendingRole == AppUserRole.parent,
                 onTap: () => setState(() => _pendingRole = AppUserRole.parent),
               ),
@@ -246,7 +247,7 @@ class _RoleCard extends StatelessWidget {
                 ),
               ),
               if (selected)
-                const Icon(Icons.check_circle_rounded, color: AppColors.primary),
+                const Icon(AppIcons.checkCircleFill, color: AppColors.primary),
             ],
           ),
         ),

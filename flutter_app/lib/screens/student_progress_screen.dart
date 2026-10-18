@@ -12,6 +12,7 @@ import 'open_practice_flow.dart';
 import 'practice_screen.dart';
 import 'dashboard_screen.dart';
 import '../theme/app_design_system.dart';
+import '../theme/app_icons.dart';
 
 /// 본문이 이만큼 아래로 스크롤되면 위쪽 흐림(제목)이 나타난다.
 const _scrollEdgeThreshold = 30.0;
@@ -228,7 +229,7 @@ class _ProgressContent extends StatelessWidget {
           IconButton(
             onPressed: () =>
                 DashboardScreen.open(context, apiClient),
-            icon: const Icon(Icons.insights_outlined),
+            icon: const Icon(AppIcons.chart),
             tooltip: viewAsGuardian ? '학생 학습 통계' : '학습 통계',
             visualDensity: VisualDensity.compact,
           ),
@@ -294,7 +295,7 @@ class _ProgressContent extends StatelessWidget {
               );
             }
           },
-          icon: const Icon(Icons.play_arrow_rounded),
+          icon: const Icon(AppIcons.play),
           label: const Text('미션 이어하기'),
         ),
       ],

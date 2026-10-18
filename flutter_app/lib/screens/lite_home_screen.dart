@@ -6,6 +6,7 @@ import '../services/api_client.dart';
 import '../theme/app_design_system.dart';
 import '../utils/problem_image_picker.dart';
 import 'analysis_screen.dart';
+import '../theme/app_icons.dart';
 
 /// 카메라·앨범 → 분석 → 유사문제/PDF/풀이만 제공하는 미니멀 홈.
 class LiteHomeScreen extends StatelessWidget {
@@ -69,7 +70,7 @@ class LiteHomeScreen extends StatelessWidget {
                     context,
                     source: primaryProblemImageSource,
                   ),
-                  icon: const Icon(Icons.photo_camera_rounded, size: 26),
+                  icon: const Icon(AppIcons.cameraFill, size: 26),
                   label: const Padding(
                     padding: EdgeInsets.symmetric(vertical: 14),
                     child: Text(
@@ -87,7 +88,7 @@ class LiteHomeScreen extends StatelessWidget {
                     context,
                     source: ImageSource.gallery,
                   ),
-                  icon: const Icon(Icons.photo_library_outlined),
+                  icon: const Icon(AppIcons.album),
                   label: const Padding(
                     padding: EdgeInsets.symmetric(vertical: 12),
                     child: Text('앨범에서 선택'),

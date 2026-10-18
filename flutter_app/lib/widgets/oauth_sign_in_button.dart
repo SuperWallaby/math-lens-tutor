@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 
 import '../theme/app_design_system.dart';
+import '../theme/app_icons.dart';
 
 enum OAuthProvider { kakao, google, apple }
 
@@ -29,7 +30,7 @@ class OAuthProviderIcon extends StatelessWidget {
   Widget _buildMark() {
     return switch (provider) {
       OAuthProvider.kakao => Icon(
-          Icons.chat_bubble_rounded,
+          AppIcons.chat,
           size: 18,
           color: color ?? AppColors.text,
         ),
@@ -40,7 +41,7 @@ class OAuthProviderIcon extends StatelessWidget {
           fit: BoxFit.contain,
         ),
       OAuthProvider.apple => Icon(
-          Icons.apple,
+          AppIcons.apple,
           size: appleMarkSize,
           color: color,
         ),

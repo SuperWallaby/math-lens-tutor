@@ -12,6 +12,7 @@ import '../widgets/learning_profile_widgets.dart';
 import '../widgets/mixed_math_text.dart';
 import 'practice_screen.dart';
 import '../theme/app_design_system.dart';
+import '../theme/app_icons.dart';
 
 class LoopResultScreen extends StatefulWidget {
   const LoopResultScreen({
@@ -184,7 +185,7 @@ class _LoopResultScreenState extends State<LoopResultScreen> {
                       IconButton(
                         onPressed: () => Navigator.pop(ctx),
                         tooltip: '닫기',
-                        icon: const Icon(Icons.close_rounded),
+                        icon: const Icon(AppIcons.close),
                       ),
                     ],
                   ),
@@ -255,7 +256,7 @@ class _LoopResultScreenState extends State<LoopResultScreen> {
                 width: double.infinity,
                 child: GlassPrimaryButton(
                   onPressed: _retryLoading ? null : _retry,
-                  icon: _retryLoading ? null : Icons.refresh_rounded,
+                  icon: _retryLoading ? null : AppIcons.refresh,
                   label: _retryLoading ? '새 문제 불러오는 중…' : '새 문제로 다시 도전',
                 ),
               ),
@@ -526,7 +527,7 @@ class _ProblemResultCard extends StatelessWidget {
                       alignment: Alignment.centerRight,
                       child: TextButton.icon(
                         onPressed: onView,
-                        icon: const Icon(Icons.visibility_outlined, size: 16),
+                        icon: const Icon(AppIcons.eye, size: 16),
                         label: const Text('풀이 보기'),
                         style: TextButton.styleFrom(
                           foregroundColor: AppColors.primary,
@@ -640,18 +641,18 @@ class _ReviewChoiceTile extends StatelessWidget {
     Color borderColor = AppColors.borderStrong;
     Color background = AppColors.surface;
     Color iconColor = AppColors.textMuted;
-    IconData icon = Icons.radio_button_unchecked;
+    IconData icon = AppIcons.radioOff;
 
     if (isCorrectChoice) {
       borderColor = AppColors.success.withValues(alpha: 0.45);
       background = AppColors.success.withValues(alpha: 0.08);
       iconColor = AppColors.success;
-      icon = Icons.check_circle_outline_rounded;
+      icon = AppIcons.checkCircle;
     } else if (isSelected) {
       borderColor = AppColors.accent.withValues(alpha: 0.4);
       background = AppColors.accent.withValues(alpha: 0.06);
       iconColor = AppColors.accent;
-      icon = Icons.radio_button_checked;
+      icon = AppIcons.radioOn;
     }
 
     return Container(

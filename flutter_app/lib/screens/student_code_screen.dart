@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../layout/tablet_layout.dart';
 import '../theme/app_design_system.dart';
 import '../utils/student_code_format.dart';
+import '../theme/app_icons.dart';
 
 class StudentCodeScreen extends StatelessWidget {
   const StudentCodeScreen({super.key, required this.studentCode});
@@ -69,7 +70,7 @@ class StudentCodeScreen extends StatelessWidget {
                 const SizedBox(height: 20),
                 FilledButton.icon(
                   onPressed: () => _copy(context),
-                  icon: const Icon(Icons.copy_rounded),
+                  icon: const Icon(AppIcons.copy),
                   label: const Text('번호 복사하기'),
                 ),
                 const Spacer(),

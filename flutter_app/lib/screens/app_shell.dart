@@ -14,6 +14,7 @@ import 'student_progress_screen.dart';
 import 'student_training_screen.dart';
 import 'teacher_screens.dart';
 import 'upload_screen.dart';
+import '../theme/app_icons.dart';
 
 /// 학부모·교사가 아니면 역할이 비어 있어도 학생 탭을 쓴다(`_tabsFor`의 `default:`).
 /// 카메라·배지·새로고침도 같은 기준이어야 학생 탭에서 사진을 올릴 수 있다.
@@ -121,6 +122,7 @@ class _AppShellState extends State<AppShell> {
           bottomNavigationBar: GlassTabBar(
             labels: [for (final tab in tabs) tab.label],
             icons: [for (final tab in tabs) tab.icon],
+            selectedIcons: [for (final tab in tabs) tab.selectedIcon],
             selectedIndex: safeIndex,
             onCenterAction: isStudentShell ? _openUpload : null,
             badgeIndex: isStudentShell ? _studentTrainingTabIndex : null,
@@ -165,22 +167,26 @@ class _AppShellState extends State<AppShell> {
         return [
           _ShellTab(
             label: '홈',
-            icon: Icons.home_rounded,
+            icon: AppIcons.home,
+            selectedIcon: AppIcons.homeFill,
             screen: ParentHomeScreen(apiClient: widget.apiClient),
           ),
           _ShellTab(
             label: '설명',
-            icon: Icons.menu_book_rounded,
+            icon: AppIcons.book,
+            selectedIcon: AppIcons.bookFill,
             screen: ParentExplainScreen(apiClient: widget.apiClient),
           ),
           _ShellTab(
             label: '이번 주',
-            icon: Icons.task_alt_rounded,
+            icon: AppIcons.week,
+            selectedIcon: AppIcons.weekFill,
             screen: ParentReportScreen(apiClient: widget.apiClient),
           ),
           _ShellTab(
             label: '진도',
-            icon: Icons.route_rounded,
+            icon: AppIcons.route,
+            selectedIcon: AppIcons.routeFill,
             screen: StudentProgressScreen(
               apiClient: widget.apiClient,
               viewAsGuardian: true,
@@ -188,7 +194,8 @@ class _AppShellState extends State<AppShell> {
           ),
           _ShellTab(
             label: '설정',
-            icon: Icons.settings_rounded,
+            icon: AppIcons.settings,
+            selectedIcon: AppIcons.settingsFill,
             screen: SettingsScreen(
               apiClient: widget.apiClient,
               oauthService: widget.oauthService,
@@ -199,22 +206,26 @@ class _AppShellState extends State<AppShell> {
         return [
           _ShellTab(
             label: '홈',
-            icon: Icons.home_rounded,
+            icon: AppIcons.home,
+            selectedIcon: AppIcons.homeFill,
             screen: TeacherHomeScreen(apiClient: widget.apiClient),
           ),
           _ShellTab(
             label: '학생',
-            icon: Icons.person_rounded,
+            icon: AppIcons.person,
+            selectedIcon: AppIcons.personFill,
             screen: TeacherStudentDetailScreen(apiClient: widget.apiClient),
           ),
           _ShellTab(
             label: '반진도',
-            icon: Icons.groups_rounded,
+            icon: AppIcons.group,
+            selectedIcon: AppIcons.groupFill,
             screen: TeacherClassProgressScreen(apiClient: widget.apiClient),
           ),
           _ShellTab(
             label: '설정',
-            icon: Icons.settings_rounded,
+            icon: AppIcons.settings,
+            selectedIcon: AppIcons.settingsFill,
             screen: SettingsScreen(
               apiClient: widget.apiClient,
               oauthService: widget.oauthService,
@@ -226,7 +237,8 @@ class _AppShellState extends State<AppShell> {
         return [
           _ShellTab(
             label: '홈',
-            icon: Icons.home_rounded,
+            icon: AppIcons.home,
+            selectedIcon: AppIcons.homeFill,
             screen: StudentHubScreen(
               key: _studentHubKey,
               apiClient: widget.apiClient,
@@ -235,7 +247,8 @@ class _AppShellState extends State<AppShell> {
           ),
           _ShellTab(
             label: '훈련',
-            icon: Icons.edit_note_rounded,
+            icon: AppIcons.training,
+            selectedIcon: AppIcons.trainingFill,
             screen: StudentTrainingScreen(
               key: _studentTrainingKey,
               apiClient: widget.apiClient,
@@ -243,7 +256,8 @@ class _AppShellState extends State<AppShell> {
           ),
           _ShellTab(
             label: '성장',
-            icon: Icons.menu_book_rounded,
+            icon: AppIcons.growth,
+            selectedIcon: AppIcons.growthFill,
             screen: StudentProgressScreen(
               key: _studentProgressKey,
               apiClient: widget.apiClient,
@@ -251,7 +265,8 @@ class _AppShellState extends State<AppShell> {
           ),
           _ShellTab(
             label: '설정',
-            icon: Icons.settings_rounded,
+            icon: AppIcons.settings,
+            selectedIcon: AppIcons.settingsFill,
             screen: SettingsScreen(
               apiClient: widget.apiClient,
               oauthService: widget.oauthService,
@@ -266,11 +281,13 @@ class _ShellTab {
   const _ShellTab({
     required this.label,
     required this.icon,
+    required this.selectedIcon,
     required this.screen,
   });
 
   final String label;
   final IconData icon;
+  final IconData selectedIcon;
   final Widget screen;
 }
 

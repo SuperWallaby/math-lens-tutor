@@ -7,6 +7,7 @@ import '../theme/app_design_system.dart';
 import '../widgets/hero_icon_3d.dart';
 import '../widgets/linked_children_panel.dart';
 import '../widgets/student_link_guide.dart';
+import '../theme/app_icons.dart';
 
 /// 학부모·교사는 자녀/학생 연결 전까지 앱 진입 불가.
 class GuardianLinkRequiredScreen extends StatefulWidget {
@@ -48,7 +49,7 @@ class _GuardianLinkRequiredScreenState extends State<GuardianLinkRequiredScreen>
     return Scaffold(
       appBar: AppBar(
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back_rounded),
+          icon: const Icon(AppIcons.back),
           onPressed: _busy ? null : _handleBack,
         ),
         title: Text(isParent ? '자녀 연결' : '학생 연결'),

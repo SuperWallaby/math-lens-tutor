@@ -14,6 +14,7 @@ import '../widgets/skeleton_box.dart';
 import '../widgets/skeleton_lines.dart';
 import 'practice_screen.dart';
 import '../theme/app_design_system.dart';
+import '../theme/app_icons.dart';
 
 const String _weakConceptPlaceholderLegacy = '사진만으로는 부족한 개념을 특정하기 어렵습니다.';
 const String _recommendedFocusPlaceholderLegacy =
@@ -289,7 +290,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                 ),
                 const SizedBox(height: 18),
                 AppInfoRow(
-                  icon: Icons.show_chart_outlined,
+                  icon: AppIcons.chart,
                   title: '약한 유형',
                   subtitle: weakShown.isNotEmpty
                       ? weakShown.first
@@ -297,7 +298,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                 ),
                 const SizedBox(height: 10),
                 AppInfoRow(
-                  icon: Icons.gps_fixed_rounded,
+                  icon: AppIcons.target,
                   title: '추천 훈련',
                   subtitle: focusShown.isNotEmpty
                       ? focusShown.first
@@ -637,7 +638,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
               const SizedBox(height: 18),
               if (similarReady) ...[
                 OutlinedButton.icon(
-                  icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+                  icon: const Icon(AppIcons.pdf, size: 18),
                   label: const Text('유사문제 PDF로 받기'),
                   onPressed: () async {
                     final set = _problemSet;

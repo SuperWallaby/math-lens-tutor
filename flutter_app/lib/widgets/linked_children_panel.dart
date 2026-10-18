@@ -11,6 +11,7 @@ import 'glass.dart';
 import 'hero_icon_3d.dart';
 import 'profile_avatar.dart';
 import 'student_code_input_field.dart';
+import '../theme/app_icons.dart';
 
 class LinkedChildrenPanel extends StatefulWidget {
   const LinkedChildrenPanel({
@@ -78,7 +79,7 @@ class _LinkedChildrenPanelState extends State<LinkedChildrenPanel> {
     }
     return IconButton(
       onPressed: _pasteCode,
-      icon: const Icon(Icons.content_paste_rounded),
+      icon: const Icon(AppIcons.paste),
       tooltip: '붙여넣기',
     );
   }
@@ -350,10 +351,10 @@ class _LinkedChildrenPanelState extends State<LinkedChildrenPanel> {
                         onPressed: _loading
                             ? null
                             : () => _showEditLabelSheet(students[i]),
-                        icon: const Icon(Icons.edit_outlined, size: 20),
+                        icon: const Icon(AppIcons.edit, size: 20),
                       ),
                       const Icon(
-                        Icons.check_circle_rounded,
+                        AppIcons.checkCircleFill,
                         color: AppColors.success,
                         size: 20,
                       ),

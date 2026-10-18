@@ -12,6 +12,7 @@ import 'upload_screen.dart';
 import '../widgets/linked_children_panel.dart';
 import '../widgets/student_link_guide.dart';
 import '../theme/app_design_system.dart';
+import '../theme/app_icons.dart';
 
 const _kStudyReturnUser = 'study_return_user';
 
@@ -135,7 +136,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                       IconButton(
                         onPressed: _copyStudentCode,
-                        icon: const Icon(Icons.copy_rounded),
+                        icon: const Icon(AppIcons.copy),
                         tooltip: '복사',
                       ),
                     ],
@@ -152,7 +153,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       ),
                     );
                   },
-                  icon: const Icon(Icons.camera_alt_rounded),
+                  icon: const Icon(AppIcons.camera),
                   label: const Text('풀이 사진 분석하기'),
                 ),
                 const SizedBox(height: 12),
@@ -183,7 +184,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         );
                       },
-                icon: const Icon(Icons.insights_rounded),
+                icon: const Icon(AppIcons.chart),
                 label: Text(isGuardian ? '학생 학습 대시보드' : '학습 대시보드'),
               ),
               if (isGuardian &&
@@ -196,17 +197,17 @@ class _HomeScreenState extends State<HomeScreen> {
               ],
               const SizedBox(height: 32),
               const _FeatureTile(
-                icon: Icons.image_search_rounded,
+                icon: AppIcons.imageSearch,
                 title: '사진 기반 분석',
                 body: 'Azure OpenAI는 서버에서만 호출하고 앱에는 API 키를 넣지 않습니다.',
               ),
               const _FeatureTile(
-                icon: Icons.quiz_rounded,
+                icon: AppIcons.question,
                 title: '네이티브 문제풀이',
                 body: '객관식 1~5번과 주관식 답안을 Flutter 화면에서 제출합니다.',
               ),
               const _FeatureTile(
-                icon: Icons.bar_chart_rounded,
+                icon: AppIcons.barChart,
                 title: '수준 피드백',
                 body: 'MongoDB에 누적된 풀이 기록으로 약점과 정답률을 보여줍니다.',
               ),

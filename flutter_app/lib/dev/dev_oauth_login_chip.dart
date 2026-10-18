@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import '../services/api_client.dart';
 import '../theme/app_design_system.dart';
 import 'dev_oauth_accounts.dart';
+import '../theme/app_icons.dart';
 
 /// 디버그 빌드 전용 — 카카오/Apple OAuth 계정 즉시 로그인
 class DevOAuthLoginChip extends StatelessWidget {
@@ -33,7 +34,7 @@ class DevOAuthLoginChip extends StatelessWidget {
             child: Row(
               mainAxisSize: MainAxisSize.min,
               children: [
-                Icon(Icons.developer_mode_rounded, color: Colors.white, size: 16),
+                Icon(AppIcons.code, color: Colors.white, size: 16),
                 SizedBox(width: 6),
                 Text(
                   'DEV',
@@ -171,7 +172,7 @@ class _DevOAuthLoginTile extends StatelessWidget {
     final isKakao = account.provider == 'kakao';
     final accent = isKakao ? const Color(0xFFFEE500) : AppColors.text;
     final fg = isKakao ? AppColors.text : Colors.white;
-    final icon = isKakao ? Icons.chat_bubble_rounded : Icons.apple_rounded;
+    final icon = isKakao ? AppIcons.chat : AppIcons.apple;
 
     return Material(
       color: isKakao ? accent : AppColors.text,

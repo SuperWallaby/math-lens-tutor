@@ -18,6 +18,7 @@ import 'package:math_lens_tutor/theme/app_design_system.dart';
 import 'package:math_lens_tutor/widgets/app_card.dart';
 import 'package:math_lens_tutor/widgets/glass.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:math_lens_tutor/theme/app_icons.dart';
 
 ApiClient _api() => ApiClient(authSession: AuthSession());
 
@@ -323,7 +324,7 @@ void main() {
       GlassPrimaryButton primary() =>
           tester.widget<GlassPrimaryButton>(_primaryButtons);
       expect(primary().label, '새 문제로 다시 도전');
-      expect(primary().icon, Icons.refresh_rounded);
+      expect(primary().icon, AppIcons.refresh);
       expect(primary().onPressed, isNotNull);
       expect(_outlined('나중에 하기'), findsOneWidget);
 

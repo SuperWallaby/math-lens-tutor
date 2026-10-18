@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../layout/tablet_layout.dart';
 import '../theme/app_design_system.dart';
 import '../services/api_client.dart';
+import '../theme/app_icons.dart';
 
 /// 교사 계정 일시 중단 안내
 class TeacherClosedScreen extends StatelessWidget {
@@ -29,7 +30,7 @@ class TeacherClosedScreen extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 const Icon(
-                  Icons.construction_outlined,
+                  AppIcons.tool,
                   size: 56,
                   color: AppColors.textSub,
                 ),

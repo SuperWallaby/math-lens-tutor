@@ -24,6 +24,7 @@ import 'package:math_lens_tutor/widgets/oauth_sign_in_button.dart';
 import 'package:math_lens_tutor/widgets/parent_tab_scaffold.dart';
 import 'package:math_lens_tutor/widgets/student_picker.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:math_lens_tutor/theme/app_icons.dart';
 
 const _parent = AppUser(
   id: 'parent-1',
@@ -381,10 +382,10 @@ void main() {
     );
     expect(find.byType(AppCard), findsOneWidget);
     expect(find.byType(BackdropFilter), findsNothing);
-    expect(find.byIcon(Icons.flag_outlined), findsOneWidget);
+    expect(find.byIcon(AppIcons.flag), findsOneWidget);
     final box = tester.widget<Container>(
       find.ancestor(
-        of: find.byIcon(Icons.flag_outlined),
+        of: find.byIcon(AppIcons.flag),
         matching: find.byType(Container),
       ).first,
     );
@@ -450,7 +451,7 @@ void main() {
 
     // 닫기 버튼은 화면 낭독기에도 「닫기」로 읽힌다.
     expect(find.descendant(of: sheet, matching: find.byTooltip('닫기')), findsOneWidget);
-    await tester.tap(find.descendant(of: sheet, matching: find.byIcon(Icons.close_rounded)));
+    await tester.tap(find.descendant(of: sheet, matching: find.byIcon(AppIcons.close)));
     await tester.pumpAndSettle();
     expect(find.textContaining('문제 1번'), findsNothing);
     expect(find.byType(GlassSurface), findsNWidgets(onScreen));
@@ -593,7 +594,7 @@ void main() {
     expect(button.style!.backgroundColor!.resolve(none), AppColors.primarySoft);
     expect(button.style!.foregroundColor!.resolve(none), AppColors.primaryDark);
     expect(button.onPressed, isNotNull);
-    expect(find.byIcon(Icons.picture_as_pdf_outlined), findsOneWidget);
+    expect(find.byIcon(AppIcons.pdf), findsOneWidget);
     expect(find.byType(GlassPrimaryButton), findsNothing);
   });
 }

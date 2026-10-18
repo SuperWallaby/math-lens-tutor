@@ -10,6 +10,7 @@ import '../widgets/learning_profile_widgets.dart';
 import '../widgets/parent_tab_scaffold.dart';
 import '../widgets/mixed_math_text.dart';
 import '../theme/app_design_system.dart';
+import '../theme/app_icons.dart';
 
 class ParentExplainScreen extends StatefulWidget {
   const ParentExplainScreen({
@@ -287,7 +288,7 @@ class _ParentExplainDetailScreenState extends State<ParentExplainDetailScreen> {
                     height: 18,
                     child: CircularProgressIndicator(strokeWidth: 2),
                   )
-                : const Icon(Icons.picture_as_pdf_outlined),
+                : const Icon(AppIcons.pdf),
             label: Text(_loadingPdf ? '준비 중…' : '유사문제 PDF 발행'),
           ),
           if (_pdfError != null) ...[

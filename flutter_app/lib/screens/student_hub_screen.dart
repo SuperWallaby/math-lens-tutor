@@ -17,6 +17,7 @@ import '../widgets/skeleton_lines.dart';
 import 'analysis_screen.dart';
 import 'practice_screen.dart';
 import 'signup_screen.dart';
+import '../theme/app_icons.dart';
 
 class _HubData {
   const _HubData({required this.profile, required this.submissions});
@@ -953,7 +954,7 @@ class _RecentSubmissionTile extends StatelessWidget {
                 ),
               ),
               const Icon(
-                Icons.chevron_right_rounded,
+                AppIcons.chevronRight,
                 color: AppColors.textMuted,
               ),
             ],
@@ -983,7 +984,7 @@ class _SubmissionThumbnail extends StatelessWidget {
                 color: AppColors.primary.withValues(alpha: 0.08),
                 alignment: Alignment.center,
                 child: Icon(
-                  Icons.image_outlined,
+                  AppIcons.image,
                   color: AppColors.primary.withValues(alpha: 0.55),
                   size: 24,
                 ),
@@ -997,7 +998,7 @@ class _SubmissionThumbnail extends StatelessWidget {
                   color: AppColors.primary.withValues(alpha: 0.08),
                   alignment: Alignment.center,
                   child: Icon(
-                    Icons.broken_image_outlined,
+                    AppIcons.image,
                     color: AppColors.primary.withValues(alpha: 0.55),
                     size: 24,
                   ),

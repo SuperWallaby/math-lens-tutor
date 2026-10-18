@@ -5,6 +5,7 @@ import '../theme/app_design_system.dart';
 import '../utils/korean_date.dart';
 import 'glass.dart';
 import 'profile_avatar.dart' show resolveProfileImageUrl;
+import '../theme/app_icons.dart';
 
 /// 홈 파란 무대가 어떤 인사를 건네는지.
 enum HomeStageMode { firstVisit, returning }
@@ -256,7 +257,7 @@ class _StreakChip extends StatelessWidget {
         mainAxisSize: MainAxisSize.min,
         children: [
           const Icon(
-            Icons.local_fire_department_rounded,
+            AppIcons.fireFill,
             size: 16,
             color: AppColors.spark,
           ),
@@ -297,7 +298,7 @@ class _StageAvatar extends StatelessWidget {
     return const GlassSurface(
       preset: GlassPreset.onBlue,
       child: Center(
-        child: Icon(Icons.person_rounded, size: 22, color: Colors.white),
+        child: Icon(AppIcons.personFill, size: 22, color: Colors.white),
       ),
     );
   }

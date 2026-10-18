@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import '../models/app_models.dart';
 import '../services/api_base_url.dart';
 import '../theme/app_design_system.dart';
+import '../theme/app_icons.dart';
 
 String profileInitialsFromName(String displayName) {
   final trimmed = displayName.trim();
@@ -89,7 +90,7 @@ class ProfileAvatar extends StatelessWidget {
               border: Border.all(color: AppColors.surface, width: 2),
             ),
             child: const Icon(
-              Icons.camera_alt_rounded,
+              AppIcons.camera,
               size: 12,
               color: Colors.white,
             ),

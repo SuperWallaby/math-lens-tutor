@@ -9,6 +9,7 @@ import '../utils/problem_image_picker.dart';
 import '../widgets/glass.dart';
 import 'analysis_screen.dart';
 import '../theme/app_design_system.dart';
+import '../theme/app_icons.dart';
 
 /// 데스크톱에서 Finder 등으로 드롭 받기 (`desktop_drop`).
 bool get _supportsDesktopDrop =>
@@ -189,7 +190,7 @@ class _UploadScreenState extends State<UploadScreen> {
             const SizedBox(height: 14),
             GlassPrimaryButton(
               onPressed: _imageBytes == null ? null : _onPrimaryButton,
-              icon: Icons.auto_awesome_rounded,
+              icon: AppIcons.sparkles,
               label: '분석하고 유사 문제 생성',
             ),
             if (_error != null) ...[
@@ -240,8 +241,8 @@ class _UploadScreenState extends State<UploadScreen> {
                     children: [
                       Icon(
                         _dragHover
-                            ? Icons.file_download_rounded
-                            : Icons.camera_alt_rounded,
+                            ? AppIcons.download
+                            : AppIcons.camera,
                         size: 36,
                         color: AppColors.primary,
                       ),

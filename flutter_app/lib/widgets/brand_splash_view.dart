@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../theme/app_design_system.dart';
+import '../theme/app_icons.dart';
 
 /// 로딩 한 줄. `web/index.html` 과 같은 목록을 유지한다.
 const kSplashLines = <String>[
@@ -115,7 +116,7 @@ class _BrandSplashViewState extends State<BrandSplashView>
                       fit: BoxFit.cover,
                       gaplessPlayback: true,
                       errorBuilder: (_, error, stackTrace) => const Icon(
-                        Icons.auto_awesome_rounded,
+                        AppIcons.sparkles,
                         size: 56,
                         color: Colors.white,
                       ),

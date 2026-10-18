@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:math_lens_tutor/theme/app_design_system.dart';
 import 'package:math_lens_tutor/widgets/app_card.dart';
+import 'package:math_lens_tutor/theme/app_icons.dart';
 
 BoxDecoration _firstDecoration(WidgetTester tester, Type owner) {
   final box = tester.widget<DecoratedBox>(
@@ -148,7 +149,7 @@ void main() {
       const MaterialApp(
         home: Scaffold(
           body: AppInfoRow(
-            icon: Icons.show_chart_outlined,
+            icon: AppIcons.chart,
             title: '약한 유형',
             subtitle: '일차방정식',
           ),

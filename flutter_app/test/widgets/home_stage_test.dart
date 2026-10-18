@@ -6,6 +6,7 @@ import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:math_lens_tutor/models/app_models.dart';
 import 'package:math_lens_tutor/widgets/home_stage.dart';
+import 'package:math_lens_tutor/theme/app_icons.dart';
 
 const jimin = HomeStageUser(
   name: '지민',
@@ -153,7 +154,7 @@ void main() {
     await tester.pumpWidget(_stage(const HomeStageUser(isGuest: true)));
     expect(find.text('반가워요'), findsOneWidget);
     expect(find.text('둘러보는 중'), findsOneWidget);
-    expect(find.byIcon(Icons.person_rounded), findsOneWidget);
+    expect(find.byIcon(AppIcons.personFill), findsOneWidget);
     expect(find.text('3주 연속'), findsNothing);
   });
 

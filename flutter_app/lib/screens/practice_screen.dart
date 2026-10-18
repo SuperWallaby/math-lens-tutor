@@ -16,6 +16,7 @@ import '../widgets/question_view.dart';
 import '../widgets/mixed_math_text.dart';
 import 'loop_result_screen.dart';
 import '../theme/app_design_system.dart';
+import '../theme/app_icons.dart';
 
 class PracticeScreen extends StatefulWidget {
   const PracticeScreen({
@@ -206,7 +207,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
     return [
       _practiceMenuItem(
         value: 'new_set',
-        icon: Icons.refresh_rounded,
+        icon: AppIcons.refresh,
         iconColor: AppColors.primary,
         iconBackground: AppColors.primary.withValues(alpha: 0.1),
         title: '새로운 문제받기',
@@ -214,7 +215,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
       ),
       _practiceMenuItem(
         value: 'harder_problem',
-        icon: Icons.trending_up_rounded,
+        icon: AppIcons.trendingUp,
         iconColor: AppColors.accent,
         iconBackground: AppColors.accent.withValues(alpha: 0.12),
         title: '더 어려운 문제로 교체',
@@ -222,7 +223,7 @@ class _PracticeScreenState extends State<PracticeScreen> {
       ),
       _practiceMenuItem(
         value: 'save_pdf',
-        icon: Icons.picture_as_pdf_outlined,
+        icon: AppIcons.pdf,
         iconColor: AppColors.textSub,
         iconBackground: AppColors.surfaceMuted,
         title: '저장하기',
@@ -378,13 +379,13 @@ class _PracticeScreenState extends State<PracticeScreen> {
                 else if (widget.liteMode)
                   IconButton(
                     onPressed: _exportPdf,
-                    icon: const Icon(Icons.picture_as_pdf_outlined),
+                    icon: const Icon(AppIcons.pdf),
                     tooltip: 'PDF로 저장',
                   )
                 else ...[
                   PopupMenuButton<String>(
                     tooltip: '문제 메뉴',
-                    icon: const Icon(Icons.more_vert_rounded),
+                    icon: const Icon(AppIcons.more),
                     position: PopupMenuPosition.under,
                     offset: const Offset(0, 12),
                     constraints: const BoxConstraints(minWidth: 272),
@@ -504,13 +505,13 @@ class _PracticeScreenState extends State<PracticeScreen> {
                       if (_currentIndex >= total - 1)
                         GlassPrimaryButton(
                           onPressed: _openLoopResult,
-                          icon: Icons.flag_rounded,
+                          icon: AppIcons.flagFill,
                           label: '세트 결과 보기',
                         )
                       else
                         OutlinedButton.icon(
                           onPressed: _openLoopResult,
-                          icon: const Icon(Icons.flag_rounded),
+                          icon: const Icon(AppIcons.flagFill),
                           label: const Text('세트 결과 보기'),
                         ),
                     ],
@@ -815,7 +816,7 @@ class _SubmittedBanner extends StatelessWidget {
           child: Row(
             children: [
               Icon(
-                ok ? Icons.check_circle_rounded : Icons.cancel_rounded,
+                ok ? AppIcons.checkCircleFill : AppIcons.closeCircleFill,
                 color: ok ? AppColors.success : AppColors.accent,
                 size: 22,
               ),

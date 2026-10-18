@@ -10,6 +10,7 @@ import 'app_restart.dart';
 import 'dev_accounts.dart';
 import 'dev_oauth_accounts.dart';
 import 'dev_tools.dart';
+import '../theme/app_icons.dart';
 
 /// 디버그 빌드 전용 플로팅 개발자 메뉴.
 class DevMenuOverlay extends StatelessWidget {
@@ -94,7 +95,7 @@ class _DevMenuFab extends StatelessWidget {
           width: 44,
           height: 44,
           child: Icon(
-            Icons.developer_mode_rounded,
+            AppIcons.code,
             color: Colors.white,
             size: 22,
           ),
@@ -216,10 +217,10 @@ class _DevMenuSheetState extends State<_DevMenuSheet> {
 
   IconData _oauthProviderIcon(String provider) {
     return switch (provider) {
-      'kakao' => Icons.chat_bubble_rounded,
-      'google' => Icons.g_mobiledata_rounded,
-      'apple' => Icons.apple_rounded,
-      _ => Icons.account_circle_outlined,
+      'kakao' => AppIcons.chat,
+      'google' => AppIcons.google,
+      'apple' => AppIcons.apple,
+      _ => AppIcons.account,
     };
   }
 
@@ -245,7 +246,7 @@ class _DevMenuSheetState extends State<_DevMenuSheet> {
           children: [
             Row(
               children: [
-                const Icon(Icons.developer_mode_rounded, size: 20),
+                const Icon(AppIcons.code, size: 20),
                 const SizedBox(width: AppSpacing.sm),
                 const Expanded(
                   child: Text(
@@ -271,16 +272,43 @@ class _DevMenuSheetState extends State<_DevMenuSheet> {
                     const SizedBox(height: AppSpacing.sm),
                     _InfoTile(label: 'API', value: apiUrl),
                     const SizedBox(height: AppSpacing.lg),
+          // 더미 로그인은 맨 위 — 아래의 계정 삭제 버튼과 멀리 둔다.
+          const _SectionLabel('빈 계정 로그인'),
+          const SizedBox(height: AppSpacing.sm),
+          const Text(
+            '역할·학년 미설정 상태로 서버 계정에 로그인합니다. 온보딩부터 테스트할 때 사용하세요.',
+            style: TextStyle(
+              color: AppColors.textSub,
+              fontSize: 12,
+              height: 1.45,
+            ),
+          ),
+          const SizedBox(height: AppSpacing.md),
+          Wrap(
+            spacing: AppSpacing.sm,
+            runSpacing: AppSpacing.sm,
+            children: [
+              for (final account in devAccountOptionsList)
+                ActionChip(
+                  avatar: const Icon(AppIcons.person, size: 18),
+                  label: Text(account.label),
+                  onPressed: _busy
+                      ? null
+                      : () => _loginDevAccount(account.id, account.label),
+                ),
+            ],
+          ),
+          const SizedBox(height: AppSpacing.lg),
                     const _SectionLabel('액션'),
           _ActionTile(
-            icon: Icons.refresh_rounded,
+            icon: AppIcons.refresh,
             title: '앱 재시작',
             subtitle: '위젯 트리만 다시 빌드 (hot restart 대용)',
             enabled: !_busy,
             onTap: widget.onRestart,
           ),
           _ActionTile(
-            icon: Icons.delete_sweep_outlined,
+            icon: AppIcons.deleteSweep,
             title: '로컬 데이터 삭제',
             subtitle: 'SharedPreferences + 로그인 세션 초기화',
             enabled: !_busy,
@@ -290,7 +318,7 @@ class _DevMenuSheetState extends State<_DevMenuSheet> {
             }),
           ),
           _ActionTile(
-            icon: Icons.tour_outlined,
+            icon: AppIcons.tour,
             title: '앱 소개 온보딩 리셋',
             subtitle: '첫 실행 튜토리얼 다시 보기',
             enabled: !_busy,
@@ -344,7 +372,7 @@ class _DevMenuSheetState extends State<_DevMenuSheet> {
               for (final account in devOAuthLoginOptionsList)
                 ActionChip(
                   avatar: Icon(
-                    Icons.delete_forever_outlined,
+                    AppIcons.deleteForever,
                     size: 18,
                     color: AppColors.accent,
                   ),
@@ -352,32 +380,6 @@ class _DevMenuSheetState extends State<_DevMenuSheet> {
                   onPressed: _busy
                       ? null
                       : () => _purgeDevOAuth(account.id, account.label),
-                ),
-            ],
-          ),
-          const SizedBox(height: AppSpacing.lg),
-          const _SectionLabel('빈 계정 로그인'),
-          const SizedBox(height: AppSpacing.sm),
-          const Text(
-            '역할·학년 미설정 상태로 서버 계정에 로그인합니다. 온보딩부터 테스트할 때 사용하세요.',
-            style: TextStyle(
-              color: AppColors.textSub,
-              fontSize: 12,
-              height: 1.45,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-          Wrap(
-            spacing: AppSpacing.sm,
-            runSpacing: AppSpacing.sm,
-            children: [
-              for (final account in devAccountOptionsList)
-                ActionChip(
-                  avatar: const Icon(Icons.person_outline_rounded, size: 18),
-                  label: Text(account.label),
-                  onPressed: _busy
-                      ? null
-                      : () => _loginDevAccount(account.id, account.label),
                 ),
             ],
           ),

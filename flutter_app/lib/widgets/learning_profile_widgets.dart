@@ -10,6 +10,7 @@ import 'app_card.dart';
 import 'mixed_math_text.dart';
 import 'parent_tab_scaffold.dart';
 import 'skeleton_box.dart';
+import '../theme/app_icons.dart';
 
 const gradeBandLabels = [
   '초1~2',
@@ -286,9 +287,9 @@ class _ConceptRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final (icon, color) = switch (item.status) {
-      'weak' => (Icons.circle, AppColors.accent),
-      'strong' => (Icons.circle, AppColors.success),
-      _ => (Icons.circle, AppColors.warning),
+      'weak' => (AppIcons.dot, AppColors.accent),
+      'strong' => (AppIcons.dot, AppColors.success),
+      _ => (AppIcons.dot, AppColors.warning),
     };
 
     return Row(
@@ -341,7 +342,7 @@ class WeeklyTrendChart extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(Icons.show_chart_rounded, size: 18, color: AppColors.text),
+              Icon(AppIcons.chart, size: 18, color: AppColors.text),
               const SizedBox(width: 8),
               const Text(
                 '정답률 추이',
@@ -506,7 +507,7 @@ class CurriculumProgressList extends StatelessWidget {
           AppCard(
             child: Column(
               children: [
-                Icon(Icons.menu_book_rounded, size: 36, color: AppColors.primary),
+                Icon(AppIcons.book, size: 36, color: AppColors.primary),
                 const SizedBox(height: AppSpacing.sm),
                 Text(
                   '$gradeLabel 교육과정',
@@ -590,22 +591,22 @@ typedef _UnitStatusStyle = ({IconData icon, Color color, String label});
 _UnitStatusStyle _unitStatusStyle(String status) {
   return switch (status) {
     'done' => (
-        icon: Icons.check_circle_rounded,
+        icon: AppIcons.checkCircleFill,
         color: AppColors.success,
         label: '완료',
       ),
     'weak' => (
-        icon: Icons.flag_rounded,
+        icon: AppIcons.flagFill,
         color: AppColors.accent,
         label: '보완 필요',
       ),
     'learning' => (
-        icon: Icons.auto_stories_rounded,
+        icon: AppIcons.bookOpen,
         color: AppColors.warning,
         label: '학습 중',
       ),
     _ => (
-        icon: Icons.play_arrow_rounded,
+        icon: AppIcons.play,
         color: AppColors.primary,
         label: '시작 전',
       ),
@@ -730,7 +731,7 @@ class _UnitCard extends StatelessWidget {
                   ),
                   const SizedBox(width: 2),
                   const Icon(
-                    Icons.chevron_right_rounded,
+                    AppIcons.chevronRight,
                     color: AppColors.primary,
                     size: 22,
                   ),
@@ -840,7 +841,7 @@ class ParentSubmissionHeroImage extends StatelessWidget {
             height: 120,
             child: Center(
               child: Icon(
-                Icons.broken_image_outlined,
+                AppIcons.image,
                 color: AppColors.textMuted.withValues(alpha: 0.7),
                 size: 36,
               ),
@@ -871,7 +872,7 @@ class _ParentSubmissionThumbnail extends StatelessWidget {
                 color: AppColors.primary.withValues(alpha: 0.08),
                 alignment: Alignment.center,
                 child: Icon(
-                  Icons.image_outlined,
+                  AppIcons.image,
                   color: AppColors.primary.withValues(alpha: 0.55),
                   size: 24,
                 ),
@@ -885,7 +886,7 @@ class _ParentSubmissionThumbnail extends StatelessWidget {
                   color: AppColors.primary.withValues(alpha: 0.08),
                   alignment: Alignment.center,
                   child: Icon(
-                    Icons.broken_image_outlined,
+                    AppIcons.image,
                     color: AppColors.primary.withValues(alpha: 0.55),
                     size: 24,
                   ),
@@ -1073,7 +1074,7 @@ class ParentActionList extends StatelessWidget {
     if (items.isEmpty) {
       if (emptyTitle == null) return const SizedBox.shrink();
       return ParentEmptyHintCard(
-        icon: Icons.check_circle_outline_rounded,
+        icon: AppIcons.checkCircle,
         title: emptyTitle!,
         body: emptyBody ?? '',
         accent: AppColors.success,
@@ -1179,7 +1180,7 @@ class ParentCoachingCardWidget extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 const Icon(
-                  Icons.flag_outlined,
+                  AppIcons.flag,
                   size: 16,
                   color: AppColors.primaryDark,
                 ),

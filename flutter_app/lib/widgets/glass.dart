@@ -5,6 +5,7 @@ import 'package:flutter/foundation.dart' show listEquals;
 import 'package:flutter/material.dart';
 
 import '../theme/app_design_system.dart';
+import '../theme/app_icons.dart';
 
 /// 평평한 옅은 안개색 바탕. 떠 있는 유리가 이 위의 콘텐츠를 비춰 보이게 한다.
 class GlassAtmosphere extends StatelessWidget {
@@ -21,7 +22,11 @@ class GlassAtmosphere extends StatelessWidget {
   }
 }
 
-/// 떠 있는 맑은 유리 알약 탭바. 높이 64, 좌우 12, 아래 16 + 안전 영역.
+/// 떠 있는 맑은 유리 알약 탭바(당근 느낌). 높이 72, 좌우 12. 아래는 iOS 26처럼
+/// 홈 표시줄 영역 안으로 10만큼 내려앉고(안전 영역 − 10), 표시줄이 없으면 12를 띄운다.
+///
+/// 아이콘과 글자는 검정 한 가지. 선택된 탭은 [selectedIcons]의 꽉 찬 아이콘으로
+/// 바뀌고, 회색 유리 방울이 그 칸으로 통통 미끄러진다(동작 줄이기면 바로 이동).
 ///
 /// [onCenterAction]이 있으면 가운데(`labels.length ~/ 2`)에 파란 유리 카메라가
 /// 30px 솟아오른다. 이때 [labels]는 짝수 개여야 하고, [selectedIndex]와
@@ -29,17 +34,19 @@ class GlassAtmosphere extends StatelessWidget {
 ///
 /// 위젯 높이에 카메라 솟음이 들어 있어서 `Scaffold(extendBody: true)`가
 /// 본문 아래 여백을 정확히 계산한다. 빈 영역은 터치를 통과시킨다.
-class GlassTabBar extends StatelessWidget {
+class GlassTabBar extends StatefulWidget {
   GlassTabBar({
     super.key,
     required this.labels,
     required this.icons,
     required this.selectedIndex,
     required this.onSelected,
+    this.selectedIcons,
     this.onCenterAction,
     this.badgeIndex,
     this.badgeCount = 0,
   }) : assert(labels.length == icons.length),
+       assert(selectedIcons == null || selectedIcons.length == labels.length),
        assert(
          onCenterAction == null || labels.length.isEven,
          'A center action needs an even number of tabs.',
@@ -47,34 +54,80 @@ class GlassTabBar extends StatelessWidget {
 
   final List<String> labels;
   final List<IconData> icons;
+
+  /// 선택됐을 때의 꽉 찬 아이콘. 없으면 [icons]를 그대로 쓴다.
+  final List<IconData>? selectedIcons;
   final int selectedIndex;
   final ValueChanged<int> onSelected;
   final VoidCallback? onCenterAction;
   final int? badgeIndex;
   final int badgeCount;
 
-  static const double _barHeight = 64;
+  static const double barHeight = 72;
   static const double _sideInset = 12;
-  static const double _bottomInset = 16;
+  static const double _homeIndicatorOverlap = 10;
+  static const double _minBottomGap = 12;
   static const double _cameraSize = 58;
   static const double _cameraLift = 30;
   static const double _cameraRing = 3;
   static const double _cameraSlotWidth = 64;
+  static const double _dropInset = 6;
+
+  /// 방울이 옆 칸으로 미끄러지는 시간. 끝에서 살짝 넘쳤다가 자리 잡는다.
+  static const Duration slideDuration = Duration(milliseconds: 480);
+
+  /// 선택된 아이콘이 톡 튀는 시간.
+  static const Duration popDuration = Duration(milliseconds: 420);
+
+  @override
+  State<GlassTabBar> createState() => _GlassTabBarState();
+}
+
+class _GlassTabBarState extends State<GlassTabBar>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _squash = AnimationController(
+    vsync: this,
+    duration: GlassTabBar.slideDuration,
+  );
+
+  /// 탭이 바뀐 횟수. 0이면 아직 바뀐 적이 없어서 첫 화면에서는 튀지 않는다.
+  int _changes = 0;
+
+  @override
+  void didUpdateWidget(covariant GlassTabBar oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.selectedIndex != widget.selectedIndex) {
+      _changes += 1;
+      _squash.forward(from: 0);
+    }
+  }
+
+  @override
+  void dispose() {
+    _squash.dispose();
+    super.dispose();
+  }
+
+  bool get _hasCamera => widget.onCenterAction != null;
+  int? get _cameraAt => _hasCamera ? widget.labels.length ~/ 2 : null;
 
   @override
   Widget build(BuildContext context) {
-    final hasCamera = onCenterAction != null;
-    final lift = hasCamera ? _cameraLift : 0.0;
+    final reduceMotion = MediaQuery.maybeDisableAnimationsOf(context) ?? false;
+    final lift = _hasCamera ? GlassTabBar._cameraLift : 0.0;
     final safeBottom = MediaQuery.paddingOf(context).bottom;
     return Padding(
       padding: EdgeInsets.fromLTRB(
-        _sideInset,
+        GlassTabBar._sideInset,
         0,
-        _sideInset,
-        _bottomInset + safeBottom,
+        GlassTabBar._sideInset,
+        math.max(
+          safeBottom - GlassTabBar._homeIndicatorOverlap,
+          GlassTabBar._minBottomGap,
+        ),
       ),
       child: SizedBox(
-        height: lift + _barHeight,
+        height: lift + GlassTabBar.barHeight,
         child: Stack(
           clipBehavior: Clip.none,
           children: [
@@ -82,21 +135,28 @@ class GlassTabBar extends StatelessWidget {
               left: 0,
               right: 0,
               bottom: 0,
-              height: _barHeight,
+              height: GlassTabBar.barHeight,
               child: GlassSurface(
-                child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: _slots(),
+                child: LayoutBuilder(
+                  builder: (context, constraints) => Stack(
+                    children: [
+                      _drop(constraints.maxWidth, reduceMotion),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: _slots(reduceMotion),
+                      ),
+                    ],
+                  ),
                 ),
               ),
             ),
-            if (hasCamera)
+            if (_hasCamera)
               Positioned.fill(
                 child: Align(
                   alignment: Alignment.topCenter,
                   child: SizedBox(
-                    width: _cameraSlotWidth,
-                    child: _cameraCell(onCenterAction!),
+                    width: GlassTabBar._cameraSlotWidth,
+                    child: _cameraCell(widget.onCenterAction!),
                   ),
                 ),
               ),
@@ -106,92 +166,153 @@ class GlassTabBar extends StatelessWidget {
     );
   }
 
-  /// 알약 안 칸들. 카메라 칸은 자리만 비워 두고, 카메라는 그 위에 따로 그린다.
-  List<Widget> _slots() {
-    final cameraAt = onCenterAction == null ? null : labels.length ~/ 2;
-    return [
-      for (var i = 0; i < labels.length; i++) ...[
-        if (i == cameraAt) const SizedBox(width: _cameraSlotWidth),
-        Expanded(child: _tabCell(i)),
-      ],
-    ];
-  }
-
-  Widget _tabCell(int i) {
-    final selected = i == selectedIndex;
-    final showBadge = badgeIndex == i && badgeCount > 0;
-    final color = selected ? AppColors.primary : AppColors.textSub;
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 8),
-      child: Semantics(
-        button: true,
-        selected: selected,
-        onTap: () => onSelected(i),
-        child: Ink(
-          decoration: selected
-              ? BoxDecoration(
-                  color: AppColors.primary.withValues(alpha: 0.12),
-                  borderRadius: _kPillRadius,
-                )
-              : null,
-          child: InkWell(
-            onTap: () => onSelected(i),
+  /// 선택된 칸 뒤의 회색 유리 방울. 칸이 바뀌면 미끄러지며 가로로 늘었다 줄어든다.
+  Widget _drop(double width, bool reduceMotion) {
+    final slotWidth =
+        (width - (_hasCamera ? GlassTabBar._cameraSlotWidth : 0)) /
+        widget.labels.length;
+    final i = widget.selectedIndex;
+    final cameraAt = _cameraAt;
+    final slotLeft =
+        i * slotWidth +
+        (cameraAt != null && i >= cameraAt ? GlassTabBar._cameraSlotWidth : 0);
+    return AnimatedPositioned(
+      key: const Key('glass-tab-drop'),
+      duration: reduceMotion ? Duration.zero : GlassTabBar.slideDuration,
+      curve: Curves.easeOutBack,
+      left: slotLeft + 4,
+      width: slotWidth - 8,
+      top: GlassTabBar._dropInset,
+      bottom: GlassTabBar._dropInset,
+      child: AnimatedBuilder(
+        animation: _squash,
+        builder: (context, child) {
+          final t = reduceMotion ? 0.0 : math.sin(math.pi * _squash.value);
+          return Transform(
+            alignment: Alignment.center,
+            transform: Matrix4.diagonal3Values(1 + 0.22 * t, 1 - 0.14 * t, 1),
+            child: child,
+          );
+        },
+        child: const DecoratedBox(
+          decoration: BoxDecoration(
+            color: Color(0x12111111),
             borderRadius: _kPillRadius,
-            excludeFromSemantics: true,
-            child: Stack(
-              alignment: Alignment.center,
-              children: [
-                FittedBox(
-                  fit: BoxFit.scaleDown,
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(icons[i], size: 22, color: color),
-                      const SizedBox(height: 2),
-                      Text(
-                        labels[i],
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        style: TextStyle(
-                          color: color,
-                          fontSize: 10,
-                          fontWeight: selected
-                              ? FontWeight.w800
-                              : FontWeight.w600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                if (showBadge)
-                  Positioned(
-                    top: 0,
-                    right: 4,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 5,
-                        vertical: 1,
-                      ),
-                      decoration: const BoxDecoration(
-                        color: AppColors.primaryDark,
-                        borderRadius: _kPillRadius,
-                      ),
-                      child: Text(
-                        '$badgeCount',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 9,
-                          fontWeight: FontWeight.w800,
-                        ),
-                      ),
-                    ),
-                  ),
-              ],
-            ),
           ),
         ),
       ),
     );
+  }
+
+  /// 알약 안 칸들. 카메라 칸은 자리만 비워 두고, 카메라는 그 위에 따로 그린다.
+  List<Widget> _slots(bool reduceMotion) {
+    return [
+      for (var i = 0; i < widget.labels.length; i++) ...[
+        if (i == _cameraAt) const SizedBox(width: GlassTabBar._cameraSlotWidth),
+        Expanded(child: _tabCell(i, reduceMotion)),
+      ],
+    ];
+  }
+
+  Widget _tabCell(int i, bool reduceMotion) {
+    final selected = i == widget.selectedIndex;
+    final showBadge = widget.badgeIndex == i && widget.badgeCount > 0;
+    final icon = selected
+        ? (widget.selectedIcons?[i] ?? widget.icons[i])
+        : widget.icons[i];
+    final pops = selected && _changes > 0 && !reduceMotion;
+    return Padding(
+      padding: const EdgeInsets.symmetric(
+        horizontal: 4,
+        vertical: GlassTabBar._dropInset,
+      ),
+      child: Semantics(
+        button: true,
+        selected: selected,
+        onTap: () => widget.onSelected(i),
+        child: InkWell(
+          onTap: () => widget.onSelected(i),
+          borderRadius: _kPillRadius,
+          excludeFromSemantics: true,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              FittedBox(
+                fit: BoxFit.scaleDown,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    TweenAnimationBuilder<double>(
+                      key: ValueKey('pop-$i-${pops ? _changes : 0}'),
+                      tween: Tween(begin: pops ? 0 : 1, end: 1),
+                      duration: GlassTabBar.popDuration,
+                      builder: (context, t, child) =>
+                          Transform.scale(scale: _popScale(t), child: child),
+                      child: AnimatedSwitcher(
+                        duration: reduceMotion
+                            ? Duration.zero
+                            : const Duration(milliseconds: 200),
+                        child: Icon(
+                          icon,
+                          key: ValueKey(icon),
+                          size: 28,
+                          color: AppColors.text,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 3),
+                    Text(
+                      widget.labels[i],
+                      textAlign: TextAlign.center,
+                      maxLines: 1,
+                      style: TextStyle(
+                        color: AppColors.text,
+                        fontSize: 12.5,
+                        fontWeight: selected
+                            ? FontWeight.w700
+                            : FontWeight.w600,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              if (showBadge)
+                Positioned(
+                  top: 2,
+                  right: 6,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 5,
+                      vertical: 1,
+                    ),
+                    decoration: const BoxDecoration(
+                      color: AppColors.primaryDark,
+                      borderRadius: _kPillRadius,
+                    ),
+                    child: Text(
+                      '${widget.badgeCount}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 9,
+                        fontWeight: FontWeight.w800,
+                      ),
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// 0.78배에서 1.16배로 튀었다가 1배로 돌아온다(0.55 지점이 꼭대기).
+  static double _popScale(double t) {
+    if (t >= 1) return 1;
+    if (t < 0.55) {
+      return 0.78 + (1.16 - 0.78) * Curves.easeOut.transform(t / 0.55);
+    }
+    return 1.16 + (1 - 1.16) * Curves.easeInOut.transform((t - 0.55) / 0.45);
   }
 
   /// 파란 유리 원(흰 테두리 3px) + 아래 「찍기」. 원 위쪽이 알약보다 30px 솟는다.
@@ -208,15 +329,18 @@ class GlassTabBar extends StatelessWidget {
         children: [
           Positioned(
             top: 0,
-            left: (_cameraSlotWidth - _cameraSize) / 2,
-            width: _cameraSize,
-            height: _cameraSize,
+            left: (GlassTabBar._cameraSlotWidth - GlassTabBar._cameraSize) / 2,
+            width: GlassTabBar._cameraSize,
+            height: GlassTabBar._cameraSize,
             child: DecoratedBox(
               position: DecorationPosition.foreground,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
                 border: Border.fromBorderSide(
-                  BorderSide(color: Colors.white, width: _cameraRing),
+                  BorderSide(
+                    color: Colors.white,
+                    width: GlassTabBar._cameraRing,
+                  ),
                 ),
               ),
               child: GlassSurface(
@@ -229,8 +353,8 @@ class GlassTabBar extends StatelessWidget {
                   excludeFromSemantics: true,
                   child: const Center(
                     child: Icon(
-                      Icons.photo_camera_rounded,
-                      size: 26,
+                      AppIcons.cameraFill,
+                      size: 28,
                       color: Colors.white,
                     ),
                   ),
@@ -241,7 +365,7 @@ class GlassTabBar extends StatelessWidget {
           Positioned(
             left: 0,
             right: 0,
-            top: _cameraSize,
+            top: GlassTabBar._cameraSize,
             bottom: 0,
             child: GestureDetector(
               behavior: HitTestBehavior.opaque,
@@ -249,14 +373,14 @@ class GlassTabBar extends StatelessWidget {
               child: const Align(
                 alignment: Alignment.bottomCenter,
                 child: Padding(
-                  padding: EdgeInsets.only(bottom: 14),
+                  padding: EdgeInsets.only(bottom: 12),
                   child: Text(
                     '찍기',
                     maxLines: 1,
                     style: TextStyle(
-                      color: AppColors.primary,
-                      fontSize: 10.5,
-                      fontWeight: FontWeight.w700,
+                      color: AppColors.text,
+                      fontSize: 12.5,
+                      fontWeight: FontWeight.w600,
                     ),
                   ),
                 ),
@@ -274,7 +398,9 @@ class GlassTabBar extends StatelessWidget {
 // 콘텐츠는 흰 카드. 아래 위젯들은 GlassPreset / GlassSpec(app_design_system)을 따른다.
 // ---------------------------------------------------------------------------
 
-const BorderRadius _kPillRadius = BorderRadius.all(Radius.circular(AppRadii.pill));
+const BorderRadius _kPillRadius = BorderRadius.all(
+  Radius.circular(AppRadii.pill),
+);
 
 /// 맑은 유리의 채도 1.8배 (CSS `saturate(1.8)`와 같은 행렬).
 ColorFilter _saturation(double s) {
@@ -763,9 +889,9 @@ class GlassDialog extends StatelessWidget {
         ),
         // 맑은 유리 위에서 기본 파랑(primary)은 대비가 모자라 진한 파랑으로 쓴다.
         textButtonTheme: TextButtonThemeData(
-          style: compact(theme.textButtonTheme.style).merge(
-            TextButton.styleFrom(foregroundColor: AppColors.primaryDark),
-          ),
+          style: compact(
+            theme.textButtonTheme.style,
+          ).merge(TextButton.styleFrom(foregroundColor: AppColors.primaryDark)),
         ),
       ),
       child: child,

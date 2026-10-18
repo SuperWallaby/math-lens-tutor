@@ -10,6 +10,7 @@ import '../widgets/mixed_math_text.dart';
 import '../widgets/student_picker.dart';
 import 'link_student_screen.dart';
 import '../theme/app_design_system.dart';
+import '../theme/app_icons.dart';
 
 class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
@@ -118,7 +119,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           if (isGuardian)
             IconButton(
               onPressed: _openLinkStudent,
-              icon: const Icon(Icons.person_add_alt_1_rounded),
+              icon: const Icon(AppIcons.personAdd),
               tooltip: '학생 연결',
             ),
         ],
@@ -356,7 +357,7 @@ class _DashboardSubmissionThumbnail extends StatelessWidget {
                 color: AppColors.primary.withValues(alpha: 0.08),
                 alignment: Alignment.center,
                 child: Icon(
-                  Icons.image_outlined,
+                  AppIcons.image,
                   color: AppColors.primary.withValues(alpha: 0.55),
                   size: 22,
                 ),
@@ -370,7 +371,7 @@ class _DashboardSubmissionThumbnail extends StatelessWidget {
                   color: AppColors.primary.withValues(alpha: 0.08),
                   alignment: Alignment.center,
                   child: Icon(
-                    Icons.broken_image_outlined,
+                    AppIcons.image,
                     color: AppColors.primary.withValues(alpha: 0.55),
                     size: 22,
                   ),

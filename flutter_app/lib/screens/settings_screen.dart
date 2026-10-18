@@ -16,6 +16,7 @@ import '../widgets/student_picker.dart';
 import 'link_student_screen.dart';
 import 'signup_screen.dart';
 import 'dashboard_screen.dart';
+import '../theme/app_icons.dart';
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({
@@ -251,7 +252,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 child: Row(
                   children: [
                     const Icon(
-                      Icons.info_outline_rounded,
+                      AppIcons.info,
                       color: AppColors.warning,
                       size: 20,
                     ),
@@ -353,7 +354,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                     const SizedBox(height: AppSpacing.lg),
                     OutlinedButton.icon(
                       onPressed: _openEditProfile,
-                      icon: const Icon(Icons.edit_outlined, size: 18),
+                      icon: const Icon(AppIcons.edit, size: 18),
                       label: const Text('기본 정보 수정'),
                     ),
                   ],
@@ -419,7 +420,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                         child: FilledButton.icon(
                           onPressed: _copyStudentCode,
                           style: AppButtonStyles.soft(),
-                          icon: const Icon(Icons.copy_rounded, size: 18),
+                          icon: const Icon(AppIcons.copy, size: 18),
                           label: const Text('번호 복사'),
                         ),
                       ),
@@ -440,7 +441,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                   );
                   if (mounted) setState(() {});
                 },
-                icon: const Icon(Icons.link_rounded),
+                icon: const Icon(AppIcons.link),
                 label: const Text('학생 연결 관리'),
               ),
             ],
@@ -474,7 +475,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                             borderRadius: BorderRadius.circular(10),
                           ),
                           child: const Icon(
-                            Icons.insights_outlined,
+                            AppIcons.chart,
                             size: 22,
                             color: AppColors.primary,
                           ),
@@ -506,7 +507,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           ),
                         ),
                         const Icon(
-                          Icons.chevron_right_rounded,
+                          AppIcons.chevronRight,
                           color: AppColors.textMuted,
                         ),
                       ],
@@ -593,7 +594,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
               const SizedBox(height: 24),
               OutlinedButton.icon(
                 onPressed: _logout,
-                icon: const Icon(Icons.logout_rounded),
+                icon: const Icon(AppIcons.logout),
                 label: const Text('로그아웃'),
               ),
               const SizedBox(height: 32),

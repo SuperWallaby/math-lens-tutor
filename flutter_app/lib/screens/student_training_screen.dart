@@ -14,6 +14,7 @@ import '../widgets/skeleton_box.dart';
 import '../widgets/skeleton_lines.dart';
 import 'open_practice_flow.dart';
 import '../theme/app_design_system.dart';
+import '../theme/app_icons.dart';
 
 const _scrollEdgeThreshold = 30.0;
 
@@ -234,7 +235,7 @@ class StudentTrainingScreenState extends State<StudentTrainingScreen> {
             FilledButton.icon(
               style: AppButtonStyles.soft(),
               onPressed: () => _startTraining(training),
-              icon: const Icon(Icons.play_arrow_rounded),
+              icon: const Icon(AppIcons.play),
               label: const Text('5문제 세트로 복습'),
             ),
           const SizedBox(height: 24),
@@ -361,7 +362,7 @@ class _TrainingFeedCard extends StatelessWidget {
             const Padding(
               padding: EdgeInsets.only(top: 2),
               child: Icon(
-                Icons.play_circle_fill_rounded,
+                AppIcons.playCircleFill,
                 color: AppColors.primary,
                 size: 28,
               ),
@@ -495,7 +496,7 @@ class _TrainingEmptyState extends StatelessWidget {
                     shape: BoxShape.circle,
                   ),
                   child: const Icon(
-                    Icons.edit_note_rounded,
+                    AppIcons.pencil,
                     size: 28,
                     color: AppColors.primary,
                   ),
@@ -663,7 +664,7 @@ class _CameraHint extends StatelessWidget {
           ),
           SizedBox(width: 4),
           Icon(
-            Icons.keyboard_arrow_down_rounded,
+            AppIcons.chevronDown,
             size: 20,
             color: AppColors.primary,
           ),
@@ -710,7 +711,7 @@ class _TrainingHeroCard extends StatelessWidget {
                   borderRadius: BorderRadius.circular(AppRadii.md),
                 ),
                 child: const Icon(
-                  Icons.replay_circle_filled_outlined,
+                  AppIcons.replay,
                   color: AppColors.accent,
                   size: 24,
                 ),
@@ -807,7 +808,7 @@ class _ContinueTrainingCard extends StatelessWidget {
                   ],
                 ),
               ),
-              const Icon(Icons.arrow_forward_rounded, color: AppColors.primary),
+              const Icon(AppIcons.arrowRight, color: AppColors.primary),
             ],
           ),
         ),
@@ -859,8 +860,8 @@ class _TrainingFocusRow extends StatelessWidget {
       children: [
         Icon(
           item.isRelearned
-              ? Icons.check_circle_outline_rounded
-              : Icons.error_outline_rounded,
+              ? AppIcons.checkCircle
+              : AppIcons.error,
           size: 18,
           color: color,
         ),

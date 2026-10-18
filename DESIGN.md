@@ -152,7 +152,7 @@ Korean math learning UI. Brand action color is the **app-icon blue** `#2A72E5`. 
 
 - **학생 탭바:** 홈 · 훈련 · [찍기] · 성장 · 설정
 - 가운데 카메라는 탭 전환이 아니라 업로드 흐름을 **전체 화면으로** 연다.
-- 떠 있는 알약 모양: 좌우 여백 12, 아래 여백 16 + 안전 영역, 높이 64. 선택된 탭은 파란 아이콘·글자 + 파랑 12% 알약 배경.
+- 떠 있는 알약 모양: 좌우 여백 12, 높이 72, 아래는 iOS 26처럼 홈 표시줄 영역 안으로 10 내려앉음(안전 영역 − 10, 표시줄이 없으면 12). 아이콘·글자는 검정 한 가지(당근 느낌). 선택된 탭은 꽉 찬 아이콘 + 회색 유리 방울(검정 7%).
 - 가운데 카메라: 58px 원, 탭바보다 30px 위로 솟음, 흰 테두리 3px, 아래 글자 「찍기」.
 - 콘텐츠는 탭바 아래까지 스크롤된다(유리 아래로 비쳐 보이게).
 - 학부모(홈 · 설명 · 이번 주 · 진도 · 설정)와 선생님(홈 · 학생 · 반진도 · 설정)은 같은 유리 탭바를 쓰고, 가운데 카메라는 없다.
@@ -194,3 +194,8 @@ Korean math learning UI. Brand action color is the **app-icon blue** `#2A72E5`. 
 | Next.js / web | `src/app/globals.css` CSS variables |
 | Cursor rule | `.cursor/rules/design.mdc` |
 | Spec | `docs/superpowers/specs/2026-10-17-liquid-glass-renewal-design.md` |
+
+## 아이콘
+
+- MingCute(`flutter_mingcute`)의 둥근 선/채움 아이콘을 쓴다. 화면은 `Icons.*` 대신 `AppIcons.*`(`lib/theme/app_icons.dart`)를 쓰고, 묶음을 바꿀 때는 그 파일만 고친다.
+- 선택 상태가 있는 곳(탭바)은 선 아이콘 ↔ `…Fill` 짝을 쓴다.

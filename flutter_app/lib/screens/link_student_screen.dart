@@ -7,6 +7,7 @@ import '../utils/pending_student_link.dart';
 import '../utils/student_code_format.dart';
 import '../widgets/student_code_input_field.dart';
 import '../widgets/student_link_guide.dart';
+import '../theme/app_icons.dart';
 
 class LinkStudentScreen extends StatefulWidget {
   const LinkStudentScreen({
@@ -64,7 +65,7 @@ class _LinkStudentScreenState extends State<LinkStudentScreen> {
     }
     return IconButton(
       onPressed: _pasteCode,
-      icon: const Icon(Icons.content_paste_rounded),
+      icon: const Icon(AppIcons.paste),
       tooltip: '붙여넣기',
     );
   }

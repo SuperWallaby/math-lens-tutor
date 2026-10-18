@@ -12,6 +12,7 @@ import '../widgets/glass.dart';
 import '../widgets/hero_icon_3d.dart';
 import '../widgets/linked_children_panel.dart';
 import '../widgets/student_link_guide.dart';
+import '../theme/app_icons.dart';
 
 enum _OnboardingStep { displayName, role, grade, details, linkChildren, studentCode }
 
@@ -390,7 +391,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
       appBar: AppBar(
         leading: canGoBack
             ? IconButton(
-                icon: const Icon(Icons.arrow_back_rounded),
+                icon: const Icon(AppIcons.back),
                 onPressed: _loading ? null : _goBack,
               )
             : null,
@@ -948,7 +949,7 @@ class _ProfileOnboardingScreenState extends State<ProfileOnboardingScreen> {
         const SizedBox(height: AppSpacing.lg),
         OutlinedButton.icon(
           onPressed: code.isEmpty ? null : _copyStudentCode,
-          icon: const Icon(Icons.copy_rounded),
+          icon: const Icon(AppIcons.copy),
           label: const Text('번호 복사하기'),
         ),
         const SizedBox(height: AppSpacing.section),

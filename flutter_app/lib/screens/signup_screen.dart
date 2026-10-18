@@ -14,6 +14,7 @@ import '../dev/dev_oauth_login_chip.dart';
 import '../widgets/app_card.dart';
 import '../widgets/glass.dart';
 import '../widgets/oauth_sign_in_button.dart';
+import '../theme/app_icons.dart';
 
 /// 서버 bypass (`devstudy*@wooyeol.com`, dev `crawl123@naver.com`) 와 동일한 기본값
 const _devBypassEmail = 'crawl123@naver.com';
@@ -253,7 +254,7 @@ class _SignupScreenState extends State<SignupScreen> {
       children: [
         _field(
           hint: '이메일',
-          icon: Icons.mail_outline,
+          icon: AppIcons.mail,
           controller: _emailController,
           focusNode: _emailFocusNode,
           keyboardType: TextInputType.emailAddress,
@@ -263,7 +264,7 @@ class _SignupScreenState extends State<SignupScreen> {
         const SizedBox(height: 12),
         _field(
           hint: '비밀번호',
-          icon: Icons.lock_outline,
+          icon: AppIcons.lock,
           obscureText: true,
           enabled: !_loading,
           onSubmitted: (_) => _sendMagicLink(),

@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
+import '../theme/app_icons.dart';
 
 /// 모바일(iOS/Android)과 모바일 웹은 `ImageSource.camera` 를 지원합니다.
 /// macOS/Windows/Linux 데스크톱은 cameraDelegate 없이 예외가 납니다.
@@ -20,8 +21,8 @@ String get problemImageGalleryLabel =>
 
 IconData get problemImageGalleryIcon =>
     supportsProblemImageCamera
-        ? Icons.photo_library_rounded
-        : Icons.folder_open_rounded;
+        ? AppIcons.album
+        : AppIcons.folderOpen;
 
 class PickedProblemImage {
   const PickedProblemImage({

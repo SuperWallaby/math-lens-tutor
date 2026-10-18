@@ -8,6 +8,7 @@ import 'glass.dart';
 import 'linked_children_panel.dart';
 import 'profile_avatar.dart';
 import 'student_link_guide.dart';
+import '../theme/app_icons.dart';
 
 class StudentPicker extends StatelessWidget {
   const StudentPicker({
@@ -189,7 +190,7 @@ class _StudentPickerChip extends StatelessWidget {
           ),
           if (showChevron)
             const Icon(
-              Icons.expand_more_rounded,
+              AppIcons.chevronDown,
               color: AppColors.textMuted,
               size: 22,
             ),
@@ -259,7 +260,7 @@ class _StudentSheetTile extends StatelessWidget {
               ),
               if (selected)
                 const Icon(
-                  Icons.check_rounded,
+                  AppIcons.check,
                   color: AppColors.success,
                   size: 22,
                 ),
@@ -293,7 +294,7 @@ class _AddChildButton extends StatelessWidget {
           ),
           alignment: Alignment.center,
           child: const Icon(
-            Icons.person_add_alt_1_rounded,
+            AppIcons.personAdd,
             color: AppColors.success,
             size: 22,
           ),
