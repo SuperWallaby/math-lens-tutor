@@ -58,6 +58,10 @@ abstract final class AppColors {
   static const border = Color(0xFFEFEFF1);
   static const borderStrong = Color(0xFFE0E0E4);
 
+  /// 꺼진 스위치의 손잡이·테두리. 흰 카드 위 4.5:1, 회색 트랙(`borderStrong`)
+  /// 위 3.4:1로 WCAG 비텍스트 대비(3:1)를 넘는다.
+  static const controlOff = Color(0xFF72767E);
+
   static const glassFill = Color(0x38FFFFFF);
   static const glassStroke = Color(0xE8FFFFFF);
 
@@ -563,12 +567,13 @@ ThemeData buildAppTheme() {
         borderRadius: BorderRadius.circular(AppRadii.pill),
       ),
     ),
-    // 스위치는 흰 카드 위에 놓인다. 꺼짐은 흰 손잡이·흰 트랙이면 보이지 않으므로 회색.
+    // 스위치는 흰 카드 위에 놓인다. 꺼짐은 회색 트랙 위 진한 회색 손잡이에, 같은
+    // 회색 테두리로 트랙 가장자리를 그려 둘 다 3:1을 넘긴다(Material 3 기본과 같은 짜임).
     switchTheme: SwitchThemeData(
       thumbColor: WidgetStateProperty.resolveWith((states) {
         return states.contains(WidgetState.selected)
             ? AppColors.primary
-            : AppColors.textMuted;
+            : AppColors.controlOff;
       }),
       trackColor: WidgetStateProperty.resolveWith((states) {
         return states.contains(WidgetState.selected)
@@ -578,7 +583,7 @@ ThemeData buildAppTheme() {
       trackOutlineColor: WidgetStateProperty.resolveWith((states) {
         return states.contains(WidgetState.selected)
             ? Colors.transparent
-            : AppColors.borderStrong;
+            : AppColors.controlOff;
       }),
     ),
     navigationBarTheme: NavigationBarThemeData(
