@@ -171,6 +171,22 @@ void main() {
     );
   });
 
+  testWidgets('date, name, subline, and headline carry a soft text shadow', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_stage(jimin));
+    const expected = [
+      Shadow(color: Color(0x591E46AA), offset: Offset(0, 1), blurRadius: 3),
+    ];
+    for (final t in ['10월 17일 토요일', '지민님', '중1 · 한빛중학교', '어제 막힌 곳부터\n이어가요']) {
+      expect(
+        tester.widget<Text>(find.text(t)).style?.shadows,
+        expected,
+        reason: t,
+      );
+    }
+  });
+
   testWidgets('long name and school ellipsize without overflow at 320 wide', (
     tester,
   ) async {
