@@ -209,22 +209,7 @@ class StudentTrainingScreenState extends State<StudentTrainingScreen> {
     return ListView(
       padding: TabletLayout.pagePadding(context),
       children: [
-        Text(
-          '맞춤 훈련',
-          style: TextStyle(
-            fontSize: TabletLayout.titleSection(context),
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        const SizedBox(height: 8),
-        const Text(
-          '당신을 위한 문제를 추천합니다.',
-          style: TextStyle(
-            color: AppColors.textSub,
-            height: 1.45,
-            fontSize: 14,
-          ),
-        ),
+        const _TrainingHeader(),
         if (feed.refreshPending) ...[
           const SizedBox(height: 10),
           _FeedStatusChip(
@@ -448,6 +433,34 @@ class _FeedTag extends StatelessWidget {
   }
 }
 
+/// 훈련 탭 맨 위 제목 「훈련」과 설명. 목록·빈 상태·로딩이 모두 같은 글자를 쓰고,
+/// 스크롤하면 [GlassScrollEdge]가 같은 제목을 이어 받는다.
+class _TrainingHeader extends StatelessWidget {
+  const _TrainingHeader();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          '훈련',
+          style: TextStyle(
+            fontSize: 24,
+            fontWeight: FontWeight.w700,
+            color: AppColors.text,
+          ),
+        ),
+        SizedBox(height: 6),
+        Text(
+          '막힌 개념만 모아서 다시 풀어보는 곳이에요.',
+          style: TextStyle(color: AppColors.textSub, height: 1.45, fontSize: 14),
+        ),
+      ],
+    );
+  }
+}
+
 /// 첫 로그인 직후(기록 없음)와 막힌 문제를 다 푼 뒤에 보이는 훈련 탭.
 ///
 /// [hasLearningData]가 true면 빈 카드 문구만 바뀌고, 예시 줄과 카메라 안내는 숨긴다.
@@ -466,19 +479,7 @@ class _TrainingEmptyState extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          '훈련',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: AppColors.text,
-          ),
-        ),
-        const SizedBox(height: 6),
-        const Text(
-          '막힌 개념만 모아서 다시 풀어보는 곳이에요.',
-          style: TextStyle(color: AppColors.textSub, height: 1.45, fontSize: 14),
-        ),
+        const _TrainingHeader(),
         const SizedBox(height: 20),
         AppCard(
           padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
@@ -902,21 +903,14 @@ class _TrainingTabSkeleton extends StatelessWidget {
     return ListView(
       padding: TabletLayout.pagePadding(context),
       children: [
-        Text(
-          '복습 훈련',
-          style: TextStyle(
-            fontSize: TabletLayout.titleSection(context),
-            fontWeight: FontWeight.w900,
-          ),
-        ),
-        const SizedBox(height: 8),
-        const SkeletonBox(width: 248, height: 14, borderRadius: 6),
+        // 제목과 설명은 불러온 뒤와 같은 글자라 자리표시 대신 그대로 보인다.
+        const _TrainingHeader(),
         const SizedBox(height: 20),
         const _TrainingHeroCardSkeleton(),
         const SizedBox(height: 16),
         const SkeletonBox(height: AppSizes.buttonHeight, borderRadius: AppRadii.md),
         const SizedBox(height: 24),
-        const SectionLabel('맞춤 피드'),
+        const SectionLabel('맞춤 문제'),
         const SizedBox(height: 10),
         for (var i = 0; i < 3; i++) ...[
           const _TrainingFeedCardSkeleton(),
