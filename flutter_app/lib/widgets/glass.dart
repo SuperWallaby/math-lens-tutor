@@ -681,20 +681,28 @@ Future<T?> showGlassSheet<T>({
   );
 }
 
+/// 시트 위 손잡이. 끌어서 닫는 손짓을 못 쓰는 화면 낭독기에는 「닫기」 버튼으로
+/// 보인다(Material 3 기본 손잡이와 같은 동작).
 class _GlassSheetHandle extends StatelessWidget {
   const _GlassSheetHandle();
 
   @override
   Widget build(BuildContext context) {
-    return SizedBox(
-      height: 36,
-      child: Center(
-        child: Container(
-          width: 36,
-          height: 4,
-          decoration: BoxDecoration(
-            color: AppColors.textMuted.withValues(alpha: 0.5),
-            borderRadius: BorderRadius.circular(2),
+    return Semantics(
+      container: true,
+      button: true,
+      label: '닫기',
+      onTap: () => Navigator.of(context).maybePop(),
+      child: SizedBox(
+        height: 36,
+        child: Center(
+          child: Container(
+            width: 36,
+            height: 4,
+            decoration: BoxDecoration(
+              color: AppColors.textMuted.withValues(alpha: 0.5),
+              borderRadius: BorderRadius.circular(2),
+            ),
           ),
         ),
       ),
@@ -704,12 +712,22 @@ class _GlassSheetHandle extends StatelessWidget {
 
 /// 모서리 26의 맑은 유리 팝업. [AlertDialog]와 같은 [title], [content],
 /// [actions]를 받는다. [showDialog]의 builder 안에서 쓴다.
+///
+/// [AlertDialog]처럼 팝업 전체가 화면 낭독기의 한 화면(route)이 되고, 열릴 때
+/// [semanticLabel](기본 「알림」)을 읽은 뒤 안쪽 제목·내용·버튼으로 넘어간다.
 class GlassDialog extends StatelessWidget {
-  const GlassDialog({super.key, this.title, this.content, this.actions});
+  const GlassDialog({
+    super.key,
+    this.title,
+    this.content,
+    this.actions,
+    this.semanticLabel = '알림',
+  });
 
   final Widget? title;
   final Widget? content;
   final List<Widget>? actions;
+  final String semanticLabel;
 
   // 글꼴은 테마 textTheme 에서만 오므로 직접 적어 두고, 아래에서는
   // DefaultTextStyle.merge 로 상속된 스타일 위에 얹는다.
@@ -762,50 +780,58 @@ class GlassDialog extends StatelessWidget {
       shadowColor: Colors.transparent,
       elevation: 0,
       insetPadding: const EdgeInsets.symmetric(horizontal: 40, vertical: 24),
-      child: ConstrainedBox(
-        constraints: const BoxConstraints(minWidth: 280, maxWidth: 560),
-        child: GlassSurface(
-          borderRadius: BorderRadius.circular(AppRadii.lg),
-          padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
-          child: IntrinsicWidth(
-            stepWidth: 56,
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                if (title != null)
-                  Padding(
-                    padding: EdgeInsets.only(bottom: content != null ? 12 : 8),
-                    child: DefaultTextStyle.merge(
-                      style: _titleStyle,
-                      child: title!,
-                    ),
-                  ),
-                if (content != null)
-                  Flexible(
-                    child: Padding(
-                      padding: const EdgeInsets.only(bottom: 8),
+      child: Semantics(
+        scopesRoute: true,
+        namesRoute: true,
+        explicitChildNodes: true,
+        label: semanticLabel,
+        child: ConstrainedBox(
+          constraints: const BoxConstraints(minWidth: 280, maxWidth: 560),
+          child: GlassSurface(
+            borderRadius: BorderRadius.circular(AppRadii.lg),
+            padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+            child: IntrinsicWidth(
+              stepWidth: 56,
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  if (title != null)
+                    Padding(
+                      padding: EdgeInsets.only(
+                        bottom: content != null ? 12 : 8,
+                      ),
                       child: DefaultTextStyle.merge(
-                        style: _contentStyle,
-                        child: content!,
+                        style: _titleStyle,
+                        child: title!,
                       ),
                     ),
-                  ),
-                if (actions != null && actions!.isNotEmpty)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: _compactButtons(
-                      context,
-                      OverflowBar(
-                        alignment: MainAxisAlignment.end,
-                        spacing: 8,
-                        overflowSpacing: 8,
-                        overflowAlignment: OverflowBarAlignment.end,
-                        children: actions!,
+                  if (content != null)
+                    Flexible(
+                      child: Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: DefaultTextStyle.merge(
+                          style: _contentStyle,
+                          child: content!,
+                        ),
                       ),
                     ),
-                  ),
-              ],
+                  if (actions != null && actions!.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: _compactButtons(
+                        context,
+                        OverflowBar(
+                          alignment: MainAxisAlignment.end,
+                          spacing: 8,
+                          overflowSpacing: 8,
+                          overflowAlignment: OverflowBarAlignment.end,
+                          children: actions!,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
         ),

@@ -233,4 +233,99 @@ void main() {
     expect(title.fontSize, 20);
     expect(title.fontWeight, FontWeight.w800);
   });
+
+  group('assistive tech', () {
+    Widget opener(void Function(BuildContext) open) => MaterialApp(
+      home: Scaffold(
+        body: Builder(
+          builder: (context) => TextButton(
+            onPressed: () => open(context),
+            child: const Text('열기'),
+          ),
+        ),
+      ),
+    );
+
+    testWidgets('glass dialog is its own named route, like AlertDialog', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        opener(
+          (context) => showDialog<void>(
+            context: context,
+            builder: (_) => const GlassDialog(
+              title: Text('계정을 삭제할까요?'),
+              content: Text('되돌릴 수 없어요.'),
+            ),
+          ),
+        ),
+      );
+      await tester.tap(find.text('열기'));
+      await tester.pumpAndSettle();
+
+      final route = find.descendant(
+        of: find.byType(GlassDialog),
+        matching: find.byWidgetPredicate(
+          (w) => w is Semantics && w.properties.namesRoute == true,
+        ),
+      );
+      expect(route, findsOneWidget);
+      expect(
+        tester.getSemantics(route),
+        containsSemantics(label: '알림', namesRoute: true, scopesRoute: true),
+      );
+      // 제목과 내용은 따로 읽힌다.
+      expect(find.semantics.byLabel('계정을 삭제할까요?'), findsOne);
+      expect(find.semantics.byLabel('되돌릴 수 없어요.'), findsOne);
+      semantics.dispose();
+    });
+
+    testWidgets('glass sheet handle is a 닫기 button for screen readers', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        opener(
+          (context) => showGlassSheet<void>(
+            context: context,
+            builder: (_) => const Text('시트 내용'),
+          ),
+        ),
+      );
+      await tester.tap(find.text('열기'));
+      await tester.pumpAndSettle();
+      expect(find.text('시트 내용'), findsOneWidget);
+
+      final handle = find.semantics.byLabel('닫기');
+      expect(handle, findsOne);
+      expect(
+        handle.evaluate().single,
+        containsSemantics(label: '닫기', isButton: true, hasTapAction: true),
+      );
+      tester.semantics.tap(handle);
+      await tester.pumpAndSettle();
+      expect(find.text('시트 내용'), findsNothing);
+      semantics.dispose();
+    });
+
+    testWidgets('a sheet that draws its own handle has no extra 닫기', (
+      tester,
+    ) async {
+      final semantics = tester.ensureSemantics();
+      await tester.pumpWidget(
+        opener(
+          (context) => showGlassSheet<void>(
+            context: context,
+            showDragHandle: false,
+            builder: (_) => const Text('시트 내용'),
+          ),
+        ),
+      );
+      await tester.tap(find.text('열기'));
+      await tester.pumpAndSettle();
+      expect(find.semantics.byLabel('닫기'), findsNothing);
+      semantics.dispose();
+    });
+  });
 }

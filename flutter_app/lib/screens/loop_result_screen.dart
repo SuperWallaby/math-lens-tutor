@@ -183,6 +183,7 @@ class _LoopResultScreenState extends State<LoopResultScreen> {
                       ),
                       IconButton(
                         onPressed: () => Navigator.pop(ctx),
+                        tooltip: '닫기',
                         icon: const Icon(Icons.close_rounded),
                       ),
                     ],

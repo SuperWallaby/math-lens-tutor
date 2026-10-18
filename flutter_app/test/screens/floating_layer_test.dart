@@ -441,6 +441,8 @@ void main() {
       findsOneWidget,
     );
 
+    // 닫기 버튼은 화면 낭독기에도 「닫기」로 읽힌다.
+    expect(find.descendant(of: sheet, matching: find.byTooltip('닫기')), findsOneWidget);
     await tester.tap(find.descendant(of: sheet, matching: find.byIcon(Icons.close_rounded)));
     await tester.pumpAndSettle();
     expect(find.byType(GlassSurface), findsNothing);
