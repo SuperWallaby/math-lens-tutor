@@ -179,6 +179,40 @@ void main() {
     expect(find.text('우열'), findsNothing);
   });
 
+  testWidgets('returning: mission card has no progress bar', (tester) async {
+    await tester.pumpWidget(
+      _hub(
+        profile: designReviewProfileReturning(),
+        subs: designReviewSubmissionsRecent(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 미션에는 전체 문제 수가 없어서 진행률을 계산할 수 없다 — 막대도, 진행률 라벨도 없다.
+    expect(
+      find.byWidgetPredicate(
+        (w) => w is Semantics && w.properties.label == '진행률',
+      ),
+      findsNothing,
+    );
+    expect(find.byType(LinearProgressIndicator), findsNothing);
+    final missionCard = find.ancestor(
+      of: find.widgetWithText(FilledButton, '이어서 풀기'),
+      matching: find.byType(GlassSurface),
+    );
+    expect(missionCard, findsOneWidget);
+    expect(
+      find.descendant(
+        of: missionCard,
+        matching: find.byType(FractionallySizedBox),
+      ),
+      findsNothing,
+    );
+    // 단원 · 남은 문제 수, 제목, 버튼은 그대로 있다.
+    expect(find.text('일차방정식 · 3문제 남음'), findsOneWidget);
+    expect(find.text('일차방정식 유사문제'), findsOneWidget);
+  });
+
   testWidgets('returning without a mission: stats stay, no continue button', (
     tester,
   ) async {

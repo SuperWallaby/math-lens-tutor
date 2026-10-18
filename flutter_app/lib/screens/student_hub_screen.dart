@@ -365,7 +365,6 @@ class _ReturningHome extends StatelessWidget {
               if (mission != null && mission.title.trim().isNotEmpty) ...[
                 _MissionCard(
                   mission: mission,
-                  progress: _missionProgress(data.profile.training),
                   onContinue: () => onOpenMission(mission),
                 ),
                 const SizedBox(height: AppSpacing.md),
@@ -417,14 +416,6 @@ class _ReturningHome extends StatelessWidget {
       ],
     );
   }
-}
-
-/// 미션 카드의 진행 막대 값. `TodayMission`에는 전체 문제 수가 없어서, 막힌 개념 중
-/// 다시 익힌 비율(다시 익힘 ÷ (다시 익힘 + 아직 막힘))을 쓴다. 계산할 수 없으면 `null`.
-double? _missionProgress(TrainingSnapshot training) {
-  final total = training.relearnedCount + training.totalMisses;
-  if (total <= 0) return null;
-  return (training.relearnedCount / total).clamp(0.0, 1.0);
 }
 
 /// 흰 카드: 흰 바탕 + 옅은 테두리, 그림자 없음. [onTap]이 있으면 눌림 효과가 카드 안에 그려진다.
@@ -692,18 +683,11 @@ class _ExampleCard extends StatelessWidget {
   }
 }
 
-/// 다시 온 화면 무대 카드: 단원 · 남은 문제 수, 제목, 진행 막대, 흰 「이어서 풀기」.
+/// 다시 온 화면 무대 카드: 단원 · 남은 문제 수, 제목, 흰 「이어서 풀기」.
 class _MissionCard extends StatelessWidget {
-  const _MissionCard({
-    required this.mission,
-    required this.progress,
-    required this.onContinue,
-  });
+  const _MissionCard({required this.mission, required this.onContinue});
 
   final TodayMission mission;
-
-  /// 0~1. `null`이면 막대를 그리지 않는다.
-  final double? progress;
   final VoidCallback onContinue;
 
   @override
@@ -715,7 +699,6 @@ class _MissionCard extends StatelessWidget {
       concept,
       if (mission.remainingCount > 0) '${mission.remainingCount}문제 남음',
     ].where((part) => part.isNotEmpty).join(' · ');
-    final value = progress;
 
     return GlassSurface(
       preset: GlassPreset.onBlue,
@@ -746,53 +729,13 @@ class _MissionCard extends StatelessWidget {
               height: 1.35,
             ),
           ),
-          if (value != null) ...[
-            const SizedBox(height: AppSpacing.md + 2),
-            _StageProgressBar(value: value),
-          ],
-          const SizedBox(height: AppSpacing.lg),
+          const SizedBox(height: AppSpacing.lg + 2),
           FilledButton(
             onPressed: onContinue,
             style: AppButtonStyles.white(),
             child: const Text('이어서 풀기'),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _StageProgressBar extends StatelessWidget {
-  const _StageProgressBar({required this.value});
-
-  final double value;
-
-  @override
-  Widget build(BuildContext context) {
-    return Semantics(
-      label: '진행률',
-      value: '${(value * 100).round()}%',
-      child: ExcludeSemantics(
-        child: ClipRRect(
-          borderRadius: BorderRadius.circular(AppRadii.pill),
-          child: SizedBox(
-            height: 6,
-            child: Stack(
-              fit: StackFit.expand,
-              children: [
-                const ColoredBox(color: Color(0x40FFFFFF)),
-                Align(
-                  alignment: Alignment.centerLeft,
-                  child: FractionallySizedBox(
-                    widthFactor: value,
-                    heightFactor: 1,
-                    child: const ColoredBox(color: Colors.white),
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
       ),
     );
   }
