@@ -688,9 +688,9 @@ class _TrainingHeroCard extends StatelessWidget {
 
     final name = displayName?.trim();
     if (name != null && name.isNotEmpty && name != '게스트') {
-      return '$name님을 위한 맞춤 문제가 준비되었습니다.';
+      return '$name님, 막힌 개념으로 문제를 준비했어요.';
     }
-    return '맞춤 문제가 준비되었습니다.';
+    return '막힌 개념으로 문제를 준비했어요.';
   }
 
   @override
@@ -826,7 +826,7 @@ class _TrainingFocusList extends StatelessWidget {
     if (items.isEmpty) {
       return const AppCard(
         child: Text(
-          '훈련 대상 개념을 정리하는 중입니다.',
+          '훈련할 개념을 모으는 중이에요.',
           style: TextStyle(color: AppColors.textSub, height: 1.5),
         ),
       );

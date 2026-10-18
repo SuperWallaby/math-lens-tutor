@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'dart:io';
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -24,11 +25,12 @@ Finder _titleInScroll(String title) => find.descendant(
 Widget _training({
   required LearningProfile profile,
   TrainingFeedResponse? feed,
+  AuthSession? session,
 }) {
   return MaterialApp(
     home: Scaffold(
       body: StudentTrainingScreen(
-        apiClient: ApiClient(authSession: AuthSession()),
+        apiClient: ApiClient(authSession: session ?? AuthSession()),
         demoProfile: profile,
         demoFeed: feed ??
             const TrainingFeedResponse(
@@ -171,6 +173,65 @@ void main() {
       tester.widget<GlassScrollEdge>(find.byType(GlassScrollEdge)).title,
       '훈련',
     );
+  });
+
+  group('training hero speaks 해요체 when the API sends no headline', () {
+    const noHeadline = TrainingSnapshot(
+      available: true,
+      hasLearningData: true,
+      headline: '',
+      description: '',
+      focusConcepts: ['일차방정식'],
+      focusItems: [],
+      activeSetId: null,
+      remainingCount: 0,
+      totalMisses: 3,
+      relearnedCount: 0,
+    );
+
+    testWidgets('without a name', (tester) async {
+      await tester.pumpWidget(
+        _training(
+          profile: _withTraining(designReviewProfileFirstVisit(), noHeadline),
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('막힌 개념으로 문제를 준비했어요.'), findsOneWidget);
+      expect(find.text('맞춤 문제가 준비되었습니다.'), findsNothing);
+    });
+
+    testWidgets('with the student name', (tester) async {
+      SharedPreferences.setMockInitialValues({
+        'auth_user': jsonEncode(
+          const AppUser(id: 'u1', displayName: '지민', profileComplete: true)
+              .toJson(),
+        ),
+      });
+      resetAppPrefsCache();
+      final session = AuthSession();
+      await tester.runAsync(session.load);
+      expect(session.user?.displayName, '지민');
+
+      await tester.pumpWidget(
+        _training(
+          profile: _withTraining(designReviewProfileFirstVisit(), noHeadline),
+          session: session,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('지민님, 막힌 개념으로 문제를 준비했어요.'), findsOneWidget);
+      expect(find.text('지민님을 위한 맞춤 문제가 준비되었습니다.'), findsNothing);
+    });
+  });
+
+  test('training screen has no 합니다체 copy left', () {
+    // 훈련 대상 목록의 빈 줄처럼 화면으로 띄우기 어려운 글자도 함께 본다.
+    final source =
+        File('lib/screens/student_training_screen.dart').readAsStringSync();
+    final formal = RegExp(r"'[^'\n]*니다[^'\n]*'");
+    expect(formal.allMatches(source).map((m) => m.group(0)), isEmpty);
   });
 
   testWidgets('training skeleton shows the same title while loading',
