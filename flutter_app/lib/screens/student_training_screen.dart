@@ -247,6 +247,7 @@ class StudentTrainingScreenState extends State<StudentTrainingScreen> {
             )
           else
             FilledButton.icon(
+              style: AppButtonStyles.soft(),
               onPressed: () => _startTraining(training),
               icon: const Icon(Icons.play_arrow_rounded),
               label: const Text('5문제 세트로 복습'),

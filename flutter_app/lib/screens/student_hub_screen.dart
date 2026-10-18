@@ -418,38 +418,6 @@ class _ReturningHome extends StatelessWidget {
   }
 }
 
-/// 흰 카드: 흰 바탕 + 옅은 테두리, 그림자 없음. [onTap]이 있으면 눌림 효과가 카드 안에 그려진다.
-class _WhiteCard extends StatelessWidget {
-  const _WhiteCard({
-    required this.child,
-    this.onTap,
-    this.padding = const EdgeInsets.all(AppSpacing.lg + 2),
-  });
-
-  final Widget child;
-  final VoidCallback? onTap;
-  final EdgeInsetsGeometry padding;
-
-  @override
-  Widget build(BuildContext context) {
-    final radius = BorderRadius.circular(AppRadii.md);
-    final content = Padding(padding: padding, child: child);
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: radius,
-        border: Border.all(color: AppColors.border),
-      ),
-      child: Material(
-        type: MaterialType.transparency,
-        child: onTap == null
-            ? content
-            : InkWell(onTap: onTap, borderRadius: radius, child: content),
-      ),
-    );
-  }
-}
-
 /// 처음 화면 무대 카드: 3단계 안내 + 아래 「앨범에서 사진 고르기」 링크.
 class _FirstVisitStageCard extends StatelessWidget {
   const _FirstVisitStageCard({required this.onPickGallery});
@@ -577,7 +545,7 @@ class _ExampleCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return _WhiteCard(
+    return AppCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -879,47 +847,57 @@ class _RecentSubmissionTile extends StatelessWidget {
         .toList();
     final primaryConcept = weakConcepts.isNotEmpty ? weakConcepts.first : null;
 
-    return _WhiteCard(
-      onTap: onTap,
-      padding: const EdgeInsets.all(AppSpacing.md),
-      child: Row(
-        children: [
-          _SubmissionThumbnail(imageUrl: imageUrl),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  item.displayTitle,
-                  maxLines: 2,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                    height: 1.35,
-                  ),
-                ),
-                if (item.createdAt.isNotEmpty) ...[
-                  const SizedBox(height: AppSpacing.xs),
-                  Text(
-                    _formatSubmissionDate(item.createdAt),
-                    style: const TextStyle(
-                      color: AppColors.textMuted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w600,
+    // 카드 전체가 눌리도록 AppCard 패딩을 없애고 InkWell 안에 패딩을 둔다.
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadii.md),
+        child: Padding(
+          padding: const EdgeInsets.all(AppSpacing.md),
+          child: Row(
+            children: [
+              _SubmissionThumbnail(imageUrl: imageUrl),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      item.displayTitle,
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                      style: const TextStyle(
+                        fontWeight: FontWeight.w800,
+                        fontSize: 15,
+                        height: 1.35,
+                      ),
                     ),
-                  ),
-                ],
-                if (primaryConcept != null) ...[
-                  const SizedBox(height: AppSpacing.sm),
-                  _MiniStatusChip(primaryConcept),
-                ],
-              ],
-            ),
+                    if (item.createdAt.isNotEmpty) ...[
+                      const SizedBox(height: AppSpacing.xs),
+                      Text(
+                        _formatSubmissionDate(item.createdAt),
+                        style: const TextStyle(
+                          color: AppColors.textMuted,
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ],
+                    if (primaryConcept != null) ...[
+                      const SizedBox(height: AppSpacing.sm),
+                      _MiniStatusChip(primaryConcept),
+                    ],
+                  ],
+                ),
+              ),
+              const Icon(
+                Icons.chevron_right_rounded,
+                color: AppColors.textMuted,
+              ),
+            ],
           ),
-          const Icon(Icons.chevron_right_rounded, color: AppColors.textMuted),
-        ],
+        ),
       ),
     );
   }

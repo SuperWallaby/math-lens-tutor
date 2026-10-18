@@ -6,6 +6,7 @@ import '../io_compat/read_path_bytes.dart';
 import '../layout/tablet_layout.dart';
 import '../services/api_client.dart';
 import '../utils/problem_image_picker.dart';
+import '../widgets/glass.dart';
 import 'analysis_screen.dart';
 import '../theme/app_design_system.dart';
 
@@ -206,10 +207,10 @@ class _UploadScreenState extends State<UploadScreen> {
               label: Text(problemImageGalleryLabel),
             ),
             const SizedBox(height: 14),
-            FilledButton.icon(
+            GlassPrimaryButton(
               onPressed: _imageBytes == null ? null : _onPrimaryButton,
-              icon: const Icon(Icons.auto_awesome_rounded),
-              label: const Text('분석하고 유사 문제 생성'),
+              icon: Icons.auto_awesome_rounded,
+              label: '분석하고 유사 문제 생성',
             ),
             if (_error != null) ...[
               const SizedBox(height: 14),

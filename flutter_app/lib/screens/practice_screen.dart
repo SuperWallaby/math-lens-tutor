@@ -8,6 +8,7 @@ import '../services/api_client.dart';
 import '../utils/choice_label_format.dart';
 import '../utils/problem_answer_format.dart';
 import '../utils/problem_set_pdf.dart';
+import '../widgets/app_card.dart';
 import '../widgets/bouncing_ellipsis_text.dart';
 import '../widgets/glass.dart';
 import '../widgets/problem_answer_input.dart';
@@ -435,13 +436,11 @@ class _PracticeScreenState extends State<PracticeScreen> {
                       Center(
                         child: ConstrainedBox(
                           constraints: const BoxConstraints(maxWidth: 160),
-                          child: GlassPanel(
-                            tone: GlassTone.blue,
+                          child: AppCard(
                             padding: const EdgeInsets.symmetric(
                               horizontal: 16,
                               vertical: 8,
                             ),
-                            borderRadius: BorderRadius.circular(AppRadii.pill),
                             child: Text(
                               '훈련 ${_currentIndex + 1} / $total',
                               textAlign: TextAlign.center,
@@ -501,11 +500,20 @@ class _PracticeScreenState extends State<PracticeScreen> {
                         !widget.reviewMode &&
                         _isSetComplete) ...[
                       const SizedBox(height: 16),
-                      FilledButton.icon(
-                        onPressed: _openLoopResult,
-                        icon: const Icon(Icons.flag_rounded),
-                        label: const Text('세트 결과 보기'),
-                      ),
+                      // 마지막 문제에서는 이 버튼이 화면의 주 행동이다. 중간 문제에서는
+                      // 「다음 문제」가 파란 유리 주 버튼이므로 이 버튼은 보조로 둔다.
+                      if (_currentIndex >= total - 1)
+                        GlassPrimaryButton(
+                          onPressed: _openLoopResult,
+                          icon: Icons.flag_rounded,
+                          label: '세트 결과 보기',
+                        )
+                      else
+                        OutlinedButton.icon(
+                          onPressed: _openLoopResult,
+                          icon: const Icon(Icons.flag_rounded),
+                          label: const Text('세트 결과 보기'),
+                        ),
                     ],
                     if (showSubmitBar) const SizedBox(height: 8),
                   ],
@@ -544,7 +552,7 @@ class _PracticeSubmitBar extends StatelessWidget {
         TabletLayout.pagePadding(context).right,
         AppSpacing.lg,
       ),
-      child: GlassButton(
+      child: GlassPrimaryButton(
         onPressed: submitting ? null : onSubmit,
         label: submitting ? '채점 중' : '답안 제출',
       ),
@@ -591,7 +599,7 @@ class _ProblemCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        GlassPanel(
+        AppCard(
           padding: const EdgeInsets.all(18),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -637,9 +645,12 @@ class _ProblemCard extends StatelessWidget {
           ),
           if (onNext != null) ...[
             const SizedBox(height: 24),
-            GlassButton(
-              onPressed: onNext,
-              label: '다음 문제',
+            SizedBox(
+              width: double.infinity,
+              child: GlassPrimaryButton(
+                onPressed: onNext,
+                label: '다음 문제',
+              ),
             ),
           ] else if (index + 1 >= total) ...[
             const SizedBox(height: 16),
@@ -656,7 +667,7 @@ class _ProblemCard extends StatelessWidget {
             for (final choice in problem.choices)
               Padding(
                 padding: const EdgeInsets.only(bottom: 10),
-                child: GlassChoice(
+                child: AppChoiceTile(
                   selected: answer == choice.id,
                   onTap: () => onAnswerChanged(choice.id),
                   label: MixedMathText(
@@ -679,13 +690,16 @@ class _ProblemCard extends StatelessWidget {
             ),
           if (showInlineSubmit) ...[
             const SizedBox(height: 16),
-            GlassButton(
-              onPressed: reviewMode
-                  ? (onNext ?? () {})
-                  : (submitting ? null : onSubmit),
-              label: reviewMode
-                  ? '다음 문제'
-                  : (submitting ? '채점 중' : '답안 제출'),
+            SizedBox(
+              width: double.infinity,
+              child: GlassPrimaryButton(
+                onPressed: reviewMode
+                    ? (onNext ?? () {})
+                    : (submitting ? null : onSubmit),
+                label: reviewMode
+                    ? '다음 문제'
+                    : (submitting ? '채점 중' : '답안 제출'),
+              ),
             ),
           ],
         ],

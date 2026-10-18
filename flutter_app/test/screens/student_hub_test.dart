@@ -6,6 +6,7 @@ import 'package:math_lens_tutor/screens/student_hub_screen.dart';
 import 'package:math_lens_tutor/services/api_client.dart';
 import 'package:math_lens_tutor/services/auth_session.dart';
 import 'package:math_lens_tutor/services/oauth_service.dart';
+import 'package:math_lens_tutor/widgets/app_card.dart';
 import 'package:math_lens_tutor/widgets/glass.dart';
 import 'package:math_lens_tutor/widgets/home_stage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -177,6 +178,32 @@ void main() {
     expect(find.text('일차방정식'), findsWidgets);
     expect(find.text('가입하기'), findsNothing);
     expect(find.text('우열'), findsNothing);
+  });
+
+  testWidgets('returning: each recent row is a white card that is tappable', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _hub(
+        profile: designReviewProfileReturning(),
+        subs: designReviewSubmissionsRecent(),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    final cards = find.byType(AppCard);
+    expect(cards, findsNWidgets(2));
+    for (var i = 0; i < 2; i++) {
+      final card = cards.at(i);
+      final ink = find.descendant(of: card, matching: find.byType(InkWell));
+      expect(ink, findsOneWidget);
+      expect(tester.widget<InkWell>(ink).onTap, isNotNull);
+      // 카드 전체가 눌린다 (테두리 1px씩 안쪽).
+      expect(
+        tester.getSize(ink).width,
+        closeTo(tester.getSize(card).width - 2, 0.01),
+      );
+    }
   });
 
   testWidgets('returning: mission card has no progress bar', (tester) async {

@@ -290,7 +290,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                   ),
                 ),
                 const SizedBox(height: 18),
-                GlassInfoRow(
+                AppInfoRow(
                   icon: Icons.show_chart_outlined,
                   title: '약한 유형',
                   subtitle: weakShown.isNotEmpty
@@ -298,7 +298,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                       : '아직 유형을 좁히는 중',
                 ),
                 const SizedBox(height: 10),
-                GlassInfoRow(
+                AppInfoRow(
                   icon: Icons.gps_fixed_rounded,
                   title: '추천 훈련',
                   subtitle: focusShown.isNotEmpty
@@ -307,7 +307,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                 ),
                 const SizedBox(height: 18),
                 if (similarReady)
-                  GlassButton(
+                  GlassPrimaryButton(
                     label: '비슷한 문제 풀기',
                     onPressed: () {
                       final set = _problemSet;
@@ -324,12 +324,11 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                     },
                   )
                 else
-                  const GlassButton(label: '비슷한 문제 풀기', onPressed: null),
+                  const GlassPrimaryButton(label: '비슷한 문제 풀기', onPressed: null),
                 const SizedBox(height: 10),
-                GlassButton(
-                  label: '홈으로',
-                  primary: false,
+                OutlinedButton(
                   onPressed: () => Navigator.of(context).pop(),
+                  child: const Text('홈으로'),
                 ),
                 if (widget.matchPinPreview) const SizedBox(height: 24),
                 if (!widget.matchPinPreview) const SizedBox(height: 22),
@@ -637,10 +636,9 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
               ],
               const SizedBox(height: 18),
               if (similarReady) ...[
-                GlassButton(
-                  label: '유사문제 PDF로 받기',
-                  primary: false,
-                  icon: Icons.picture_as_pdf_outlined,
+                OutlinedButton.icon(
+                  icon: const Icon(Icons.picture_as_pdf_outlined, size: 18),
+                  label: const Text('유사문제 PDF로 받기'),
                   onPressed: () async {
                     final set = _problemSet;
                     if (set == null) return;
@@ -659,7 +657,7 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                 ),
                 if (!tutorReady) ...[
                   const SizedBox(height: 12),
-                  GlassButton(
+                  GlassPrimaryButton(
                     label: '비슷한 문제 풀기',
                     onPressed: () {
                       final set = _problemSet;
@@ -744,6 +742,7 @@ class _AnswerBox extends StatelessWidget {
       decoration: BoxDecoration(
         color: AppColors.surfaceElevated,
         borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.border),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
