@@ -841,6 +841,7 @@ class GlassPrimaryButton extends StatelessWidget {
     return Semantics(
       button: true,
       enabled: enabled,
+      onTap: onPressed,
       child: Opacity(
         opacity: enabled ? 1 : 0.4,
         child: GlassSurface(

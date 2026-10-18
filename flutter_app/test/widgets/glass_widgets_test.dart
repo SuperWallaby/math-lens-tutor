@@ -1,4 +1,7 @@
+import 'dart:ui' show Tristate;
+
 import 'package:flutter/material.dart';
+import 'package:flutter/semantics.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:math_lens_tutor/widgets/glass.dart';
 
@@ -28,6 +31,53 @@ void main() {
     expect(tester.getSize(find.byType(GlassPrimaryButton)).height, 52);
     await tester.tap(find.text('분석하기'));
     expect(taps, 1);
+  });
+
+  testWidgets('GlassPrimaryButton exposes a tap action to assistive tech when enabled', (tester) async {
+    var taps = 0;
+    final handle = tester.ensureSemantics();
+    try {
+      await tester.pumpWidget(
+        MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: GlassPrimaryButton(label: '분석하기', onPressed: () => taps++),
+            ),
+          ),
+        ),
+      );
+      final data = tester.getSemantics(find.text('분석하기')).getSemanticsData();
+      expect(data.label, '분석하기');
+      expect(data.flagsCollection.isButton, isTrue);
+      expect(data.flagsCollection.isEnabled, Tristate.isTrue);
+      expect(data.hasAction(SemanticsAction.tap), isTrue);
+      tester.semantics.tap(find.semantics.byLabel('분석하기'));
+      expect(taps, 1);
+    } finally {
+      handle.dispose();
+    }
+  });
+
+  testWidgets('GlassPrimaryButton has no tap action when disabled', (tester) async {
+    final handle = tester.ensureSemantics();
+    try {
+      await tester.pumpWidget(
+        const MaterialApp(
+          home: Scaffold(
+            body: Center(
+              child: GlassPrimaryButton(label: '분석하기', onPressed: null),
+            ),
+          ),
+        ),
+      );
+      final data = tester.getSemantics(find.text('분석하기')).getSemanticsData();
+      expect(data.label, '분석하기');
+      expect(data.flagsCollection.isButton, isTrue);
+      expect(data.flagsCollection.isEnabled, Tristate.isFalse);
+      expect(data.hasAction(SemanticsAction.tap), isFalse);
+    } finally {
+      handle.dispose();
+    }
   });
 
   testWidgets('GlassScrollEdge hides when not visible', (tester) async {
