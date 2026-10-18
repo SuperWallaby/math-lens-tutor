@@ -512,28 +512,34 @@ class GradeBandTabBar extends StatelessWidget {
         separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final selected = selectedIndex == index;
-          return Material(
-            color: Colors.transparent,
-            child: InkWell(
-              onTap: () => onSelected(index),
-              borderRadius: BorderRadius.circular(AppRadii.pill),
-              child: Ink(
-                height: 40,
-                padding: const EdgeInsets.symmetric(horizontal: 14),
-                decoration: BoxDecoration(
-                  color: selected ? AppColors.primary : AppColors.surface,
-                  borderRadius: BorderRadius.circular(AppRadii.pill),
-                  border: Border.all(
-                    color: selected ? AppColors.primary : AppColors.border,
+          // 탭 화면에서 파란 채움은 가운데 카메라 하나뿐이라, 선택은 연파랑 + 진한 파랑 글자.
+          return Semantics(
+            selected: selected,
+            child: Material(
+              color: Colors.transparent,
+              child: InkWell(
+                onTap: () => onSelected(index),
+                borderRadius: BorderRadius.circular(AppRadii.pill),
+                child: Ink(
+                  height: 40,
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                  decoration: BoxDecoration(
+                    color: selected ? AppColors.primarySoft : AppColors.surface,
+                    borderRadius: BorderRadius.circular(AppRadii.pill),
+                    border: Border.all(
+                      color: selected ? AppColors.primarySoft : AppColors.border,
+                    ),
                   ),
-                ),
-                child: Center(
-                  child: Text(
-                    gradeBandLabels[index],
-                    style: TextStyle(
-                      color: selected ? Colors.white : AppColors.textSub,
-                      fontWeight: FontWeight.w700,
-                      fontSize: 13,
+                  child: Center(
+                    child: Text(
+                      gradeBandLabels[index],
+                      style: TextStyle(
+                        color: selected
+                            ? AppColors.primaryDark
+                            : AppColors.textSub,
+                        fontWeight: FontWeight.w700,
+                        fontSize: 13,
+                      ),
                     ),
                   ),
                 ),
