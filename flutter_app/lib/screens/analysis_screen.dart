@@ -325,7 +325,9 @@ class _AnalysisScreenState extends State<AnalysisScreen> {
                   const GlassPrimaryButton(label: '비슷한 문제 풀기', onPressed: null),
                 const SizedBox(height: 10),
                 OutlinedButton(
-                  onPressed: () => Navigator.of(context).pop(),
+                  // 카메라 → 업로드 → 분석으로 쌓였으니, 한 장만 닫으면 업로드 화면이다.
+                  onPressed: () =>
+                      Navigator.of(context).popUntil((r) => r.isFirst),
                   child: const Text('홈으로'),
                 ),
                 if (widget.matchPinPreview) const SizedBox(height: 24),

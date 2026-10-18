@@ -68,6 +68,49 @@ void main() {
       expect(_outlined('홈으로'), findsOneWidget);
       expect(_outlined('유사문제 PDF로 받기'), findsOneWidget);
     });
+
+    testWidgets('홈으로 goes back to the first route, not the upload page', (
+      tester,
+    ) async {
+      _tallPhone(tester);
+      final navigator = GlobalKey<NavigatorState>();
+      await tester.pumpWidget(
+        MaterialApp(
+          navigatorKey: navigator,
+          theme: buildAppTheme(),
+          home: const Scaffold(body: Text('탭 화면')),
+        ),
+      );
+
+      // 카메라 → 업로드(전체 화면) → 분석 결과, 앱이 실제로 쌓는 순서.
+      navigator.currentState!.push(
+        MaterialPageRoute<void>(
+          fullscreenDialog: true,
+          builder: (_) => const Scaffold(body: Text('업로드 화면')),
+        ),
+      );
+      await tester.pumpAndSettle();
+      navigator.currentState!.push(
+        MaterialPageRoute<void>(
+          builder: (_) => AnalysisScreen(
+            apiClient: _api(),
+            result: designReviewAnalyzeResultWeak(),
+          ),
+        ),
+      );
+      // 분석 화면에는 끝나지 않는 애니메이션이 있어 pumpAndSettle 을 쓰지 않는다.
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+      expect(find.byType(AnalysisScreen), findsOneWidget);
+
+      await tester.tap(_outlined('홈으로'));
+      await tester.pump();
+      await tester.pump(const Duration(milliseconds: 500));
+
+      expect(find.byType(AnalysisScreen), findsNothing);
+      expect(find.text('업로드 화면'), findsNothing);
+      expect(find.text('탭 화면'), findsOneWidget);
+    });
   });
 
   group('practice', () {
