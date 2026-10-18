@@ -116,6 +116,92 @@ abstract final class AppShadows {
   ];
 }
 
+/// 홈 파란 무대 배경 — 165° 하늘색에서 코발트로.
+abstract final class AppGradients {
+  static const stage = LinearGradient(
+    begin: Alignment(-0.27, -1),
+    end: Alignment(0.27, 1),
+    colors: [
+      AppColors.sky,
+      AppColors.primary,
+      AppColors.primaryDark,
+    ],
+  );
+}
+
+/// 유리 프리셋 — 맑은 유리 / 무대용 유리 / 파란 유리.
+enum GlassPreset { clear, onBlue, prominent }
+
+/// 유리 한 장의 채움·흐림·테두리·그림자 값.
+@immutable
+class GlassSpec {
+  const GlassSpec({
+    required this.fill,
+    required this.blur,
+    required this.rim,
+    required this.shadows,
+    required this.topHighlight,
+  });
+
+  final Color fill;
+  final double blur;
+  final Color rim;
+  final List<BoxShadow> shadows;
+
+  /// 위쪽 안쪽 하이라이트를 그릴지 여부.
+  final bool topHighlight;
+
+  static const _clear = GlassSpec(
+    fill: Color(0x4DFFFFFF),
+    blur: 14,
+    rim: Color(0xA8FFFFFF),
+    shadows: [
+      BoxShadow(
+        color: Color(0x24112850),
+        offset: Offset(0, 8),
+        blurRadius: 24,
+      ),
+    ],
+    topHighlight: true,
+  );
+
+  static const _onBlue = GlassSpec(
+    fill: Color(0x24FFFFFF),
+    blur: 16,
+    rim: Color(0x61FFFFFF),
+    shadows: [
+      BoxShadow(
+        color: Color(0x380A1E5A),
+        offset: Offset(0, 10),
+        blurRadius: 26,
+      ),
+    ],
+    topHighlight: false,
+  );
+
+  static const _prominent = GlassSpec(
+    fill: Color(0xE02A72E5),
+    blur: 10,
+    rim: Color(0x47FFFFFF),
+    shadows: [
+      BoxShadow(
+        color: Color(0x522A72E5),
+        offset: Offset(0, 8),
+        blurRadius: 18,
+      ),
+    ],
+    topHighlight: true,
+  );
+
+  static GlassSpec of(GlassPreset preset) {
+    return switch (preset) {
+      GlassPreset.clear => _clear,
+      GlassPreset.onBlue => _onBlue,
+      GlassPreset.prominent => _prominent,
+    };
+  }
+}
+
 abstract final class AppRadii {
   static const sm = 12.0;
   static const md = 16.0;
@@ -191,6 +277,18 @@ abstract final class AppButtonStyles {
       shape: const StadiumBorder(),
     );
   }
+
+  /// 연파랑 주 버튼 — 탭 화면 본문.
+  static ButtonStyle soft() => filled(
+    backgroundColor: AppColors.primarySoft,
+    foregroundColor: AppColors.primaryDark,
+  );
+
+  /// 흰 주 버튼 — 홈 파란 무대 위에서만.
+  static ButtonStyle white() => filled(
+    backgroundColor: Colors.white,
+    foregroundColor: AppColors.primary,
+  );
 
   static ButtonStyle filledKeyAction({
     Color? backgroundColor,
