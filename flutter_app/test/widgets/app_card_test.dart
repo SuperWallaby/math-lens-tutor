@@ -97,7 +97,7 @@ void main() {
     expect(find.byType(BackdropFilter), findsNothing);
   });
 
-  testWidgets('TagChip is a flat tint pill: 12% fill, own-color text, no rim or shadow',
+  testWidgets('TagChip is a flat tint pill: 12% fill, no rim or shadow',
       (tester) async {
     await tester.pumpWidget(
       const MaterialApp(
@@ -126,7 +126,73 @@ void main() {
       expect(deco.boxShadow, anyOf(isNull, isEmpty));
       expect(deco.borderRadius, BorderRadius.circular(AppRadii.pill));
     }
-    expect(tester.widget<Text>(find.text('보완')).style!.color, AppColors.accent);
-    expect(tester.widget<Text>(find.text('작게')).style!.color, AppColors.success);
+    expect(
+      tester.widget<Text>(find.text('보완')).style!.color,
+      tagChipTextColor(AppColors.accent),
+    );
+    expect(
+      tester.widget<Text>(find.text('작게')).style!.color,
+      tagChipTextColor(AppColors.success),
+    );
+  });
+
+  group('TagChip text contrast', () {
+    double contrast(Color a, Color b) {
+      final la = a.computeLuminance();
+      final lb = b.computeLuminance();
+      return la > lb ? (la + 0.05) / (lb + 0.05) : (lb + 0.05) / (la + 0.05);
+    }
+
+    // 앱에서 TagChip에 넘기는 색 전부 + 기본값.
+    const used = {
+      'primary': AppColors.primary,
+      'accent': AppColors.accent,
+      'success': AppColors.success,
+      'warning': AppColors.warning,
+      'textMuted': AppColors.textMuted,
+      'teacher': AppColors.teacher,
+    };
+
+    for (final entry in used.entries) {
+      test('${entry.key} text is at least 4.5:1 on white and on mist', () {
+        final text = tagChipTextColor(entry.value);
+        for (final under in [Colors.white, AppColors.background]) {
+          final fill = Color.alphaBlend(
+            entry.value.withValues(alpha: 0.12),
+            under,
+          );
+          expect(
+            contrast(text, fill),
+            greaterThanOrEqualTo(4.5),
+            reason: '${entry.key} on $under',
+          );
+        }
+      });
+    }
+
+    test('green and orange were about 2:1 with their own color', () {
+      for (final c in [AppColors.success, AppColors.accent]) {
+        final fill = Color.alphaBlend(c.withValues(alpha: 0.12), Colors.white);
+        expect(contrast(c, fill), lessThan(2.2));
+      }
+    });
+
+    test('darkens at least as much as the old 0.25 mix, never past text', () {
+      // 파랑은 0.25만 섞어도 충분해서 거기서 멈춘다.
+      expect(
+        tagChipTextColor(AppColors.primary),
+        Color.lerp(AppColors.primary, AppColors.text, 0.25),
+      );
+      for (final c in used.values) {
+        final l = tagChipTextColor(c).computeLuminance();
+        expect(
+          l,
+          lessThanOrEqualTo(
+            Color.lerp(c, AppColors.text, 0.25)!.computeLuminance(),
+          ),
+        );
+        expect(l, greaterThanOrEqualTo(AppColors.text.computeLuminance()));
+      }
+    });
   });
 }

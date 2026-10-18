@@ -161,7 +161,29 @@ class AppInfoRow extends StatelessWidget {
   }
 }
 
-/// 평평한 색 알약: 자기 색 12% 바탕에 자기 색 글씨. 테두리와 그림자는 없다.
+/// [TagChip] 글자색. 자기 색을 [AppColors.text] 쪽으로 0.25부터 0.05씩 더 섞어,
+/// 안개색(`#EEF3F8`) 위 12% 바탕에서도 4.5:1(WCAG AA)이 되는 첫 색을 쓴다.
+/// 초록·주황처럼 밝은 색은 0.25만으로는 3:1 남짓이라 더 진해진다.
+Color tagChipTextColor(Color color) {
+  final fill = Color.alphaBlend(
+    color.withValues(alpha: 0.12),
+    AppColors.background,
+  );
+  for (var step = 5; step < 20; step++) {
+    final text = Color.lerp(color, AppColors.text, step / 20)!;
+    if (_contrast(text, fill) >= 4.5) return text;
+  }
+  return AppColors.text;
+}
+
+double _contrast(Color a, Color b) {
+  final la = a.computeLuminance();
+  final lb = b.computeLuminance();
+  return la > lb ? (la + 0.05) / (lb + 0.05) : (lb + 0.05) / (la + 0.05);
+}
+
+/// 평평한 색 알약: 자기 색 12% 바탕에 자기 색을 진하게 한 글씨([tagChipTextColor]).
+/// 테두리와 그림자는 없다.
 class TagChip extends StatelessWidget {
   const TagChip(
     this.label, {
@@ -188,7 +210,7 @@ class TagChip extends StatelessWidget {
       child: Text(
         label,
         style: TextStyle(
-          color: color,
+          color: tagChipTextColor(color),
           fontSize: compact ? 11 : 12,
           fontWeight: compact ? FontWeight.w600 : FontWeight.w700,
           height: compact ? 1.2 : null,
