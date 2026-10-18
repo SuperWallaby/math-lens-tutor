@@ -433,7 +433,7 @@ export async function buildLearningProfile(
             {
               label: "주차별 정답률",
               data: weeklyTrend.map((w) => w.accuracy),
-              backgroundColor: ["#FF8C00", "#B8860B", "#2ECC40", "#007BFF"],
+              backgroundColor: ["#FF8C00", "#B8860B", "#2ECC40", "#2A72E5"],
             },
           ],
         },

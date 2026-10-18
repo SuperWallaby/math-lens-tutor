@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-/// 우열 design tokens — see `/DESIGN.md` (Flat Design Educacional Vibrante).
+/// 우열 design tokens — see `/DESIGN.md` (app-icon brand).
 abstract final class AppFonts {
-  /// [pubspec.yaml]에 번들된 Noto Sans KR Variable.
-  static const family = 'Noto Sans KR';
+  /// Bundled SUIT Variable (`assets/fonts/SUIT-Variable.ttf`).
+  static const family = 'SUIT';
+
+  /// Bundled IBM Plex Sans KR Bold — brand / display titles.
+  static const display = 'IBM Plex Sans KR';
 }
 
 TextStyle _appTextStyle({
@@ -12,45 +15,48 @@ TextStyle _appTextStyle({
   FontWeight? fontWeight,
   double? fontSize,
   double? height,
+  String? fontFamily,
 }) {
   return TextStyle(
-    fontFamily: AppFonts.family,
+    fontFamily: fontFamily ?? AppFonts.family,
     color: color,
     fontWeight: fontWeight,
     fontSize: fontSize,
     height: height,
   );
 }
-abstract final class AppColors {
-  /// Cool field under Liquid Glass (color blobs show through panels).
-  static const background = Color(0xFFF4F6F8);
-  static const surface = Color(0xFFF4F7FB);
-  static const surfaceElevated = Color(0xFFFFFFFF);
-  static const surfaceMuted = Color(0xFFDDE3EC);
 
-  static const primary = Color(0xFF7EAFD9);
-  static const primarySoft = Color(0xFFB7D4F0);
-  static const primaryDark = Color(0xFF5E8FBF);
-  static const onPrimarySoft = Color(0xFF2C2C2C);
+abstract final class AppColors {
+  /// Pale mist canvas — blue only on CTA / active.
+  static const background = Color(0xFFEEF3F8);
+  static const surface = Color(0xFFFFFFFF);
+  static const surfaceElevated = Color(0xFFFFFFFF);
+  static const surfaceMuted = Color(0xFFE8F1F8);
+
+  static const primary = Color(0xFF2A72E5);
+  static const primarySoft = Color(0xFFE8F1FC);
+  static const primaryDark = Color(0xFF1E46AA);
+  static const sky = Color(0xFF5EB7EB);
+  static const spark = Color(0xFFFEB231);
+  static const onPrimarySoft = Color(0xFF1E46AA);
 
   static const accent = Color(0xFFFF8C00);
   static const success = Color(0xFF2ECC40);
   static const warning = Color(0xFFB8860B);
-  static const teacher = Color(0xFF7C5CBF);
+  static const teacher = Color(0xFF9370DB);
   static const magenta = Color(0xFFE0119D);
   static const orange = Color(0xFFFF8C00);
 
-  /// Category / progress wayfinding (Educacional hue mapping).
   static const categoryBlue = primary;
   static const categoryGold = warning;
   static const categoryGreen = success;
 
-  static const text = Color(0xFF2C2C2C);
-  static const textSub = Color(0xFF6B6B6B);
-  static const textMuted = Color(0xFF8A8A8A);
+  static const text = Color(0xFF111111);
+  static const textSub = Color(0xFF494C4F);
+  static const textMuted = Color(0xFF999999);
 
-  static const border = Color(0xFFE2E2E2);
-  static const borderStrong = Color(0xFFD0D0D0);
+  static const border = Color(0xFFEFEFF1);
+  static const borderStrong = Color(0xFFE0E0E4);
 
   static const glassFill = Color(0x38FFFFFF);
   static const glassStroke = Color(0xE8FFFFFF);
@@ -98,7 +104,7 @@ abstract final class AppShadows {
       blurRadius: 14,
     ),
     BoxShadow(
-      color: Color(0x387EAFD9),
+      color: Color(0x382A72E5),
       offset: Offset(0, 10),
       blurRadius: 18,
     ),
@@ -134,12 +140,37 @@ abstract final class AppSizes {
   static const buttonHeightKeyAction = 62.0;
 }
 
-/// Button label typography — key action uses 17/w700 to match 62px height.
+/// Button / role typography — key action uses 17/w700 to match 62px height.
 abstract final class AppTypography {
   static const button = 16.0;
   static const buttonWeight = FontWeight.w600;
   static const buttonKeyAction = 17.0;
   static const buttonKeyActionWeight = FontWeight.w700;
+
+  static const display = TextStyle(
+    fontFamily: AppFonts.display,
+    fontSize: 28,
+    fontWeight: FontWeight.w700,
+    letterSpacing: -0.6,
+    height: 1.1,
+    color: AppColors.text,
+  );
+
+  static const title = TextStyle(
+    fontFamily: AppFonts.family,
+    fontSize: 20,
+    fontWeight: FontWeight.w700,
+    height: 1.22,
+    color: AppColors.text,
+  );
+
+  static const headline = TextStyle(
+    fontFamily: AppFonts.family,
+    fontSize: 24,
+    fontWeight: FontWeight.w700,
+    height: 1.22,
+    color: AppColors.text,
+  );
 }
 
 abstract final class AppButtonStyles {
@@ -292,7 +323,8 @@ ThemeData buildAppTheme() {
   ).copyWith(
     headlineLarge: _appTextStyle(
       color: AppColors.text,
-      fontWeight: FontWeight.w800,
+      fontWeight: FontWeight.w700,
+      fontFamily: AppFonts.display,
     ),
     titleLarge: _appTextStyle(
       color: AppColors.text,
@@ -355,8 +387,8 @@ ThemeData buildAppTheme() {
     ),
     filledButtonTheme: FilledButtonThemeData(
       style: AppButtonStyles.filled(
-        backgroundColor: AppColors.primarySoft,
-        foregroundColor: AppColors.onPrimarySoft,
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
       ),
     ),
     outlinedButtonTheme: OutlinedButtonThemeData(

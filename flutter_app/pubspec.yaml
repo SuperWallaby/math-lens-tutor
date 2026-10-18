@@ -112,6 +112,13 @@ flutter:
   # For details regarding fonts from package dependencies,
   # see https://flutter.dev/to/font-from-package
   fonts:
+    - family: SUIT
+      fonts:
+        - asset: assets/fonts/SUIT-Variable.ttf
+    - family: IBM Plex Sans KR
+      fonts:
+        - asset: assets/fonts/IBMPlexSansKR-Bold.ttf
+          weight: 700
     - family: Noto Sans KR
       fonts:
         - asset: assets/fonts/NotoSansKR-Variable.ttf
@@ -126,7 +133,7 @@ flutter_launcher_icons:
   web:
     generate: true
     background_color: "#5EB7EB"
-    theme_color: "#1E6FE0"
+    theme_color: "#2A72E5"
   macos:
     generate: true
   windows:

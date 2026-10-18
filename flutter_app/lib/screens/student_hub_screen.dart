@@ -289,17 +289,12 @@ class _FirstTimeHome extends StatelessWidget {
       physics: const AlwaysScrollableScrollPhysics(),
       padding: TabletLayout.pagePadding(context),
       children: [
+        const Text('우열', style: AppTypography.display),
+        const SizedBox(height: AppSpacing.md),
         const Text(
-          '우열',
-          style: TextStyle(
-            fontWeight: FontWeight.w900,
-            fontSize: 28,
-            letterSpacing: -0.6,
-            height: 1.1,
-          ),
+          '오늘은 한 장만 올려도 돼요',
+          style: AppTypography.headline,
         ),
-        const SizedBox(height: AppSpacing.sm),
-        const TagChip('중1 맞춤'),
         const SizedBox(height: AppSpacing.xl),
         _NewProblemCard(
           onCapture: onCapture,
@@ -341,9 +336,6 @@ class _ReturningHome extends StatelessWidget {
 
     final missionTitle = mission?.title.trim();
     final hasMission = missionTitle != null && missionTitle.isNotEmpty;
-    final grade = data.profile.grade.trim().isNotEmpty
-        ? data.profile.grade.trim()
-        : '중1';
     final accuracy = data.profile.stats.accuracy;
     final totalProblems = data.profile.stats.totalProblems;
 
@@ -352,26 +344,12 @@ class _ReturningHome extends StatelessWidget {
       padding: TabletLayout.pagePadding(context),
       children: [
         if (!matchPinPreview) ...[
-          const Text(
-            '우열',
-            style: TextStyle(
-              fontWeight: FontWeight.w900,
-              fontSize: 28,
-              letterSpacing: -0.6,
-              height: 1.1,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.sm),
-          TagChip('$grade 맞춤'),
+          const Text('우열', style: AppTypography.display),
           const SizedBox(height: AppSpacing.lg),
         ],
         const Text(
-          '오늘 어떤문제를 풀어볼까요?',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w800,
-            height: 1.22,
-          ),
+          '어제 막힌 곳부터 이어가요',
+          style: AppTypography.headline,
         ),
         const SizedBox(height: AppSpacing.xl),
         Row(
@@ -402,9 +380,7 @@ class _ReturningHome extends StatelessWidget {
           GlassButton(
             onPressed: () => onOpenMission(mission),
             icon: Icons.play_arrow_rounded,
-            label: mission.remainingCount > 0
-                ? '이어서 ${mission.remainingCount}문제 풀기'
-                : '이어서 훈련하기',
+            label: '이어서 풀기',
           ),
         ],
         const SizedBox(height: AppSpacing.lg),
@@ -419,7 +395,7 @@ class _ReturningHome extends StatelessWidget {
         ],
         if (!matchPinPreview && recent.isNotEmpty) ...[
           const SizedBox(height: AppSpacing.section),
-          _SectionHeader(title: '최근 분석', caption: '${recent.length}개 기록'),
+          _SectionHeader(title: '최근', caption: '${recent.length}장'),
           const SizedBox(height: AppSpacing.md),
           for (final item in recent) ...[
             _RecentSubmissionTile(
@@ -452,22 +428,11 @@ class _NewProblemCard extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        if (!matchPinPreview) ...[
-          const Text(
-            '새 문제',
-            style: TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              height: 1.2,
-            ),
-          ),
-          const SizedBox(height: AppSpacing.md),
-        ],
         if (supportsProblemImageCamera) ...[
           GlassButton(
             onPressed: onCapture,
             icon: Icons.photo_camera_outlined,
-            label: '촬영하기',
+            label: '숙제 올리기',
           ),
           if (!matchPinPreview) ...[
             const SizedBox(height: AppSpacing.sm),
@@ -482,7 +447,7 @@ class _NewProblemCard extends StatelessWidget {
           GlassButton(
             onPressed: onPickGallery,
             icon: problemImageGalleryIcon,
-            label: matchPinPreview ? '촬영하기' : '새 문제 등록',
+            label: '숙제 올리기',
           ),
       ],
     );

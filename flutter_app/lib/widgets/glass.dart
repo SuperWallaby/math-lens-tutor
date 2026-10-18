@@ -398,7 +398,7 @@ class GlassTabBar extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 5, vertical: 1),
               decoration: const BoxDecoration(
-                color: Color(0xFF5E8FBF),
+                color: AppColors.primaryDark,
                 borderRadius: BorderRadius.all(Radius.circular(999)),
               ),
               child: Text(

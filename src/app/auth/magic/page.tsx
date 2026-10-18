@@ -45,7 +45,7 @@ export default async function MagicLinkPage({ searchParams }: PageProps) {
               href={appLink}
               style={{
                 display: "inline-block",
-                background: "#007BFF",
+                background: "#2A72E5",
                 color: "#fff",
                 textDecoration: "none",
                 padding: "12px 20px",

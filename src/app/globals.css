@@ -1,15 +1,20 @@
 @import "tailwindcss";
 
+@import url("https://cdn.jsdelivr.net/gh/sun-typeface/SUIT@2.0/fonts/variable/woff2/SUIT-Variable.css");
+@import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@700&display=swap");
+
 :root {
-  --background: #f5f5f5;
-  --foreground: #1a1a2e;
-  --wy-bg: #f5f5f5;
+  --background: #eef3f8;
+  --foreground: #111111;
+  --wy-bg: #eef3f8;
   --wy-surface: #ffffff;
-  --wy-surface-elevated: #fafafa;
-  --wy-surface-muted: #eeeeee;
-  --wy-primary: #007bff;
-  --wy-primary-dark: #0062cc;
-  --wy-primary-tint: rgba(0, 123, 255, 0.12);
+  --wy-surface-elevated: #ffffff;
+  --wy-surface-muted: #e8f1f8;
+  --wy-primary: #2a72e5;
+  --wy-primary-dark: #1e46aa;
+  --wy-primary-tint: #e8f1fc;
+  --wy-sky: #5eb7eb;
+  --wy-spark: #feb231;
   --wy-accent: #ff8c00;
   --wy-accent-tint: rgba(255, 140, 0, 0.12);
   --wy-success: #2ecc40;
@@ -18,14 +23,16 @@
   --wy-warning-tint: rgba(184, 134, 11, 0.14);
   --wy-teacher: #9370db;
   --wy-teacher-tint: rgba(147, 112, 219, 0.12);
-  --wy-text-sub: #5a6278;
-  --wy-text-muted: #949bb0;
-  --wy-border: rgba(0, 0, 0, 0.08);
-  --wy-border-strong: rgba(0, 0, 0, 0.12);
-  --wy-radius-sm: 10px;
-  --wy-radius-md: 14px;
-  --wy-radius-lg: 16px;
+  --wy-text-sub: #494c4f;
+  --wy-text-muted: #999999;
+  --wy-border: #efeff1;
+  --wy-border-strong: #e0e0e4;
+  --wy-radius-sm: 12px;
+  --wy-radius-md: 16px;
+  --wy-radius-lg: 26px;
   --wy-button-height: 52px;
+  --font-suit: "SUIT Variable", SUIT, sans-serif;
+  --font-display: "IBM Plex Sans KR", var(--font-suit);
 }
 
 @theme inline {
@@ -45,7 +52,7 @@
   --color-wy-text-muted: var(--wy-text-muted);
   --color-wy-border: var(--wy-border);
   --color-wy-border-strong: var(--wy-border-strong);
-  --font-sans: var(--font-noto-sans);
+  --font-sans: var(--font-suit);
   --font-mono: var(--font-geist-mono);
   --radius-wy-md: var(--wy-radius-md);
 }
@@ -53,7 +60,7 @@
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-noto-sans), "Noto Sans KR", sans-serif;
+  font-family: var(--font-suit);
 }
 
 @media print {
