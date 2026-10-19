@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 
-import '../layout/tablet_layout.dart';
 import '../models/app_models.dart';
 import '../theme/app_design_system.dart';
 import '../services/api_client.dart';
@@ -11,6 +10,7 @@ import '../utils/student_code_format.dart';
 import '../widgets/app_card.dart';
 import '../widgets/edit_profile_sheet.dart';
 import '../widgets/glass.dart';
+import '../widgets/page_stage.dart';
 import '../widgets/profile_avatar.dart';
 import '../widgets/student_picker.dart';
 import 'link_student_screen.dart';
@@ -207,248 +207,192 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
   }
 
+  /// 무대 위 흰 작은 버튼(기본 정보 수정, 복사).
+  static ButtonStyle _smallWhite() => AppButtonStyles.white().copyWith(
+        minimumSize: const WidgetStatePropertyAll(Size(0, 36)),
+        padding: const WidgetStatePropertyAll(
+          EdgeInsets.symmetric(horizontal: 14),
+        ),
+      );
+
   @override
   Widget build(BuildContext context) {
-    final user = widget.apiClient.authSession.user;
-    final isGuest = widget.apiClient.authSession.isGuest;
-    final studentCode = user?.studentCode;
-
     return ListenableBuilder(
       listenable: widget.apiClient.authSession,
       builder: (context, _) {
-        return ListView(
-          padding: TabletLayout.pagePadding(context),
-          children: [
-            if (user?.role == AppUserRole.parent &&
-                widget.apiClient.authSession.linkedStudents.isNotEmpty) ...[
-              StudentPicker(
-                authSession: widget.apiClient.authSession,
-                apiClient: widget.apiClient,
-                onChanged: () => setState(() {}),
-              ),
-              const SizedBox(height: 12),
-            ],
-            Text(
-              '설정',
-              style: TextStyle(
-                fontSize: TabletLayout.titleSection(context),
-                fontWeight: FontWeight.w900,
-              ),
-            ),
-            const SizedBox(height: 16),
-            if (isGuest) ...[
-              Container(
-                padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md,
-                  vertical: AppSpacing.md,
-                ),
-                decoration: BoxDecoration(
-                  color: AppColors.warning.withValues(alpha: 0.1),
-                  borderRadius: BorderRadius.circular(AppRadii.md),
-                  border: Border.all(
-                    color: AppColors.warning.withValues(alpha: 0.35),
+        final session = widget.apiClient.authSession;
+        final user = session.user;
+        final isGuest = session.isGuest;
+        final canEdit = !isGuest && session.isSignedIn;
+        return StageFrame(
+          child: StageListView(
+            stage: PageStage.tab(
+              title: '설정',
+              children: [
+                if (user?.role == AppUserRole.parent &&
+                    session.linkedStudents.isNotEmpty)
+                  StudentPicker(
+                    authSession: session,
+                    apiClient: widget.apiClient,
+                    onChanged: () => setState(() {}),
+                    onStage: true,
                   ),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(
-                      AppIcons.info,
-                      color: AppColors.warning,
-                      size: 20,
-                    ),
-                    const SizedBox(width: AppSpacing.sm),
-                    const Expanded(
-                      child: Text(
-                        '로그인하지 않은 게스트 모드입니다.',
-                        style: TextStyle(
-                          color: AppColors.textSub,
-                          fontSize: 13,
-                          height: 1.4,
-                        ),
-                      ),
-                    ),
-                    TextButton(
-                      onPressed: _openSignIn,
-                      style: TextButton.styleFrom(
-                        padding: const EdgeInsets.symmetric(horizontal: 8),
-                        minimumSize: const Size(0, 36),
-                      ),
-                      child: const Text('로그인'),
-                    ),
-                  ],
-                ),
-              ),
-              const SizedBox(height: 12),
-            ],
-            AppCard(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          ProfileAvatar(
-                            user: user,
-                            size: 72,
-                            showEditBadge:
-                                !isGuest && widget.apiClient.authSession.isSignedIn,
-                            onTap: isGuest ||
-                                    !widget.apiClient.authSession.isSignedIn ||
-                                    _uploadingAvatar
-                                ? null
-                                : _pickProfileImage,
-                          ),
-                          if (_uploadingAvatar)
-                            const Positioned.fill(
-                              child: ColoredBox(
-                                color: Color(0x66FFFFFF),
-                                child: Center(
-                                  child: SizedBox(
-                                    width: 22,
-                                    height: 22,
-                                    child: CircularProgressIndicator(strokeWidth: 2),
-                                  ),
-                                ),
-                              ),
-                            ),
-                        ],
-                      ),
-                      const SizedBox(width: AppSpacing.lg),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              user?.displayName ?? '',
-                              style: const TextStyle(
-                                fontSize: 20,
-                                fontWeight: FontWeight.w900,
-                                color: AppColors.text,
-                              ),
-                            ),
-                            const SizedBox(height: AppSpacing.sm),
-                            Wrap(
-                              spacing: AppSpacing.sm,
-                              runSpacing: AppSpacing.sm,
-                              children: [
-                                _SettingsProfileChip(
-                                  label: user?.role?.label ?? '역할 미설정',
-                                ),
-                                if (user?.grade != null)
-                                  _SettingsProfileChip(label: user!.grade!),
-                                if (user?.organizationName != null)
-                                  _SettingsProfileChip(
-                                    label: user!.organizationName!,
-                                  ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  if (!isGuest && widget.apiClient.authSession.isSignedIn) ...[
-                    const SizedBox(height: AppSpacing.lg),
-                    OutlinedButton.icon(
+                _stageProfileRow(user, canEdit),
+                if (canEdit)
+                  Align(
+                    alignment: Alignment.centerLeft,
+                    child: FilledButton.icon(
+                      style: _smallWhite(),
                       onPressed: _openEditProfile,
                       icon: const Icon(AppIcons.edit, size: 18),
                       label: const Text('기본 정보 수정'),
                     ),
-                  ],
-                ],
-              ),
+                  ),
+                if (user?.isStudent == true)
+                  _studentCodeCard(user?.studentCode, isGuest),
+              ],
             ),
-            if (user?.isStudent == true) ...[
-              const SizedBox(height: 12),
-              AppCard(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '내 학생 고유번호',
-                      style: TextStyle(color: AppColors.textSub),
-                    ),
-                    const SizedBox(height: 6),
-                    if (_loadingStudentCode)
-                      const Padding(
-                        padding: EdgeInsets.symmetric(vertical: 8),
-                        child: LinearProgressIndicator(minHeight: 2),
-                      )
-                    else if (studentCode != null)
-                      InkWell(
-                        onTap: _copyStudentCode,
-                        borderRadius: BorderRadius.circular(AppRadii.sm),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(vertical: 4),
-                          child: Text(
-                            studentCode,
-                            style: const TextStyle(
-                              fontSize: 22,
-                              fontWeight: FontWeight.w900,
-                              letterSpacing: 1.2,
-                            ),
-                          ),
-                        ),
-                      )
-                    else
-                      Text(
-                        isGuest
-                            ? '로그인하면 학생 고유번호가 발급됩니다.'
-                            : '번호를 불러올 수 없습니다.',
-                        style: const TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 13,
-                          height: 1.45,
-                        ),
-                      ),
-                    if (studentCode != null) ...[
-                      const SizedBox(height: 4),
-                      const Text(
-                        '탭하거나 복사해서 학부모·교사에게 보내주세요.',
-                        style: TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 12,
-                          height: 1.45,
-                        ),
-                      ),
-                      const SizedBox(height: AppSpacing.sm),
-                      SizedBox(
-                        width: double.infinity,
-                        child: FilledButton.icon(
-                          onPressed: _copyStudentCode,
-                          style: AppButtonStyles.soft(),
-                          icon: const Icon(AppIcons.copy, size: 18),
-                          label: const Text('번호 복사'),
-                        ),
-                      ),
-                    ],
-                  ],
+            children: [
+              Align(
+                alignment: Alignment.centerLeft,
+                child: _SettingsProfileChip(
+                  label: user?.role?.label ?? '역할 미설정',
                 ),
               ),
-            ],
-            if (user?.isGuardian ?? false) ...[
-              const SizedBox(height: 12),
-              OutlinedButton.icon(
-                onPressed: () async {
-                  await Navigator.of(context).push(
-                    MaterialPageRoute(
-                      builder: (_) =>
-                          LinkStudentScreen(apiClient: widget.apiClient),
+              if (isGuest) ...[
+                const SizedBox(height: 12),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md,
+                    vertical: AppSpacing.md,
+                  ),
+                  decoration: BoxDecoration(
+                    color: AppColors.warning.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(AppRadii.md),
+                    border: Border.all(
+                      color: AppColors.warning.withValues(alpha: 0.35),
                     ),
-                  );
-                  if (mounted) setState(() {});
-                },
-                icon: const Icon(AppIcons.link),
-                label: const Text('학생 연결 관리'),
-              ),
-            ],
-            const SizedBox(height: 20),
-            if (user?.isStudent == true || user?.isGuardian == true) ...[
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(
+                        AppIcons.info,
+                        color: AppColors.warning,
+                        size: 20,
+                      ),
+                      const SizedBox(width: AppSpacing.sm),
+                      const Expanded(
+                        child: Text(
+                          '로그인하지 않은 게스트 모드입니다.',
+                          style: TextStyle(
+                            color: AppColors.textSub,
+                            fontSize: 13,
+                            height: 1.4,
+                          ),
+                        ),
+                      ),
+                      TextButton(
+                        onPressed: _openSignIn,
+                        style: TextButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(horizontal: 8),
+                          minimumSize: const Size(0, 36),
+                        ),
+                        child: const Text('로그인'),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+              if (user?.isGuardian ?? false) ...[
+                const SizedBox(height: 12),
+                OutlinedButton.icon(
+                  onPressed: () async {
+                    await Navigator.of(context).push(
+                      MaterialPageRoute(
+                        builder: (_) =>
+                            LinkStudentScreen(apiClient: widget.apiClient),
+                      ),
+                    );
+                    if (mounted) setState(() {});
+                  },
+                  icon: const Icon(AppIcons.link),
+                  label: const Text('학생 연결 관리'),
+                ),
+              ],
+              const SizedBox(height: 20),
+              if (user?.isStudent == true || user?.isGuardian == true) ...[
+                const Text(
+                  '학습',
+                  style: TextStyle(
+                    color: AppColors.textSub,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                AppCard(
+                  child: InkWell(
+                    borderRadius: BorderRadius.circular(AppRadii.lg),
+                    onTap: () => DashboardScreen.open(context, widget.apiClient),
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.md,
+                        vertical: AppSpacing.sm + 2,
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            width: 40,
+                            height: 40,
+                            alignment: Alignment.center,
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(
+                              AppIcons.chart,
+                              size: 22,
+                              color: AppColors.primary,
+                            ),
+                          ),
+                          const SizedBox(width: AppSpacing.md),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  user?.isGuardian == true
+                                      ? '학생 학습 통계'
+                                      : '학습 통계',
+                                  style: const TextStyle(
+                                    fontSize: 15,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.text,
+                                  ),
+                                ),
+                                const Text(
+                                  '정답률 · 주간 추이 · 약점 개념',
+                                  style: TextStyle(
+                                    fontSize: 12,
+                                    color: AppColors.textMuted,
+                                    height: 1.35,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          const Icon(
+                            AppIcons.chevronRight,
+                            color: AppColors.textMuted,
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+              ],
               const Text(
-                '학습',
+                '알림',
                 style: TextStyle(
                   color: AppColors.textSub,
                   fontWeight: FontWeight.w800,
@@ -456,176 +400,231 @@ class _SettingsScreenState extends State<SettingsScreen> {
               ),
               const SizedBox(height: 8),
               AppCard(
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(AppRadii.lg),
-                  onTap: () => DashboardScreen.open(context, widget.apiClient),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.md,
-                      vertical: AppSpacing.sm + 2,
-                    ),
-                    child: Row(
-                      children: [
-                        Container(
-                          width: 40,
-                          height: 40,
-                          alignment: Alignment.center,
-                          decoration: BoxDecoration(
-                            color: AppColors.primary.withValues(alpha: 0.1),
-                            borderRadius: BorderRadius.circular(10),
-                          ),
-                          child: const Icon(
-                            AppIcons.chart,
-                            size: 22,
-                            color: AppColors.primary,
+                child: Column(
+                  children: [
+                    if (user?.isStudent == true) ...[
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('오늘의 미션 알림'),
+                        subtitle: const Text(
+                          '남은 유사문제가 있을 때 알려드려요',
+                          style: TextStyle(
+                            color: AppColors.textMuted,
+                            fontSize: 12,
                           ),
                         ),
-                        const SizedBox(width: AppSpacing.md),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                user?.isGuardian == true
-                                    ? '학생 학습 통계'
-                                    : '학습 통계',
-                                style: const TextStyle(
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.w700,
-                                  color: AppColors.text,
-                                ),
-                              ),
-                              const Text(
-                                '정답률 · 주간 추이 · 약점 개념',
-                                style: TextStyle(
-                                  fontSize: 12,
-                                  color: AppColors.textMuted,
-                                  height: 1.35,
-                                ),
-                              ),
-                            ],
+                        value: _missionAlerts,
+                        onChanged: (value) {
+                          setState(() => _missionAlerts = value);
+                          _setPref('notify_mission', value);
+                        },
+                      ),
+                      const Divider(color: AppColors.border),
+                    ],
+                    if (user?.role == AppUserRole.parent) ...[
+                      SwitchListTile(
+                        contentPadding: EdgeInsets.zero,
+                        title: const Text('오늘의 부모 코칭'),
+                        subtitle: const Text(
+                          '매일 코칭 질문과 틀린 문제 설명을 알려드려요',
+                          style: TextStyle(
+                            color: AppColors.textMuted,
+                            fontSize: 12,
                           ),
                         ),
-                        const Icon(
-                          AppIcons.chevronRight,
+                        value: _coachingDaily,
+                        onChanged: (value) {
+                          setState(() => _coachingDaily = value);
+                          _setPref('notify_coaching_daily', value);
+                        },
+                      ),
+                      const Divider(color: AppColors.border),
+                    ],
+                    SwitchListTile(
+                      contentPadding: EdgeInsets.zero,
+                      title: const Text('주간 보고서'),
+                      subtitle: Text(
+                        switch (user?.role) {
+                          AppUserRole.student => '매주 학습 요약을 받아보세요',
+                          AppUserRole.parent => '매주 자녀 학습 요약을 받아보세요',
+                          AppUserRole.teacher => '매주 학생 학습 요약을 받아보세요',
+                          _ => '매주 학습 요약을 받아보세요',
+                        },
+                        style: const TextStyle(
                           color: AppColors.textMuted,
+                          fontSize: 12,
                         ),
-                      ],
+                      ),
+                      value: _weeklyReport,
+                      onChanged: (value) {
+                        setState(() => _weeklyReport = value);
+                        _setPref('notify_weekly', value);
+                      },
                     ),
-                  ),
+                  ],
                 ),
               ),
-              const SizedBox(height: 20),
-            ],
-            const Text(
-              '알림',
-              style: TextStyle(
-                color: AppColors.textSub,
-                fontWeight: FontWeight.w800,
-              ),
-            ),
-            const SizedBox(height: 8),
-            AppCard(
-              child: Column(
-                children: [
-                  if (user?.isStudent == true) ...[
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('오늘의 미션 알림'),
-                      subtitle: const Text(
-                        '남은 유사문제가 있을 때 알려드려요',
-                        style: TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 12,
-                        ),
+              if (!isGuest) ...[
+                const SizedBox(height: 24),
+                OutlinedButton.icon(
+                  onPressed: _logout,
+                  icon: const Icon(AppIcons.logout),
+                  label: const Text('로그아웃'),
+                ),
+                const SizedBox(height: 32),
+                Center(
+                  child: TextButton(
+                    onPressed: _confirmDeleteAccount,
+                    style: TextButton.styleFrom(
+                      foregroundColor: AppColors.textMuted,
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: AppSpacing.sm,
+                        vertical: AppSpacing.xs,
                       ),
-                      value: _missionAlerts,
-                      onChanged: (value) {
-                        setState(() => _missionAlerts = value);
-                        _setPref('notify_mission', value);
-                      },
+                      minimumSize: Size.zero,
+                      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
-                    const Divider(color: AppColors.border),
-                  ],
-                  if (user?.role == AppUserRole.parent) ...[
-                    SwitchListTile(
-                      contentPadding: EdgeInsets.zero,
-                      title: const Text('오늘의 부모 코칭'),
-                      subtitle: const Text(
-                        '매일 코칭 질문과 틀린 문제 설명을 알려드려요',
-                        style: TextStyle(
-                          color: AppColors.textMuted,
-                          fontSize: 12,
-                        ),
-                      ),
-                      value: _coachingDaily,
-                      onChanged: (value) {
-                        setState(() => _coachingDaily = value);
-                        _setPref('notify_coaching_daily', value);
-                      },
-                    ),
-                    const Divider(color: AppColors.border),
-                  ],
-                  SwitchListTile(
-                    contentPadding: EdgeInsets.zero,
-                    title: const Text('주간 보고서'),
-                    subtitle: Text(
-                      switch (user?.role) {
-                        AppUserRole.student => '매주 학습 요약을 받아보세요',
-                        AppUserRole.parent => '매주 자녀 학습 요약을 받아보세요',
-                        AppUserRole.teacher => '매주 학생 학습 요약을 받아보세요',
-                        _ => '매주 학습 요약을 받아보세요',
-                      },
-                      style: const TextStyle(
-                        color: AppColors.textMuted,
+                    child: const Text(
+                      '계정 탈퇴',
+                      style: TextStyle(
                         fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        decoration: TextDecoration.underline,
+                        decorationColor: AppColors.textMuted,
                       ),
-                    ),
-                    value: _weeklyReport,
-                    onChanged: (value) {
-                      setState(() => _weeklyReport = value);
-                      _setPref('notify_weekly', value);
-                    },
-                  ),
-                ],
-              ),
-            ),
-            if (!isGuest) ...[
-              const SizedBox(height: 24),
-              OutlinedButton.icon(
-                onPressed: _logout,
-                icon: const Icon(AppIcons.logout),
-                label: const Text('로그아웃'),
-              ),
-              const SizedBox(height: 32),
-              Center(
-                child: TextButton(
-                  onPressed: _confirmDeleteAccount,
-                  style: TextButton.styleFrom(
-                    foregroundColor: AppColors.textMuted,
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: AppSpacing.sm,
-                      vertical: AppSpacing.xs,
-                    ),
-                    minimumSize: Size.zero,
-                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                  child: const Text(
-                    '계정 탈퇴',
-                    style: TextStyle(
-                      fontSize: 12,
-                      fontWeight: FontWeight.w500,
-                      decoration: TextDecoration.underline,
-                      decorationColor: AppColors.textMuted,
                     ),
                   ),
                 ),
-              ),
-              const SizedBox(height: AppSpacing.lg),
+                const SizedBox(height: AppSpacing.lg),
+              ],
             ],
-          ],
+          ),
         );
       },
+    );
+  }
+
+  /// 무대 위 프로필 줄: 사진(눌러서 바꿈) · 이름 · 학년 · 학교.
+  Widget _stageProfileRow(AppUser? user, bool canEdit) {
+    final subline = [
+      user?.grade?.trim() ?? '',
+      user?.organizationName?.trim() ?? '',
+    ].where((part) => part.isNotEmpty).join(' · ');
+    return Row(
+      children: [
+        Stack(
+          alignment: Alignment.center,
+          children: [
+            ProfileAvatar(
+              user: user,
+              size: 64,
+              showEditBadge: canEdit,
+              onTap: !canEdit || _uploadingAvatar ? null : _pickProfileImage,
+            ),
+            if (_uploadingAvatar)
+              const Positioned.fill(
+                child: ColoredBox(
+                  color: Color(0x66FFFFFF),
+                  child: Center(
+                    child: SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(strokeWidth: 2),
+                    ),
+                  ),
+                ),
+              ),
+          ],
+        ),
+        const SizedBox(width: AppSpacing.lg),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                user?.displayName ?? '',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(
+                  shadows: kStageTextShadows,
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                ),
+              ),
+              if (subline.isNotEmpty) ...[
+                const SizedBox(height: 2),
+                Text(
+                  subline,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: StageText.subtitle,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  /// 무대 위 학생 코드 카드: 코드 · 도움말 · 흰 「복사」.
+  Widget _studentCodeCard(String? studentCode, bool isGuest) {
+    return StageCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('학생 코드', style: StageText.eyebrow),
+          const SizedBox(height: 6),
+          if (_loadingStudentCode)
+            const Padding(
+              padding: EdgeInsets.symmetric(vertical: 8),
+              child: LinearProgressIndicator(
+                minHeight: 2,
+                color: Colors.white,
+                backgroundColor: Color(0x40FFFFFF),
+              ),
+            )
+          else if (studentCode != null)
+            InkWell(
+              onTap: _copyStudentCode,
+              borderRadius: BorderRadius.circular(AppRadii.sm),
+              child: Padding(
+                padding: const EdgeInsets.symmetric(vertical: 4),
+                child: Text(
+                  studentCode,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 22,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.2,
+                  ),
+                ),
+              ),
+            )
+          else
+            Text(
+              isGuest
+                  ? '로그인하면 학생 고유번호가 발급됩니다.'
+                  : '번호를 불러올 수 없습니다.',
+              style: StageText.body,
+            ),
+          if (studentCode != null) ...[
+            const SizedBox(height: 4),
+            const Text(
+              '탭하거나 복사해서 학부모·교사에게 보내주세요.',
+              style: StageText.subtitle,
+            ),
+            const SizedBox(height: AppSpacing.md),
+            FilledButton.icon(
+              style: _smallWhite(),
+              onPressed: _copyStudentCode,
+              icon: const Icon(AppIcons.copy, size: 18),
+              label: const Text('복사'),
+            ),
+          ],
+        ],
+      ),
     );
   }
 }

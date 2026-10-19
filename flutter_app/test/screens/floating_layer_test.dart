@@ -130,7 +130,11 @@ void main() {
       await tester.tap(find.text('기본 정보 수정'));
       await tester.pumpAndSettle();
 
-      final sheet = find.byType(GlassSurface);
+      // 무대에도 유리가 있으니 시트 안의 유리만 센다.
+      final sheet = find.descendant(
+        of: find.byType(BottomSheet),
+        matching: find.byType(GlassSurface),
+      );
       expect(sheet, findsOneWidget);
       expect(tester.takeException(), isNull);
       expect(tester.widget<GlassSurface>(sheet).preset, GlassPreset.clear);
@@ -153,7 +157,7 @@ void main() {
       );
     });
 
-    testWidgets('student code copy is the soft primary of the tab screen', (
+    testWidgets('student code copy is the white button on the stage', (
       tester,
     ) async {
       const student = AppUser(
@@ -175,19 +179,20 @@ void main() {
       await tester.pumpAndSettle();
 
       await tester.scrollUntilVisible(
-        find.text('번호 복사'),
+        find.text('복사'),
         300,
         scrollable: find.byType(Scrollable).first,
       );
       final button = tester.widget<ButtonStyleButton>(
         find.ancestor(
-          of: find.text('번호 복사'),
+          of: find.text('복사'),
           matching: find.bySubtype<ButtonStyleButton>(),
         ),
       );
+      // 학생 코드 카드는 파란 무대 위라 흰 버튼 + 파란 글씨다.
       const none = <WidgetState>{};
-      expect(button.style!.backgroundColor!.resolve(none), AppColors.primarySoft);
-      expect(button.style!.foregroundColor!.resolve(none), AppColors.primaryDark);
+      expect(button.style!.backgroundColor!.resolve(none), Colors.white);
+      expect(button.style!.foregroundColor!.resolve(none), AppColors.primary);
       expect(find.byType(GlassPrimaryButton), findsNothing);
     });
 
