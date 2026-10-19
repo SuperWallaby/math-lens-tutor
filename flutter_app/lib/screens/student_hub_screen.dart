@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:image_picker/image_picker.dart';
 
 import '../layout/tablet_layout.dart';
@@ -293,20 +294,24 @@ class _HomeScrollFrameState extends State<_HomeScrollFrame> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        NotificationListener<ScrollNotification>(
-          onNotification: _onScroll,
-          child: widget.list,
-        ),
-        if (widget.overlay != null) widget.overlay!(_scrolled),
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: GlassStatusBarBand(visible: _scrolled),
-        ),
-      ],
+    // 기본은 검정 글자. 무대(HomeStage)가 상태바 밑에 있는 동안만 흰색이 된다.
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Stack(
+        children: [
+          NotificationListener<ScrollNotification>(
+            onNotification: _onScroll,
+            child: widget.list,
+          ),
+          if (widget.overlay != null) widget.overlay!(_scrolled),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: GlassStatusBarBand(visible: _scrolled),
+          ),
+        ],
+      ),
     );
   }
 }

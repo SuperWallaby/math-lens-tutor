@@ -437,7 +437,9 @@ class StageListView extends StatelessWidget {
   Widget build(BuildContext context) {
     return ListView(
       physics: physics,
-      padding: EdgeInsets.only(bottom: TabletLayout.pagePadding(context).bottom),
+      padding: EdgeInsets.only(
+        bottom: TabletLayout.pagePadding(context).bottom,
+      ),
       children: [
         stage,
         const SizedBox(height: AppSpacing.xl),

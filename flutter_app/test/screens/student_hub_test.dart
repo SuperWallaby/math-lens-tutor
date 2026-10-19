@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:math_lens_tutor/dev/design_review_data.dart';
 import 'package:math_lens_tutor/models/app_models.dart';
@@ -157,6 +158,27 @@ void main() {
       find.widgetWithText(FilledButton, '이어서 풀기'),
     );
     expect(cta.style!.backgroundColor!.resolve({}), Colors.white);
+  });
+
+  testWidgets('home frame turns the status bar dark once the stage is gone', (
+    tester,
+  ) async {
+    await tester.pumpWidget(
+      _hub(
+        profile: designReviewProfileReturning(),
+        subs: designReviewSubmissionsRecent(),
+      ),
+    );
+    await tester.pumpAndSettle();
+    // 무대가 상태바 밑에 있는 동안은 무대의 흰색이, 지나가면 이 검정이 쓰인다.
+    expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w is AnnotatedRegion<SystemUiOverlayStyle> &&
+            w.value == SystemUiOverlayStyle.dark,
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('returning: mission card, stats, and recent rows', (

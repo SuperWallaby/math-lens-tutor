@@ -3,6 +3,7 @@ import 'dart:typed_data';
 
 import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:math_lens_tutor/models/app_models.dart';
 import 'package:math_lens_tutor/widgets/home_stage.dart';
@@ -278,5 +279,19 @@ void main() {
     final icon = tester.widget<Image>(find.byKey(const Key('home-stage-icon')));
     expect(icon.width, 108);
     expect((icon.image as ResizeImage).width, 324);
+  });
+
+  testWidgets('the home stage asks for a light status bar like the tab stages', (
+    tester,
+  ) async {
+    await tester.pumpWidget(_stage(jimin));
+    expect(
+      find.byWidgetPredicate(
+        (w) =>
+            w is AnnotatedRegion<SystemUiOverlayStyle> &&
+            w.value == SystemUiOverlayStyle.light,
+      ),
+      findsOneWidget,
+    );
   });
 }

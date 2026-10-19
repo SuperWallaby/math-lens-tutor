@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../models/app_models.dart';
 import '../theme/app_design_system.dart';
@@ -104,101 +105,105 @@ class HomeStage extends StatelessWidget {
     const headerRightReserve =
         _kIconSize + _kIconRightInset + _kIconGap - _kSidePad;
 
-    return StageBackground(
-      child: Stack(
-        children: [
-          Padding(
-            padding: EdgeInsets.fromLTRB(_kSidePad, top, _kSidePad, 24),
-            child: Column(
-              // card / footer가 무대 폭을 꽉 채운다.
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                ConstrainedBox(
-                  constraints: const BoxConstraints(minHeight: _kIconSize),
-                  child: Padding(
-                    padding: const EdgeInsets.only(right: headerRightReserve),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          formatKoreanDate(today),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            shadows: kStageTextShadows,
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: Color(0xDBFFFFFF),
+    // 무대가 상태바 밑에 있는 동안 시계·배터리 글자를 흰색으로(탭 무대와 같다).
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.light,
+      child: StageBackground(
+        child: Stack(
+          children: [
+            Padding(
+              padding: EdgeInsets.fromLTRB(_kSidePad, top, _kSidePad, 24),
+              child: Column(
+                // card / footer가 무대 폭을 꽉 채운다.
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(minHeight: _kIconSize),
+                    child: Padding(
+                      padding: const EdgeInsets.only(right: headerRightReserve),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            formatKoreanDate(today),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: const TextStyle(
+                              shadows: kStageTextShadows,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xDBFFFFFF),
+                            ),
                           ),
-                        ),
-                        const SizedBox(height: 12),
-                        Row(
-                          children: [
-                            _StageAvatar(user: user),
-                            const SizedBox(width: 10),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    homeStageTitle(user),
-                                    maxLines: 1,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: const TextStyle(
-                                      shadows: kStageTextShadows,
-                                      fontSize: 17,
-                                      fontWeight: FontWeight.w700,
-                                      color: Colors.white,
-                                    ),
-                                  ),
-                                  if (subline != null)
+                          const SizedBox(height: 12),
+                          Row(
+                            children: [
+                              _StageAvatar(user: user),
+                              const SizedBox(width: 10),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
                                     Text(
-                                      subline,
+                                      homeStageTitle(user),
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
                                         shadows: kStageTextShadows,
-                                        fontSize: 12.5,
-                                        fontWeight: FontWeight.w600,
-                                        color: Color(0xCCFFFFFF),
+                                        fontSize: 17,
+                                        fontWeight: FontWeight.w700,
+                                        color: Colors.white,
                                       ),
                                     ),
-                                ],
+                                    if (subline != null)
+                                      Text(
+                                        subline,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          shadows: kStageTextShadows,
+                                          fontSize: 12.5,
+                                          fontWeight: FontWeight.w600,
+                                          color: Color(0xCCFFFFFF),
+                                        ),
+                                      ),
+                                  ],
+                                ),
                               ),
-                            ),
+                            ],
+                          ),
+                          if (homeStageShowsStreak(mode, user)) ...[
+                            const SizedBox(height: 12),
+                            _StreakChip(weeks: user.streakWeeks),
                           ],
-                        ),
-                        if (homeStageShowsStreak(mode, user)) ...[
-                          const SizedBox(height: 12),
-                          _StreakChip(weeks: user.streakWeeks),
                         ],
-                      ],
+                      ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 14),
-                Text(
-                  homeStageHeadline(mode),
-                  style: const TextStyle(
-                    shadows: kStageTextShadows,
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    height: 1.3,
-                    color: Colors.white,
+                  const SizedBox(height: 14),
+                  Text(
+                    homeStageHeadline(mode),
+                    style: const TextStyle(
+                      shadows: kStageTextShadows,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      height: 1.3,
+                      color: Colors.white,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 16),
-                card,
-                if (footer != null) ...[const SizedBox(height: 14), footer!],
-              ],
+                  const SizedBox(height: 16),
+                  card,
+                  if (footer != null) ...[const SizedBox(height: 14), footer!],
+                ],
+              ),
             ),
-          ),
-          Positioned(
-            top: top,
-            right: _kIconRightInset,
-            child: const _StageIcon(),
-          ),
-        ],
+            Positioned(
+              top: top,
+              right: _kIconRightInset,
+              child: const _StageIcon(),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -248,11 +253,7 @@ class _StreakChip extends StatelessWidget {
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          const Icon(
-            AppIcons.fireFill,
-            size: 16,
-            color: AppColors.spark,
-          ),
+          const Icon(AppIcons.fireFill, size: 16, color: AppColors.spark),
           const SizedBox(width: 4),
           Text(
             '$weeks주 연속',
