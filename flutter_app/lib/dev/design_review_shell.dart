@@ -24,10 +24,10 @@ class DesignReviewShell extends StatelessWidget {
   final ApiClient apiClient;
   final OAuthService oauthService;
 
-  Widget _scaffold(Widget body) {
+  Widget _fullBleed(Widget body) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: SafeArea(child: body),
+      body: body,
     );
   }
 
@@ -47,10 +47,11 @@ class DesignReviewShell extends StatelessWidget {
         return _analysis(parsed.state);
       case 'practice':
         return _practice(parsed.state);
+      // 탭 화면도 파란 무대가 위쪽 안전 영역까지 채우므로 SafeArea로 감싸지 않는다.
       case 'student_progress':
-        return _scaffold(_studentProgress(parsed.state));
+        return _fullBleed(_studentProgress(parsed.state));
       case 'student_training':
-        return _scaffold(_studentTraining(parsed.state));
+        return _fullBleed(_studentTraining(parsed.state));
       default:
         return Scaffold(
           body: Center(
@@ -166,6 +167,12 @@ class DesignReviewShell extends StatelessWidget {
 
   Widget _studentTraining(String state) {
     switch (state) {
+      case 'feed':
+        return StudentTrainingScreen(
+          apiClient: apiClient,
+          demoProfile: designReviewProfileReturning(),
+          demoFeed: designReviewTrainingFeed(),
+        );
       case 'empty':
       default:
         return StudentTrainingScreen(

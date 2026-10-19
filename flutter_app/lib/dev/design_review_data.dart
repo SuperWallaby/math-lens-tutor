@@ -681,4 +681,5 @@ const designReviewCaptureKeys = [
   'student_progress__chain_warning',
   'student_progress__empty',
   'student_training__empty',
+  'student_training__feed',
 ];

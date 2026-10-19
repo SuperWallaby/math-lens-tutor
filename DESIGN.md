@@ -111,9 +111,9 @@ Korean math learning UI. Brand action color is the **app-icon blue** `#2A72E5`. 
 
 ## Elevation & Depth
 
-스펙: [`docs/superpowers/specs/2026-10-17-liquid-glass-renewal-design.md`](docs/superpowers/specs/2026-10-17-liquid-glass-renewal-design.md)
+스펙: [`docs/superpowers/specs/2026-10-17-liquid-glass-renewal-design.md`](docs/superpowers/specs/2026-10-17-liquid-glass-renewal-design.md), [`docs/superpowers/specs/2026-10-19-page-stage-design.md`](docs/superpowers/specs/2026-10-19-page-stage-design.md)
 
-**콘텐츠 위에 떠 있으면 유리, 아니면 흰 카드.** 예외는 홈 상단의 파란 무대 하나뿐이다.
+**콘텐츠 위에 떠 있으면 유리, 아니면 흰 카드.** 예외는 탭 화면 위쪽의 파란 무대다.
 
 | 요소 | 표면 |
 |------|------|
@@ -124,7 +124,7 @@ Korean math learning UI. Brand action color is the **app-icon blue** `#2A72E5`. 
 | 스크롤하면 생기는 상단 | 흐림 가장자리(위는 진하고 아래로 사라짐) + 가운데 작은 제목 |
 | 아래에서 올라오는 시트, 팝업 | 맑은 유리 |
 | 사진 위 라벨, 버튼 (분석 화면 등) | 맑은 유리 |
-| **예외**: 홈 파란 무대 위 카드 | 무대용 유리 |
+| **예외**: 탭 화면 파란 무대 위 카드·칸·알약·원 | 무대용 유리 |
 
 유리 프리셋 (Flutter `GlassPreset`, `BackdropFilter` 흐림 기반)
 
@@ -142,8 +142,8 @@ Korean math learning UI. Brand action color is the **app-icon blue** `#2A72E5`. 
 | 종류 | 모양 | 쓰는 곳 |
 |------|------|---------|
 | 파란 유리 주 버튼 | 파란 유리 + 흰 글씨, 높이 50~52, 완전 둥근 모서리 | 탭바가 없는 전체 화면 흐름(풀이, 분석, 업로드)에서 화면당 하나 |
-| 흰 주 버튼 | 흰색 + 파란 글씨 | 홈 파란 무대 위에서만 (「이어서 풀기」) |
-| 연파랑 주 버튼 | `#E8F1FC` + `#1E46AA` 글씨 | 탭 화면(홈 아래쪽, 훈련, 성장, 설정)의 본문 |
+| 흰 주 버튼 | 흰색 + 파란 글씨 | 파란 무대 위에서 (「이어서 풀기」, 「5문제 세트로 복습」) |
+| 연파랑 주 버튼 | `#E8F1FC` + `#1E46AA` 글씨 | 탭 화면 무대 아래 본문 |
 | 보조 | 흰 카드 버튼 또는 글자 링크 | 어디서나 |
 
 탭 화면에서는 가운데 카메라가 그 화면의 유일한 파란 채움이다. 그래서 탭 화면 본문에는 파란 채움 버튼을 두지 않는다.
@@ -157,15 +157,29 @@ Korean math learning UI. Brand action color is the **app-icon blue** `#2A72E5`. 
 - 콘텐츠는 탭바 아래까지 스크롤된다(유리 아래로 비쳐 보이게).
 - 학부모(홈 · 설명 · 이번 주 · 진도 · 설정)와 선생님(홈 · 학생 · 반진도 · 설정)은 같은 유리 탭바를 쓰고, 가운데 카메라는 없다.
 
-## Home stage
+## Blue stage
 
-학생 홈 상단의 파란 무대. 유리 규칙의 유일한 예외다. 홈 밖에서 쓰지 않는다.
+탭 화면 위쪽의 파란 무대. 유리 규칙의 예외다. 탭 화면에만 쓰고, 밀어서 여는 화면(분석, 풀이, 업로드, 세트 결과, 학습 통계)과 로그인·가입에는 쓰지 않는다.
 
-- 배경: 165° 그라데이션 `#5EB7EB` → `#2A72E5` → `#1E46AA`, 아래 모서리 32. 번짐 장식은 없다.
+- 배경: 165° 그라데이션 `#5EB7EB` → `#2A72E5` → `#1E46AA`, 아래 모서리 32. 번짐 장식은 없다. 무대는 콘텐츠와 함께 스크롤되고, 스크롤하면 상태바 흐림 띠가 나타난다.
+- 상태바 글자는 무대 위에서 흰색, 무대가 지나가면 검정.
+
+### 탭 무대 (`PageStage.tab`, 훈련 · 성장 · 설정, 2단계에서 학부모·선생님 탭)
+
+- 위 = 안전 영역 + 14, 좌우 18, 아래 24.
+- 큰 제목 24/700 흰색(홈 인사와 같은 그림자), 설명 13.5/600 흰색 86%.
+- 제목 줄 오른쪽에 무대용 유리 원 버튼 하나(예: 성장의 학습 통계).
+- 그 아래 무대용 유리 카드(요약 + 흰 주 버튼), 숫자 칸(`StageTile`), 알약(`StagePill`).
+- 화면 틀은 `StageFrame`, 무대 아래 목록은 `StageListView`. 탭 화면에서 `GlassSurface`를 직접 쓰지 않고 `page_stage.dart` 부품을 쓴다.
+- 데이터가 와야 생기는 숫자 칸은 불러오는 동안 그리지 않는다.
+
+### 홈 무대 (`HomeStage`, 학생 홈만)
+
 - 오른쪽 위: 앱 아이콘(흰 모서리를 뺀 버전) 108px, 8° 기울임.
 - 왼쪽 위: 날짜, 사용자 줄(프로필 사진 40px + 「이름님」 + 「학년 · 학교」), 연속 칩(`streakWeeks` 1 이상이고 다시 온 상태일 때만), 인사 문장.
 - 무대 안 카드는 무대용 유리, 주 버튼은 흰 주 버튼.
 - 「우열」 글자 워드마크는 쓰지 않는다.
+- 배경과 글자 그림자는 `page_stage.dart`와 공유한다.
 
 ## Do's and Don'ts
 
@@ -181,7 +195,7 @@ Korean math learning UI. Brand action color is the **app-icon blue** `#2A72E5`. 
 - Don't lead with AI / insight / 정답률 dashboard copy on home.
 - 콘텐츠 위 유리 금지: 카드, 리스트 줄, 통계, 입력칸에 `GlassPanel` 등 유리를 바르지 않는다.
 - 배경화면 이미지와 큰 색 번짐(blob) 금지. 노란색 번짐도 금지(파랑과 섞여 회갈색이 된다).
-- 파란 무대를 홈 밖에서 쓰지 않는다.
+- 파란 무대는 탭 화면에만. 밀어서 여는 화면과 로그인·가입에는 쓰지 않는다.
 
 ## Code locations
 
@@ -189,7 +203,7 @@ Korean math learning UI. Brand action color is the **app-icon blue** `#2A72E5`. 
 |----------|----------------|
 | Flutter | `flutter_app/lib/theme/app_design_system.dart` (토큰, `GlassPreset`, 버튼 스타일) |
 | Flutter 유리 위젯 | `flutter_app/lib/widgets/glass.dart` (떠 있는 층만) |
-| Flutter 카드 · 홈 무대 | `flutter_app/lib/widgets/app_card.dart`, `flutter_app/lib/widgets/home_stage.dart` |
+| Flutter 카드 · 무대 | `flutter_app/lib/widgets/app_card.dart`, `flutter_app/lib/widgets/home_stage.dart`, `flutter_app/lib/widgets/page_stage.dart` |
 | 유리 규칙 검사 | `flutter_app/test/design_rules_test.dart` |
 | Next.js / web | `src/app/globals.css` CSS variables |
 | Cursor rule | `.cursor/rules/design.mdc` |
