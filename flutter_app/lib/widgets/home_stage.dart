@@ -4,6 +4,7 @@ import '../models/app_models.dart';
 import '../theme/app_design_system.dart';
 import '../utils/korean_date.dart';
 import 'glass.dart';
+import 'page_stage.dart';
 import 'profile_avatar.dart' show resolveProfileImageUrl;
 import '../theme/app_icons.dart';
 
@@ -77,11 +78,6 @@ const double _kIconRightInset = 18;
 const double _kIconGap = 12;
 const double _kAvatarSize = 40;
 
-/// 하늘색 구간에서 흰 글자가 묻히지 않게 깔아 주는 옅은 남색 그림자.
-const List<Shadow> _stageTextShadows = [
-  Shadow(color: Color(0x591E46AA), offset: Offset(0, 1), blurRadius: 3),
-];
-
 /// 학생 홈 맨 위 파란 무대: 날짜 · 사용자 줄 · 연속 칩 · 인사 문장 · [card] · [footer].
 /// 안전 영역 위 여백까지 무대가 채우므로 화면 맨 위에 붙여서 쓴다.
 class HomeStage extends StatelessWidget {
@@ -108,11 +104,7 @@ class HomeStage extends StatelessWidget {
     const headerRightReserve =
         _kIconSize + _kIconRightInset + _kIconGap - _kSidePad;
 
-    return DecoratedBox(
-      decoration: const BoxDecoration(
-        gradient: AppGradients.stage,
-        borderRadius: BorderRadius.vertical(bottom: Radius.circular(32)),
-      ),
+    return StageBackground(
       child: Stack(
         children: [
           Padding(
@@ -133,7 +125,7 @@ class HomeStage extends StatelessWidget {
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: const TextStyle(
-                            shadows: _stageTextShadows,
+                            shadows: kStageTextShadows,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
                             color: Color(0xDBFFFFFF),
@@ -153,7 +145,7 @@ class HomeStage extends StatelessWidget {
                                     maxLines: 1,
                                     overflow: TextOverflow.ellipsis,
                                     style: const TextStyle(
-                                      shadows: _stageTextShadows,
+                                      shadows: kStageTextShadows,
                                       fontSize: 17,
                                       fontWeight: FontWeight.w700,
                                       color: Colors.white,
@@ -165,7 +157,7 @@ class HomeStage extends StatelessWidget {
                                       maxLines: 1,
                                       overflow: TextOverflow.ellipsis,
                                       style: const TextStyle(
-                                        shadows: _stageTextShadows,
+                                        shadows: kStageTextShadows,
                                         fontSize: 12.5,
                                         fontWeight: FontWeight.w600,
                                         color: Color(0xCCFFFFFF),
@@ -188,7 +180,7 @@ class HomeStage extends StatelessWidget {
                 Text(
                   homeStageHeadline(mode),
                   style: const TextStyle(
-                    shadows: _stageTextShadows,
+                    shadows: kStageTextShadows,
                     fontSize: 22,
                     fontWeight: FontWeight.w700,
                     height: 1.3,

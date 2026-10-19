@@ -11,6 +11,7 @@ const _glassFile = 'lib/widgets/glass.dart';
 const _glassSurfaceAllowlist = {
   _glassFile: '유리 정의 (탭바, 카메라, 흐림 가장자리, 시트, 팝업이 여기서 만든다)',
   'lib/widgets/home_stage.dart': '홈의 파란 무대 위 예외: 무대 카드가 파란 바탕을 비춘다',
+  'lib/widgets/page_stage.dart': '탭 화면 위 파란 무대: 무대 카드·칸·알약·원이 파란 바탕을 비춘다',
   'lib/screens/student_hub_screen.dart': '홈의 파란 무대 위 카드들 (무대 예외)',
   'lib/screens/open_practice_flow.dart': '문제를 만드는 동안 화면 위에 뜨는 로딩 팝업',
 };

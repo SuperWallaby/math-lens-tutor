@@ -11,6 +11,7 @@ import '../utils/network_thumbnail_cache.dart';
 import '../widgets/app_card.dart';
 import '../widgets/glass.dart';
 import '../widgets/home_stage.dart';
+import '../widgets/page_stage.dart';
 import '../widgets/learning_profile_widgets.dart';
 import '../widgets/skeleton_box.dart';
 import '../widgets/skeleton_lines.dart';
@@ -427,14 +428,14 @@ class _ReturningHome extends StatelessWidget {
                 Row(
                   children: [
                     Expanded(
-                      child: _StatTile(
+                      child: StageTile(
                         label: '정답률',
                         value: accuracy > 0 ? '$accuracy%' : '시작 전',
                       ),
                     ),
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
-                      child: _StatTile(
+                      child: StageTile(
                         label: '해결한 문제',
                         value: '$totalProblems개',
                       ),
@@ -763,49 +764,6 @@ class _MissionCard extends StatelessWidget {
             child: const Text('이어서 풀기'),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _StatTile extends StatelessWidget {
-  const _StatTile({required this.label, required this.value});
-
-  final String label;
-  final String value;
-
-  @override
-  Widget build(BuildContext context) {
-    // 「정답률, 72%」처럼 이름과 값이 한 번에 읽히게 묶는다.
-    return GlassSurface(
-      preset: GlassPreset.onBlue,
-      borderRadius: BorderRadius.circular(AppRadii.lg),
-      padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 12),
-      child: MergeSemantics(
-        child: Column(
-          children: [
-            Text(
-              label,
-              style: const TextStyle(
-                color: _kStageTextSub,
-                fontSize: 12,
-                fontWeight: FontWeight.w700,
-              ),
-            ),
-            const SizedBox(height: 6),
-            Text(
-              value,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                color: Colors.white,
-                fontSize: 26,
-                fontWeight: FontWeight.w800,
-                height: 1.05,
-              ),
-            ),
-          ],
-        ),
       ),
     );
   }

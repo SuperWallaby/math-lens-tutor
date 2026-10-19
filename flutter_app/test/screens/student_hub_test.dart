@@ -10,6 +10,7 @@ import 'package:math_lens_tutor/theme/app_design_system.dart';
 import 'package:math_lens_tutor/widgets/app_card.dart';
 import 'package:math_lens_tutor/widgets/glass.dart';
 import 'package:math_lens_tutor/widgets/home_stage.dart';
+import 'package:math_lens_tutor/widgets/page_stage.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 Widget _hub({
@@ -175,6 +176,9 @@ void main() {
     expect(find.text('72%'), findsOneWidget);
     expect(find.text('해결한 문제'), findsOneWidget);
     expect(find.text('18개'), findsOneWidget);
+    // 다른 탭 무대와 같은 숫자 칸을 쓴다.
+    expect(find.widgetWithText(StageTile, '정답률'), findsOneWidget);
+    expect(find.widgetWithText(StageTile, '해결한 문제'), findsOneWidget);
     expect(find.text('2장'), findsOneWidget);
     expect(find.text('일차방정식'), findsWidgets);
     expect(find.text('가입하기'), findsNothing);
