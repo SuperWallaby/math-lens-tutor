@@ -8,6 +8,7 @@ import '../theme/app_design_system.dart';
 import '../utils/network_thumbnail_cache.dart';
 import 'app_card.dart';
 import 'mixed_math_text.dart';
+import 'page_stage.dart';
 import 'parent_tab_scaffold.dart';
 import 'skeleton_box.dart';
 import '../theme/app_icons.dart';
@@ -415,10 +416,14 @@ class GradeBandTabBar extends StatelessWidget {
     super.key,
     required this.selectedIndex,
     required this.onSelected,
+    this.onStage = false,
   });
 
   final int selectedIndex;
   final ValueChanged<int> onSelected;
+
+  /// 파란 무대 위에 놓일 때: 유리 알약, 고른 것은 흰색 + 진파랑 글자.
+  final bool onStage;
 
   @override
   Widget build(BuildContext context) {
@@ -430,6 +435,13 @@ class GradeBandTabBar extends StatelessWidget {
         separatorBuilder: (_, _) => const SizedBox(width: 8),
         itemBuilder: (context, index) {
           final selected = selectedIndex == index;
+          if (onStage) {
+            return StagePill(
+              label: gradeBandLabels[index],
+              selected: selected,
+              onTap: () => onSelected(index),
+            );
+          }
           // 탭 화면에서 파란 채움은 가운데 카메라 하나뿐이라, 선택은 연파랑 + 진한 파랑 글자.
           return Semantics(
             selected: selected,

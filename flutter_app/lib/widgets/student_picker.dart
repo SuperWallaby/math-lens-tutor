@@ -6,6 +6,7 @@ import '../services/auth_session.dart';
 import '../theme/app_design_system.dart';
 import 'glass.dart';
 import 'linked_children_panel.dart';
+import 'page_stage.dart';
 import 'profile_avatar.dart';
 import 'student_link_guide.dart';
 import '../theme/app_icons.dart';
@@ -16,11 +17,15 @@ class StudentPicker extends StatelessWidget {
     required this.authSession,
     this.apiClient,
     this.onChanged,
+    this.onStage = false,
   });
 
   final AuthSession authSession;
   final ApiClient? apiClient;
   final VoidCallback? onChanged;
+
+  /// 파란 무대 위에 놓일 때: 유리 칩에 흰 글자, 유리 원 자녀 추가.
+  final bool onStage;
 
   @override
   Widget build(BuildContext context) {
@@ -46,6 +51,7 @@ class StudentPicker extends StatelessWidget {
                 student: selected,
                 apiBaseUrl: apiClient?.baseUrl,
                 showChevron: canSwitch,
+                onStage: onStage,
                 onTap: canSwitch
                     ? () => _showStudentSheet(context, students, selectedId)
                     : null,
@@ -55,6 +61,7 @@ class StudentPicker extends StatelessWidget {
               const SizedBox(width: AppSpacing.sm),
               _AddChildButton(
                 onPressed: () => _showAddChildSheet(context),
+                onStage: onStage,
               ),
             ],
           ],
@@ -149,53 +156,74 @@ class _StudentPickerChip extends StatelessWidget {
     required this.student,
     required this.apiBaseUrl,
     required this.showChevron,
+    required this.onStage,
     this.onTap,
   });
 
   final LinkedStudent student;
   final String? apiBaseUrl;
   final bool showChevron;
+  final bool onStage;
   final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
+    final radius = BorderRadius.circular(AppRadii.lg);
+    final row = Row(
+      children: [
+        LinkedStudentAvatar(
+          student: student,
+          apiBaseUrl: apiBaseUrl,
+          size: 34,
+        ),
+        const SizedBox(width: AppSpacing.md),
+        Expanded(
+          child: Text(
+            student.labelForGuardian,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontWeight: FontWeight.w800,
+              fontSize: 15,
+              height: 1.2,
+              color: onStage ? Colors.white : AppColors.text,
+            ),
+          ),
+        ),
+        if (showChevron)
+          Icon(
+            AppIcons.chevronDown,
+            color: onStage ? StageText.sub : AppColors.textMuted,
+            size: 22,
+          ),
+      ],
+    );
+
+    if (onStage) {
+      final inner = SizedBox(
+        height: AppSizes.buttonHeight,
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
+          child: row,
+        ),
+      );
+      return StageGlass(
+        borderRadius: radius,
+        child: onTap == null
+            ? inner
+            : InkWell(onTap: onTap, borderRadius: radius, child: inner),
+      );
+    }
+
     final content = Container(
       height: AppSizes.buttonHeight,
       padding: const EdgeInsets.symmetric(horizontal: AppSpacing.md),
       decoration: BoxDecoration(
         color: AppColors.surface,
-        borderRadius: BorderRadius.circular(AppRadii.lg),
+        borderRadius: radius,
         border: Border.all(color: AppColors.borderStrong),
       ),
-      child: Row(
-        children: [
-          LinkedStudentAvatar(
-            student: student,
-            apiBaseUrl: apiBaseUrl,
-            size: 34,
-          ),
-          const SizedBox(width: AppSpacing.md),
-          Expanded(
-            child: Text(
-              student.labelForGuardian,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: const TextStyle(
-                fontWeight: FontWeight.w800,
-                fontSize: 15,
-                height: 1.2,
-                color: AppColors.text,
-              ),
-            ),
-          ),
-          if (showChevron)
-            const Icon(
-              AppIcons.chevronDown,
-              color: AppColors.textMuted,
-              size: 22,
-            ),
-        ],
-      ),
+      child: row,
     );
 
     if (onTap == null) return content;
@@ -204,7 +232,7 @@ class _StudentPickerChip extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(AppRadii.lg),
+        borderRadius: radius,
         child: content,
       ),
     );
@@ -273,12 +301,31 @@ class _StudentSheetTile extends StatelessWidget {
 }
 
 class _AddChildButton extends StatelessWidget {
-  const _AddChildButton({required this.onPressed});
+  const _AddChildButton({required this.onPressed, required this.onStage});
 
   final VoidCallback onPressed;
+  final bool onStage;
 
   @override
   Widget build(BuildContext context) {
+    if (onStage) {
+      const radius = BorderRadius.all(
+        Radius.circular(AppSizes.buttonHeight / 2),
+      );
+      return SizedBox.square(
+        dimension: AppSizes.buttonHeight,
+        child: StageGlass(
+          borderRadius: radius,
+          child: InkWell(
+            onTap: onPressed,
+            borderRadius: radius,
+            child: const Center(
+              child: Icon(AppIcons.personAdd, color: Colors.white, size: 22),
+            ),
+          ),
+        ),
+      );
+    }
     return Material(
       color: AppColors.surface,
       borderRadius: BorderRadius.circular(AppRadii.lg),
