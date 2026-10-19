@@ -277,7 +277,9 @@ void main() {
     expect(_titleInScroll('내 진도'), findsOneWidget);
     expect(find.text('내 진도 현황'), findsNothing);
     expect(find.textContaining('숙제를 찍으면 그 단원부터 채워져요.'), findsOneWidget);
-    expect(find.textContaining(RegExp(r'^0 / \d+ 단원$')), findsOneWidget);
+    // 무대의 「끝낸 단원」 칸이 0 / N을 보인다(옛 안내 카드의 「0 / N 단원」은 없다).
+    expect(find.textContaining(RegExp(r'^0 / \d+$')), findsOneWidget);
+    expect(find.textContaining(RegExp(r'^0 / \d+ 단원$')), findsNothing);
     expect(find.text('시작 전'), findsWidgets);
     expect(find.text('미시작'), findsNothing);
   });
@@ -294,8 +296,11 @@ void main() {
     expect(bars, isNotEmpty);
     expect(bars.every((bar) => bar.value == 0), isTrue);
     // 구간은 데모가 정한 중1이고, 프로필의 학년(초1)이 덮어쓰지 않는다.
-    expect(find.text('2022 개정 교육과정 · 중1'), findsOneWidget);
-    expect(find.text('0 / 9 단원'), findsOneWidget);
+    expect(
+      tester.widget<GradeBandTabBar>(find.byType(GradeBandTabBar)).selectedIndex,
+      3,
+    );
+    expect(find.text('0 / 9'), findsOneWidget);
   });
 
   testWidgets('progress with some progress hides the intro card',
@@ -347,19 +352,20 @@ void main() {
     expect(bars.every((bar) => bar.value == 0), isTrue);
   });
 
-  testWidgets('scroll edge appears after scrolling the progress tab',
+  testWidgets('status-bar band appears after scrolling the progress tab',
       (tester) async {
     await tester.pumpWidget(_progress());
     await tester.pumpAndSettle();
 
+    expect(find.byType(GlassScrollEdge), findsNothing);
     expect(
-      tester.widget<GlassScrollEdge>(find.byType(GlassScrollEdge)).visible,
+      tester.widget<GlassStatusBarBand>(find.byType(GlassStatusBarBand)).visible,
       isFalse,
     );
     await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));
     await tester.pumpAndSettle();
     expect(
-      tester.widget<GlassScrollEdge>(find.byType(GlassScrollEdge)).visible,
+      tester.widget<GlassStatusBarBand>(find.byType(GlassStatusBarBand)).visible,
       isTrue,
     );
   });

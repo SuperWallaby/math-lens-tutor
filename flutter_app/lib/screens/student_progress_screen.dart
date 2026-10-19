@@ -1,21 +1,35 @@
 import 'package:flutter/material.dart';
 
-import '../layout/tablet_layout.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
 import '../widgets/app_card.dart';
-import '../widgets/glass.dart';
 import '../widgets/guardian_learning_gate.dart';
 import '../widgets/learning_profile_widgets.dart';
+import '../widgets/page_stage.dart';
 import '../widgets/parent_tab_scaffold.dart';
+import '../widgets/skeleton_box.dart';
+import '../widgets/student_picker.dart';
 import 'open_practice_flow.dart';
 import 'practice_screen.dart';
 import 'dashboard_screen.dart';
-import '../theme/app_design_system.dart';
 import '../theme/app_icons.dart';
 
-/// 본문이 이만큼 아래로 스크롤되면 위쪽 흐림(제목)이 나타난다.
-const _scrollEdgeThreshold = 30.0;
+const _studentTitle = '내 진도';
+const _guardianTitle = '교육과정 진도';
+const _guardianSubtitle = '단원을 눌러 자녀에게 어떻게 도와줄지 확인하세요';
+const _notStartedHint = '숙제를 찍으면 그 단원부터 채워져요.';
+
+/// 학년 구간 단원 중 끝낸(진행률 100) 단원 수와 전체 단원 수.
+({int done, int total}) finishedUnits(List<CurriculumUnitProgress> unitsInBand) {
+  return (
+    done: unitsInBand.where((unit) => unit.percent >= 100).length,
+    total: unitsInBand.length,
+  );
+}
+
+/// 구간에 단원이 있는데 하나도 시작하지 않았으면 참.
+bool _notStarted(List<CurriculumUnitProgress> units) =>
+    units.isNotEmpty && units.every((unit) => unit.percent <= 0);
 
 class StudentProgressScreen extends StatefulWidget {
   const StudentProgressScreen({
@@ -39,7 +53,6 @@ class StudentProgressScreenState extends State<StudentProgressScreen> {
   Future<LearningProfile>? _profileFuture;
   late int _gradeTab;
   bool _gradeTabTouched = false;
-  bool _scrolled = false;
 
   @override
   void initState() {
@@ -65,7 +78,6 @@ class StudentProgressScreenState extends State<StudentProgressScreen> {
   void _reload({bool forceRefresh = false}) {
     if (widget.demoProfile != null) {
       setState(() {
-        _scrolled = false;
         _profileFuture = Future.value(widget.demoProfile);
       });
       return;
@@ -73,30 +85,15 @@ class StudentProgressScreenState extends State<StudentProgressScreen> {
     if (widget.viewAsGuardian &&
         widget.apiClient.authSession.linkedStudents.isEmpty) {
       setState(() {
-        _scrolled = false;
         _profileFuture = null;
       });
       return;
     }
     setState(() {
-      // 다시 불러오는 동안 스크롤 위치가 사라지므로 흐림도 함께 끈다.
-      _scrolled = false;
       _profileFuture = widget.apiClient.getLearningProfile(
         forceRefresh: forceRefresh,
       );
     });
-  }
-
-  bool _onScroll(ScrollNotification notification) {
-    // 구간 선택처럼 안쪽에서 가로로 스크롤되는 목록은 건너뛴다.
-    if (notification.depth != 0 || notification.metrics.axis != Axis.vertical) {
-      return false;
-    }
-    final scrolled = notification.metrics.pixels > _scrollEdgeThreshold;
-    if (scrolled != _scrolled && mounted) {
-      setState(() => _scrolled = scrolled);
-    }
-    return false;
   }
 
   void _onGradeTabChanged(int index) {
@@ -106,18 +103,45 @@ class StudentProgressScreenState extends State<StudentProgressScreen> {
     });
   }
 
+  void _onStudentChanged() {
+    _gradeTabTouched = false;
+    _reload();
+  }
+
+  /// 데이터 없이 그릴 수 있는 무대(불러오는 중·오류).
+  Widget _emptyStage() {
+    return _ProgressStage(
+      apiClient: widget.apiClient,
+      viewAsGuardian: widget.viewAsGuardian,
+      gradeTab: _gradeTab,
+      onGradeTabChanged: _onGradeTabChanged,
+      onStudentChanged: widget.viewAsGuardian ? _onStudentChanged : null,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final body = FutureBuilder<LearningProfile>(
       future: _profileFuture,
       builder: (context, snapshot) {
         if (snapshot.connectionState != ConnectionState.done) {
-          return const ProfileLoadingView();
+          return StageListView(
+            stage: _emptyStage(),
+            children: const [_ProgressSkeletonRows()],
+          );
         }
         if (snapshot.hasError) {
-          return ProfileLoadingError(
-            error: snapshot.error,
-            onRetry: () => _reload(forceRefresh: true),
+          return RefreshIndicator(
+            onRefresh: () async => _reload(forceRefresh: true),
+            child: StageListView(
+              stage: _emptyStage(),
+              children: [
+                ProfileLoadingError(
+                  error: snapshot.error,
+                  onRetry: () => _reload(forceRefresh: true),
+                ),
+              ],
+            ),
           );
         }
 
@@ -138,42 +162,93 @@ class StudentProgressScreenState extends State<StudentProgressScreen> {
           gradeTab: _gradeTab,
           onGradeTabChanged: _onGradeTabChanged,
           onReload: _reload,
-          onStudentChanged: widget.viewAsGuardian
-              ? () {
-                  _gradeTabTouched = false;
-                  _reload();
-                }
-              : null,
+          onStudentChanged: widget.viewAsGuardian ? _onStudentChanged : null,
         );
       },
     );
 
-    if (!widget.viewAsGuardian) {
-      return Stack(
-        fit: StackFit.expand,
-        children: [
-          NotificationListener<ScrollNotification>(
-            onNotification: _onScroll,
-            child: body,
-          ),
-          Positioned(
-            top: 0,
-            left: 0,
-            right: 0,
-            child: GlassScrollEdge(visible: _scrolled, title: '내 진도'),
-          ),
-        ],
-      );
-    }
+    final framed = StageFrame(child: body);
+    if (!widget.viewAsGuardian) return framed;
 
     return GuardianLearningGate(
       apiClient: widget.apiClient,
-      title: '교육과정 진도',
-      onStudentChanged: () {
-        _gradeTabTouched = false;
-        _reload();
-      },
-      child: body,
+      title: _guardianTitle,
+      onStudentChanged: _onStudentChanged,
+      child: framed,
+    );
+  }
+}
+
+/// 성장 탭 무대: 제목 · 설명 · 학습 통계 원 · (학부모) 자녀 고르기 · 학년 알약 · 숫자 칸.
+/// [units]와 [accuracy]가 없으면(불러오는 중·오류) 숫자 칸을 그리지 않는다.
+class _ProgressStage extends StatelessWidget {
+  const _ProgressStage({
+    required this.apiClient,
+    required this.viewAsGuardian,
+    required this.gradeTab,
+    required this.onGradeTabChanged,
+    this.onStudentChanged,
+    this.units,
+    this.accuracy,
+  });
+
+  final ApiClient apiClient;
+  final bool viewAsGuardian;
+  final int gradeTab;
+  final ValueChanged<int> onGradeTabChanged;
+  final VoidCallback? onStudentChanged;
+  final List<CurriculumUnitProgress>? units;
+  final int? accuracy;
+
+  @override
+  Widget build(BuildContext context) {
+    final units = this.units;
+    final accuracy = this.accuracy;
+    final String subtitle;
+    if (viewAsGuardian) {
+      subtitle = _guardianSubtitle;
+    } else if (units != null && _notStarted(units)) {
+      subtitle = _notStartedHint;
+    } else {
+      subtitle = '2022 개정 교육과정 · ${gradeBandLabels[gradeTab]}';
+    }
+    final finished = units == null ? null : finishedUnits(units);
+
+    return PageStage.tab(
+      title: viewAsGuardian ? _guardianTitle : _studentTitle,
+      subtitle: subtitle,
+      trailing: StageCircleButton(
+        icon: AppIcons.chart,
+        tooltip: viewAsGuardian ? '학생 학습 통계' : '학습 통계',
+        onPressed: () => DashboardScreen.open(context, apiClient),
+      ),
+      children: [
+        if (viewAsGuardian)
+          StudentPicker(
+            authSession: apiClient.authSession,
+            apiClient: apiClient,
+            onChanged: onStudentChanged,
+            onStage: true,
+          ),
+        GradeBandTabBar(
+          selectedIndex: gradeTab,
+          onSelected: onGradeTabChanged,
+          onStage: true,
+        ),
+        if (finished != null && accuracy != null)
+          StageTileRow(
+            tiles: [
+              StageTile(
+                label: '끝낸 단원',
+                value: '${finished.done} / ${finished.total}',
+              ),
+              StageTile(
+                label: '정답률',
+                value: accuracy > 0 ? '$accuracy%' : '시작 전',
+              ),
+            ],
+          ),
+      ],
     );
   }
 }
@@ -202,51 +277,6 @@ class _ProgressContent extends StatelessWidget {
     final units = profile.unitsForGradeTab(gradeTab);
 
     final scrollChildren = [
-      Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  viewAsGuardian ? '교육과정 진도' : '내 진도',
-                  style: TextStyle(
-                    fontSize: TabletLayout.titleSection(context),
-                    fontWeight: FontWeight.w900,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  viewAsGuardian
-                      ? '단원을 눌러 자녀에게 어떻게 도와줄지 확인하세요'
-                      : '2022 개정 교육과정 · ${gradeBandLabels[gradeTab]}',
-                  style: const TextStyle(color: AppColors.textSub, fontSize: 12),
-                ),
-              ],
-            ),
-          ),
-          IconButton(
-            onPressed: () =>
-                DashboardScreen.open(context, apiClient),
-            icon: const Icon(AppIcons.chart),
-            tooltip: viewAsGuardian ? '학생 학습 통계' : '학습 통계',
-            visualDensity: VisualDensity.compact,
-          ),
-        ],
-      ),
-      const SizedBox(height: 12),
-      GradeBandTabBar(
-        selectedIndex: gradeTab,
-        onSelected: onGradeTabChanged,
-      ),
-      const SizedBox(height: 12),
-      if (!viewAsGuardian &&
-          units.isNotEmpty &&
-          units.every((unit) => unit.percent <= 0)) ...[
-        _ProgressIntroCard(unitCount: units.length),
-        const SizedBox(height: 12),
-      ],
       CurriculumProgressList(
         units: units,
         gradeLabel: gradeBandLabels[gradeTab],
@@ -302,59 +332,49 @@ class _ProgressContent extends StatelessWidget {
       const SizedBox(height: 24),
     ];
 
-    if (viewAsGuardian && onStudentChanged != null) {
-      return ParentLinkedScrollView(
-        apiClient: apiClient,
-        onStudentChanged: onStudentChanged!,
-        onRefresh: () async => onReload(forceRefresh: true),
-        children: scrollChildren,
-      );
-    }
-
     return RefreshIndicator(
       onRefresh: () async => onReload(forceRefresh: true),
-      child: ListView(
-        padding: TabletLayout.pagePadding(context),
+      child: StageListView(
+        stage: _ProgressStage(
+          apiClient: apiClient,
+          viewAsGuardian: viewAsGuardian,
+          gradeTab: gradeTab,
+          onGradeTabChanged: onGradeTabChanged,
+          onStudentChanged: onStudentChanged,
+          units: units,
+          accuracy: profile.stats.accuracy,
+        ),
         children: scrollChildren,
       ),
     );
   }
 }
 
-/// 아직 시작한 단원이 하나도 없을 때, 구간 선택 아래에 두는 안내 카드.
-class _ProgressIntroCard extends StatelessWidget {
-  const _ProgressIntroCard({required this.unitCount});
-
-  final int unitCount;
+/// 불러오는 중 무대 아래 단원 자리표시.
+class _ProgressSkeletonRows extends StatelessWidget {
+  const _ProgressSkeletonRows();
 
   @override
   Widget build(BuildContext context) {
-    return AppCard(
-      child: SizedBox(
-        width: double.infinity,
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Text(
-              '0 / $unitCount 단원',
-              style: const TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w700,
-                color: AppColors.text,
-              ),
+    return Column(
+      children: [
+        for (var i = 0; i < 5; i++) ...[
+          const AppCard(
+            padding: EdgeInsets.all(14),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SkeletonBox(width: 120, height: 14, borderRadius: 6),
+                SizedBox(height: 8),
+                SkeletonBox(height: 10, borderRadius: 6),
+                SizedBox(height: 6),
+                SkeletonBox(width: 200, height: 10, borderRadius: 6),
+              ],
             ),
-            const SizedBox(height: 4),
-            const Text(
-              '숙제를 찍으면 그 단원부터 채워져요.',
-              style: TextStyle(
-                fontSize: 14,
-                height: 1.45,
-                color: AppColors.textSub,
-              ),
-            ),
-          ],
-        ),
-      ),
+          ),
+          const SizedBox(height: 10),
+        ],
+      ],
     );
   }
 }
