@@ -19,10 +19,11 @@ const _guardianTitle = '교육과정 진도';
 const _guardianSubtitle = '단원을 눌러 자녀에게 어떻게 도와줄지 확인하세요';
 const _notStartedHint = '숙제를 찍으면 그 단원부터 채워져요.';
 
-/// 학년 구간 단원 중 끝낸(진행률 100) 단원 수와 전체 단원 수.
+/// 학년 구간 단원 중 끝낸 단원 수와 전체 단원 수.
+/// 끝냄은 단원 목록이 「완료」로 보이는 것과 같은 `status == 'done'`이다.
 ({int done, int total}) finishedUnits(List<CurriculumUnitProgress> unitsInBand) {
   return (
-    done: unitsInBand.where((unit) => unit.percent >= 100).length,
+    done: unitsInBand.where((unit) => unit.status == 'done').length,
     total: unitsInBand.length,
   );
 }

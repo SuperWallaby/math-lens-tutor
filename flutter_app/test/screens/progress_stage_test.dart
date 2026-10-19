@@ -82,11 +82,14 @@ void main() {
     resetAppPrefsCache();
   });
 
-  test('finished units counts units at 100% in the band', () {
+  test('finished units counts the units the list marks 완료 (status done)', () {
     final units = designReviewProfileGradeM1().unitsForGradeTab(3);
     final r = finishedUnits(units);
     expect(r.total, units.length);
-    expect(r.done, units.where((u) => u.percent >= 100).length);
+    expect(r.done, units.where((u) => u.status == 'done').length);
+    // 목록이 「완료」로 보이는 단원(85%)도 끝낸 단원으로 센다.
+    expect(units.any((u) => u.status == 'done' && u.percent < 100), isTrue);
+    expect(r.done, greaterThan(0));
   });
 
   testWidgets('student: title, curriculum line, pills, tiles and stats button', (
