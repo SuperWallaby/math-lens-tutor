@@ -281,6 +281,39 @@ LearningProfile designReviewProfileGradeM1() {
   );
 }
 
+/// 문제는 풀었는데 올린 숙제도 이어서 풀 세트도 없는 학생(홈 아래가 비지 않는지 보는 용).
+LearningProfile designReviewProfileNoUploads() {
+  final p = designReviewProfileReturning();
+  return LearningProfile(
+    grade: p.grade,
+    insight: p.insight,
+    stats: p.stats,
+    conceptStatus: p.conceptStatus,
+    strongConcepts: p.strongConcepts,
+    weeklyTrend: p.weeklyTrend,
+    curriculumUnits: p.curriculumUnits,
+    curriculumByBand: p.curriculumByBand,
+    parentActions: p.parentActions,
+    weeklyReport: p.weeklyReport,
+    training: const TrainingSnapshot(
+      available: true,
+      hasLearningData: true,
+      headline: '',
+      description: '',
+      focusConcepts: ['제곱근', '실수', '수직선'],
+      focusItems: [
+        TrainingFocusItem(concept: '제곱근', missScore: 3, status: 'weak', label: '복습 필요'),
+        TrainingFocusItem(concept: '실수', missScore: 2, status: 'weak', label: '복습 필요'),
+        TrainingFocusItem(concept: '수직선', missScore: 2, status: 'weak', label: '복습 필요'),
+      ],
+      activeSetId: null,
+      remainingCount: 0,
+      totalMisses: 7,
+      relearnedCount: 1,
+    ),
+  );
+}
+
 LearningProfile designReviewProfileChainWarning() {
   final m1 = _m1Units(withProgress: true);
   return LearningProfile(
@@ -669,6 +702,7 @@ const designReviewCaptureKeys = [
   'student_hub__first_visit',
   'student_hub__returning',
   'student_hub__guest',
+  'student_hub__no_uploads',
   'upload__idle',
   'analysis__analyzing',
   'analysis__result_weak',

@@ -49,6 +49,16 @@ void main() {
     });
   }
 
+  testWidgets('student_hub__no_uploads fills home with training and hints', (
+    tester,
+  ) async {
+    expect(designReviewCaptureKeys, contains('student_hub__no_uploads'));
+    await tester.pumpWidget(_shell('student_hub__no_uploads'));
+    await tester.pumpAndSettle();
+    expect(find.text('훈련하러 가기'), findsOneWidget);
+    expect(find.text('자주 막힌 개념'), findsOneWidget);
+  });
+
   testWidgets('student_training__feed shows the feed list', (tester) async {
     await tester.pumpWidget(_shell('student_training__feed'));
     await tester.pumpAndSettle();

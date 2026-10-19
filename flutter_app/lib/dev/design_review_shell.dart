@@ -95,6 +95,17 @@ class DesignReviewShell extends StatelessWidget {
           demoUser: user,
           demoToday: today,
         );
+      case 'no_uploads':
+        return StudentHubScreen(
+          apiClient: apiClient,
+          oauthService: oauthService,
+          demoProfile: designReviewProfileNoUploads(),
+          demoSubmissions: designReviewSubmissionsEmpty(),
+          demoIsGuest: false,
+          demoUser: user,
+          demoToday: today,
+          onOpenTraining: () {},
+        );
       case 'first_visit':
       default:
         return StudentHubScreen(
