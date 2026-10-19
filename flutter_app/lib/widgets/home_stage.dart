@@ -107,7 +107,7 @@ class HomeStage extends StatelessWidget {
 
     // 무대가 상태바 밑에 있는 동안 시계·배터리 글자를 흰색으로(탭 무대와 같다).
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: kStatusBarOnStage,
       child: StageBackground(
         child: Stack(
           children: [

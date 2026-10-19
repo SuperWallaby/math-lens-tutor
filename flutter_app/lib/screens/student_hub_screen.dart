@@ -296,7 +296,7 @@ class _HomeScrollFrameState extends State<_HomeScrollFrame> {
   Widget build(BuildContext context) {
     // 기본은 검정 글자. 무대(HomeStage)가 상태바 밑에 있는 동안만 흰색이 된다.
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark,
+      value: kStatusBarOnFog,
       child: Stack(
         children: [
           NotificationListener<ScrollNotification>(

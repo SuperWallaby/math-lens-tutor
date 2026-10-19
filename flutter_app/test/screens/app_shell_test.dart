@@ -1,6 +1,7 @@
 import 'dart:convert';
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:math_lens_tutor/dev/design_review_data.dart';
 import 'package:math_lens_tutor/models/app_models.dart';
@@ -191,6 +192,26 @@ void main() {
       expect(_bar(tester).labels, ['홈', '설명', '이번 주', '진도', '설정']);
       expect(_inBar('찍기'), findsNothing);
       expect(_bar(tester).badgeIndex, isNull);
+    });
+
+    testWidgets('a parent tab without a stage gets a dark status bar back', (
+      tester,
+    ) async {
+      await _pumpShell(tester, AppUserRole.parent);
+
+      // 무대가 있는 설정 탭 → 상태바 흰 글자.
+      await tester.tap(_inBar('설정'));
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(SystemChrome.latestStyle?.statusBarIconBrightness, Brightness.light);
+
+      // 무대가 없는 홈 탭으로 돌아오면 검정 글자로 돌아와야 한다.
+      await tester.tap(_inBar('홈'));
+      for (var i = 0; i < 6; i++) {
+        await tester.pump(const Duration(milliseconds: 100));
+      }
+      expect(SystemChrome.latestStyle?.statusBarIconBrightness, Brightness.dark);
     });
 
     testWidgets('a session without a role gets the student tabs and the camera', (

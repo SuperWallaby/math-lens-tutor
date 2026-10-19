@@ -175,7 +175,10 @@ void main() {
       find.byWidgetPredicate(
         (w) =>
             w is AnnotatedRegion<SystemUiOverlayStyle> &&
-            w.value == SystemUiOverlayStyle.dark,
+            w.value.statusBarIconBrightness == Brightness.dark &&
+            // 안드로이드 아래 내비게이션 바는 건드리지 않는다.
+            w.value.systemNavigationBarColor == null &&
+            w.value.systemNavigationBarIconBrightness == null,
       ),
       findsOneWidget,
     );

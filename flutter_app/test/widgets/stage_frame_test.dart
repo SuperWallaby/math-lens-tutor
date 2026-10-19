@@ -51,7 +51,9 @@ void main() {
         find.byWidgetPredicate(
           (w) =>
               w is AnnotatedRegion<SystemUiOverlayStyle> &&
-              w.value == SystemUiOverlayStyle.dark,
+              w.value.statusBarIconBrightness == Brightness.dark &&
+              w.value.systemNavigationBarColor == null &&
+              w.value.systemNavigationBarIconBrightness == null,
         ),
         findsOneWidget,
       );

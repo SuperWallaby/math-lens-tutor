@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 import '../models/app_models.dart';
 import '../services/api_client.dart';
@@ -15,6 +16,7 @@ import 'student_training_screen.dart';
 import 'teacher_screens.dart';
 import 'upload_screen.dart';
 import '../theme/app_icons.dart';
+import '../widgets/page_stage.dart';
 
 /// 학부모·교사가 아니면 역할이 비어 있어도 학생 탭을 쓴다(`_tabsFor`의 `default:`).
 /// 카메라·배지·새로고침도 같은 기준이어야 학생 탭에서 사진을 올릴 수 있다.
@@ -113,10 +115,15 @@ class _AppShellState extends State<AppShell> {
         return Scaffold(
           extendBody: true,
           backgroundColor: Colors.transparent,
-          body: GlassAtmosphere(
-            child: IndexedStack(
-              index: safeIndex,
-              children: tabs.map((tab) => tab.screen).toList(),
+          // 기본은 검정 상태바 글자. 무대가 있는 탭만 무대 위에서 흰색으로 바꾼다
+          // (무대 없는 탭으로 돌아왔을 때 흰 글자가 남지 않게).
+          body: AnnotatedRegion<SystemUiOverlayStyle>(
+            value: kStatusBarOnFog,
+            child: GlassAtmosphere(
+              child: IndexedStack(
+                index: safeIndex,
+                children: tabs.map((tab) => tab.screen).toList(),
+              ),
             ),
           ),
           bottomNavigationBar: GlassTabBar(

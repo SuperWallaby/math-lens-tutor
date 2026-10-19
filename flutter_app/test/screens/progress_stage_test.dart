@@ -60,6 +60,21 @@ class _CountingApi extends ApiClient {
   }
 }
 
+/// 고른 자녀에 따라 다른 프로필을 주는 가짜 서버(s1: 진도 있음, s2: 시작 전).
+class _PerChildApi extends ApiClient {
+  _PerChildApi(AuthSession session) : super(authSession: session);
+
+  @override
+  Future<LearningProfile> getLearningProfile({
+    bool forceRefresh = false,
+    LearningProfileScope scope = LearningProfileScope.full,
+  }) async {
+    return authSession.viewAsStudentId == 's2'
+        ? designReviewProfileFirstVisit()
+        : designReviewProfileGradeM1();
+  }
+}
+
 Future<AuthSession> _guardianWithTwoChildren(WidgetTester tester) async {
   SharedPreferences.setMockInitialValues({
     'linked_students': jsonEncode([
@@ -157,6 +172,41 @@ void main() {
     expect(find.text('내 진도'), findsNothing);
     expect(_onStage(find.byTooltip('학생 학습 통계')), findsOneWidget);
     expect(find.byType(GlassScrollEdge), findsNothing);
+  });
+
+  testWidgets('guardian: picking another child reloads the stage numbers', (
+    tester,
+  ) async {
+    final session = await _guardianWithTwoChildren(tester);
+    final api = _PerChildApi(session);
+    await tester.pumpWidget(
+      MaterialApp(
+        home: Scaffold(
+          body: StudentProgressScreen(
+            apiClient: api,
+            viewAsGuardian: true,
+            demoInitialGradeTab: 3,
+          ),
+        ),
+      ),
+    );
+    await tester.pumpAndSettle();
+    expect(_tile(tester, '정답률').value, '68%');
+
+    await tester.tap(_onStage(find.text('지민')));
+    await tester.pumpAndSettle();
+    await tester.tap(
+      find.descendant(of: find.byType(BottomSheet), matching: find.text('서준')),
+    );
+    // 선택은 prefs 저장을 기다린 뒤 시트를 닫는다.
+    await tester.runAsync(
+      () => Future<void>.delayed(const Duration(milliseconds: 50)),
+    );
+    await tester.pumpAndSettle();
+
+    expect(session.viewAsStudentId, 's2');
+    expect(_onStage(find.text('서준')), findsOneWidget);
+    expect(_tile(tester, '정답률').value, '시작 전');
   });
 
   testWidgets('the stats circle opens learning stats', (tester) async {

@@ -57,7 +57,10 @@ void main() {
       find.byWidgetPredicate(
         (w) =>
             w is AnnotatedRegion<SystemUiOverlayStyle> &&
-            w.value == SystemUiOverlayStyle.light,
+            w.value.statusBarIconBrightness == Brightness.light &&
+            // 안드로이드 아래 내비게이션 바는 건드리지 않는다.
+            w.value.systemNavigationBarColor == null &&
+            w.value.systemNavigationBarIconBrightness == null,
       ),
       findsOneWidget,
     );
@@ -115,6 +118,39 @@ void main() {
       expect(taps, 1);
     },
   );
+
+  testWidgets('the circle button can be pressed by a screen reader', (t) async {
+    final handle = t.ensureSemantics();
+    try {
+      var taps = 0;
+      await t.pumpWidget(
+        _host(
+          PageStage.tab(
+            title: '내 진도',
+            trailing: StageCircleButton(
+              icon: AppIcons.chart,
+              tooltip: '학습 통계',
+              onPressed: () => taps++,
+            ),
+          ),
+        ),
+      );
+      expect(
+        t.getSemantics(find.bySemanticsLabel('학습 통계')),
+        matchesSemantics(
+          label: '학습 통계',
+          isButton: true,
+          hasTapAction: true,
+        ),
+      );
+      t.semantics.tap(find.semantics.byLabel('학습 통계'));
+      expect(taps, 1);
+      // 보이는 원은 36이지만 누르는 자리는 44.
+      expect(t.getSize(find.byType(StageCircleButton)), const Size(44, 44));
+    } finally {
+      handle.dispose();
+    }
+  });
 
   testWidgets('pills report their selected state to screen readers', (t) async {
     final handle = t.ensureSemantics();

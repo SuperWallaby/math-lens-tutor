@@ -12,6 +12,19 @@ const List<Shadow> kStageTextShadows = [
   Shadow(color: Color(0x591E46AA), offset: Offset(0, 1), blurRadius: 3),
 ];
 
+/// 무대가 상태바 밑에 있을 때: 흰 상태바 글자.
+/// 안드로이드 아래 내비게이션 바는 건드리지 않도록 상태바 값만 정한다.
+const SystemUiOverlayStyle kStatusBarOnStage = SystemUiOverlayStyle(
+  statusBarIconBrightness: Brightness.light,
+  statusBarBrightness: Brightness.dark,
+);
+
+/// 안개색 바탕 위: 검정 상태바 글자(상태바 값만).
+const SystemUiOverlayStyle kStatusBarOnFog = SystemUiOverlayStyle(
+  statusBarIconBrightness: Brightness.dark,
+  statusBarBrightness: Brightness.light,
+);
+
 /// 파란 무대 위 글자 스타일.
 abstract final class StageText {
   /// 흰색 86% — 설명 줄.
@@ -245,25 +258,42 @@ class StageCircleButton extends StatelessWidget {
   final String tooltip;
   final VoidCallback onPressed;
 
+  /// 보이는 원의 지름.
   static const double size = 36;
+
+  /// 누르는 자리(최소 탭 영역 44).
+  static const double hitSize = 44;
 
   @override
   Widget build(BuildContext context) {
     const radius = BorderRadius.all(Radius.circular(size / 2));
     return Tooltip(
       message: tooltip,
+      excludeFromSemantics: true,
       child: Semantics(
+        container: true,
         button: true,
         label: tooltip,
+        onTap: onPressed,
         excludeSemantics: true,
         child: SizedBox.square(
-          dimension: size,
-          child: StageGlass(
-            borderRadius: radius,
+          dimension: hitSize,
+          child: Material(
+            type: MaterialType.transparency,
             child: InkWell(
               onTap: onPressed,
-              borderRadius: radius,
-              child: Center(child: Icon(icon, size: 20, color: Colors.white)),
+              customBorder: const CircleBorder(),
+              child: Center(
+                child: SizedBox.square(
+                  dimension: size,
+                  child: StageGlass(
+                    borderRadius: radius,
+                    child: Center(
+                      child: Icon(icon, size: 20, color: Colors.white),
+                    ),
+                  ),
+                ),
+              ),
             ),
           ),
         ),
@@ -292,7 +322,7 @@ class PageStage extends StatelessWidget {
   Widget build(BuildContext context) {
     final top = MediaQuery.paddingOf(context).top + 14;
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.light,
+      value: kStatusBarOnStage,
       child: StageBackground(
         child: Padding(
           padding: EdgeInsets.fromLTRB(18, top, 18, 24),
@@ -372,7 +402,7 @@ class _StageFrameState extends State<StageFrame> {
   @override
   Widget build(BuildContext context) {
     return AnnotatedRegion<SystemUiOverlayStyle>(
-      value: SystemUiOverlayStyle.dark,
+      value: kStatusBarOnFog,
       child: Stack(
         children: [
           NotificationListener<ScrollNotification>(
