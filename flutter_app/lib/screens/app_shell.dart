@@ -137,28 +137,30 @@ class _AppShellState extends State<AppShell> {
                 _showTrainingBadge(isStudentShell, _studentTrainingTabIndex)
                 ? _trainingBadgeCount
                 : 0,
-            onSelected: (value) {
-              setState(() => _index = value);
-              if (isStudentShell) {
-                if (value == _studentHomeTabIndex) {
-                  _studentHubKey.currentState?.refreshFromTab();
-                } else if (value == _studentTrainingTabIndex) {
-                  _studentTrainingKey.currentState?.refreshFromTab();
-                  if (_trainingBadgeCount > 0 || !_trainingTabSeen) {
-                    setState(() {
-                      _trainingBadgeCount = 0;
-                      _trainingTabSeen = true;
-                    });
-                  }
-                } else if (value == _studentProgressTabIndex) {
-                  _studentProgressKey.currentState?.refreshFromTab();
-                }
-              }
-            },
+            onSelected: (value) => _selectTab(value, isStudentShell),
           ),
         );
       },
     );
+  }
+
+  /// 탭을 바꾸고, 학생 탭이면 그 탭의 데이터를 새로 고친다.
+  void _selectTab(int value, bool isStudentShell) {
+    setState(() => _index = value);
+    if (!isStudentShell) return;
+    if (value == _studentHomeTabIndex) {
+      _studentHubKey.currentState?.refreshFromTab();
+    } else if (value == _studentTrainingTabIndex) {
+      _studentTrainingKey.currentState?.refreshFromTab();
+      if (_trainingBadgeCount > 0 || !_trainingTabSeen) {
+        setState(() {
+          _trainingBadgeCount = 0;
+          _trainingTabSeen = true;
+        });
+      }
+    } else if (value == _studentProgressTabIndex) {
+      _studentProgressKey.currentState?.refreshFromTab();
+    }
   }
 
   bool _showTrainingBadge(bool isStudentShell, int tabIndex) {
@@ -250,6 +252,7 @@ class _AppShellState extends State<AppShell> {
               key: _studentHubKey,
               apiClient: widget.apiClient,
               oauthService: widget.oauthService,
+              onOpenTraining: () => _selectTab(_studentTrainingTabIndex, true),
             ),
           ),
           _ShellTab(

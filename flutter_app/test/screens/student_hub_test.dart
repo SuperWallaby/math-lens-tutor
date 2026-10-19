@@ -19,6 +19,7 @@ Widget _hub({
   required List<SubmissionSummary> subs,
   bool guest = false,
   EdgeInsets inset = EdgeInsets.zero,
+  VoidCallback? onOpenTraining,
 }) {
   final auth = AuthSession();
   return MaterialApp(
@@ -42,7 +43,43 @@ Widget _hub({
           organizationName: '한빛중학교',
         ),
         demoToday: DateTime(2026, 10, 17),
+        onOpenTraining: onOpenTraining,
       ),
+    ),
+  );
+}
+
+/// 문제는 풀었는데(기록 있음) 올린 숙제도 이어서 풀 세트도 없는 학생.
+LearningProfile _solvedButNoUploads() {
+  final p = designReviewProfileReturning();
+  return LearningProfile(
+    grade: p.grade,
+    insight: p.insight,
+    stats: p.stats,
+    conceptStatus: p.conceptStatus,
+    strongConcepts: p.strongConcepts,
+    weeklyTrend: p.weeklyTrend,
+    curriculumUnits: p.curriculumUnits,
+    curriculumByBand: p.curriculumByBand,
+    parentActions: p.parentActions,
+    weeklyReport: p.weeklyReport,
+    training: const TrainingSnapshot(
+      available: true,
+      hasLearningData: true,
+      headline: '',
+      description: '',
+      focusConcepts: ['제곱근', '실수', '수직선'],
+      focusItems: [
+        TrainingFocusItem(concept: '제곱근', missScore: 3, status: 'weak', label: '복습 필요'),
+        TrainingFocusItem(concept: '실수', missScore: 2, status: 'weak', label: '복습 필요'),
+        TrainingFocusItem(concept: '절댓값', missScore: 0, status: 'relearned', label: '다시 맞힘'),
+        TrainingFocusItem(concept: '수직선', missScore: 2, status: 'weak', label: '복습 필요'),
+        TrainingFocusItem(concept: '유리수', missScore: 1, status: 'weak', label: '복습 필요'),
+      ],
+      activeSetId: null,
+      remainingCount: 0,
+      totalMisses: 7,
+      relearnedCount: 1,
     ),
   );
 }
@@ -158,6 +195,110 @@ void main() {
       find.widgetWithText(FilledButton, '이어서 풀기'),
     );
     expect(cta.style!.backgroundColor!.resolve({}), Colors.white);
+  });
+
+  group('solved problems but no uploads and no set in progress', () {
+    testWidgets('the stage offers training with a white button', (
+      tester,
+    ) async {
+      var opened = 0;
+      await tester.pumpWidget(
+        _hub(
+          profile: _solvedButNoUploads(),
+          subs: const [],
+          onOpenTraining: () => opened++,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      Finder onStage(Finder f) =>
+          find.descendant(of: find.byType(HomeStage), matching: f);
+      expect(onStage(find.text('막힌 개념 3개를 모아뒀어요')), findsOneWidget);
+      expect(onStage(find.text('제곱근 · 실수 · 수직선')), findsOneWidget);
+      final button = find.ancestor(
+        of: onStage(find.text('훈련하러 가기')),
+        matching: find.byType(FilledButton),
+      );
+      expect(button, findsOneWidget);
+      expect(
+        tester.widget<FilledButton>(button).style!.backgroundColor!.resolve({}),
+        Colors.white,
+      );
+      await tester.tap(button);
+      expect(opened, 1);
+    });
+
+    testWidgets('below the stage: stuck concepts and an empty recent card', (
+      tester,
+    ) async {
+      var opened = 0;
+      await tester.pumpWidget(
+        _hub(
+          profile: _solvedButNoUploads(),
+          subs: const [],
+          onOpenTraining: () => opened++,
+        ),
+      );
+      await tester.pumpAndSettle();
+
+      expect(find.text('자주 막힌 개념'), findsOneWidget);
+      // 다시 맞힌 개념은 빼고 셋까지.
+      expect(find.text('제곱근'), findsOneWidget);
+      expect(find.text('오답 3회'), findsOneWidget);
+      expect(find.text('실수'), findsOneWidget);
+      expect(find.text('수직선'), findsOneWidget);
+      expect(find.text('절댓값'), findsNothing);
+      expect(find.text('유리수'), findsNothing);
+
+      await tester.scrollUntilVisible(
+        find.text('올린 숙제가 아직 없어요'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('최근'), findsOneWidget);
+      expect(find.text('숙제를 찍으면 여기에 쌓여요'), findsOneWidget);
+
+      await tester.scrollUntilVisible(
+        find.text('제곱근'),
+        -200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      await tester.tap(find.text('제곱근'));
+      expect(opened, 1);
+    });
+
+    testWidgets('with a set in progress the mission card stays', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _hub(profile: designReviewProfileReturning(), subs: const []),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('훈련하러 가기'), findsNothing);
+      expect(find.text('이어서 풀기'), findsOneWidget);
+      // 올린 숙제가 없으면 아래는 빈 안내로 채운다.
+      await tester.scrollUntilVisible(
+        find.text('올린 숙제가 아직 없어요'),
+        200,
+        scrollable: find.byType(Scrollable).first,
+      );
+      expect(find.text('올린 숙제가 아직 없어요'), findsOneWidget);
+    });
+
+    testWidgets('with uploads the recent list stays and no concept list', (
+      tester,
+    ) async {
+      await tester.pumpWidget(
+        _hub(
+          profile: _solvedButNoUploads(),
+          subs: designReviewSubmissionsRecent(),
+        ),
+      );
+      await tester.pumpAndSettle();
+      expect(find.text('자주 막힌 개념'), findsNothing);
+      expect(find.text('올린 숙제가 아직 없어요'), findsNothing);
+      expect(find.text('2장'), findsOneWidget);
+    });
   });
 
   testWidgets('home frame turns the status bar dark once the stage is gone', (

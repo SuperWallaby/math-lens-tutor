@@ -55,6 +55,49 @@ class _DemoApi extends ApiClient {
   fetchMe() async => (user: authSession.user!, linkedStudents: const <LinkedStudent>[]);
 }
 
+/// 문제는 풀었는데 올린 숙제도 이어서 풀 세트도 없는 학생.
+class _NoUploadsApi extends _DemoApi {
+  _NoUploadsApi(super.session);
+
+  @override
+  Future<LearningProfile> getLearningProfile({
+    bool forceRefresh = false,
+    LearningProfileScope scope = LearningProfileScope.full,
+  }) async {
+    profileCalls++;
+    final p = designReviewProfileReturning();
+    return LearningProfile(
+      grade: p.grade,
+      insight: p.insight,
+      stats: p.stats,
+      conceptStatus: p.conceptStatus,
+      strongConcepts: p.strongConcepts,
+      weeklyTrend: p.weeklyTrend,
+      curriculumUnits: p.curriculumUnits,
+      curriculumByBand: p.curriculumByBand,
+      parentActions: p.parentActions,
+      weeklyReport: p.weeklyReport,
+      training: const TrainingSnapshot(
+        available: true,
+        hasLearningData: true,
+        headline: '',
+        description: '',
+        focusConcepts: ['제곱근', '실수'],
+        focusItems: [],
+        activeSetId: null,
+        remainingCount: 0,
+        totalMisses: 5,
+        relearnedCount: 0,
+      ),
+    );
+  }
+
+  @override
+  Future<List<SubmissionSummary>> getSubmissionSummaries({
+    bool forceRefresh = false,
+  }) async => const [];
+}
+
 class _RouteLog extends NavigatorObserver {
   final pushed = <Route<dynamic>>[];
 
@@ -90,13 +133,15 @@ Future<AuthSession> _session(WidgetTester tester, AppUserRole? role) async {
 /// 폰 크기 화면에 셸을 띄우고 첫 조회가 끝날 때까지 돌린다.
 Future<({_DemoApi api, _RouteLog routes})> _pumpShell(
   WidgetTester tester,
-  AppUserRole? role,
-) async {
+  AppUserRole? role, {
+  _DemoApi Function(AuthSession session)? makeApi,
+}) async {
   tester.view.physicalSize = const Size(390 * 3, 844 * 3);
   tester.view.devicePixelRatio = 3;
   addTearDown(tester.view.reset);
 
-  final api = _DemoApi(await _session(tester, role));
+  final session = await _session(tester, role);
+  final api = makeApi?.call(session) ?? _DemoApi(session);
   final routes = _RouteLog();
   await tester.pumpWidget(
     MaterialApp(
@@ -154,6 +199,19 @@ void main() {
       expect(find.byType(UploadScreen), findsOneWidget);
       // 카메라는 탭 전환이 아니다: 선택된 탭은 그대로 홈.
       expect(_bar(tester).selectedIndex, 0);
+    });
+
+    testWidgets('「훈련하러 가기」 on home switches to the training tab', (
+      tester,
+    ) async {
+      await _pumpShell(
+        tester,
+        AppUserRole.student,
+        makeApi: _NoUploadsApi.new,
+      );
+      await tester.tap(find.text('훈련하러 가기'));
+      await tester.pump(const Duration(milliseconds: 600));
+      expect(_bar(tester).selectedIndex, 1);
     });
 
     testWidgets('tapping 훈련 then 성장 selects tab 1 then 2', (tester) async {

@@ -41,6 +41,7 @@ class StudentHubScreen extends StatefulWidget {
     this.demoIsGuest,
     this.demoUser,
     this.demoToday,
+    this.onOpenTraining,
   });
 
   final ApiClient apiClient;
@@ -54,6 +55,9 @@ class StudentHubScreen extends StatefulWidget {
 
   /// 디자인 리뷰·테스트용. 없으면 오늘 날짜를 쓴다.
   final DateTime? demoToday;
+
+  /// 「훈련하러 가기」: 앱 셸이 훈련 탭으로 바꾼다. 없으면 버튼을 그리지 않는다.
+  final VoidCallback? onOpenTraining;
 
   @override
   State<StudentHubScreen> createState() => StudentHubScreenState();
@@ -248,6 +252,7 @@ class StudentHubScreenState extends State<StudentHubScreen> {
             onSignup: _openSignup,
             onOpenSubmission: _openSubmission,
             onOpenMission: _openMission,
+            onOpenTraining: widget.onOpenTraining,
           );
         },
       ),
@@ -391,6 +396,7 @@ class _ReturningHome extends StatelessWidget {
     required this.onSignup,
     required this.onOpenSubmission,
     required this.onOpenMission,
+    this.onOpenTraining,
   });
 
   final _HubData data;
@@ -400,11 +406,22 @@ class _ReturningHome extends StatelessWidget {
   final VoidCallback onSignup;
   final ValueChanged<SubmissionSummary> onOpenSubmission;
   final ValueChanged<TodayMission> onOpenMission;
+  final VoidCallback? onOpenTraining;
 
   @override
   Widget build(BuildContext context) {
     final recent = data.submissions.take(5).toList();
     final mission = data.profile.mission;
+    final hasMission = mission != null && mission.title.trim().isNotEmpty;
+    final training = data.profile.training;
+    final showTrainingCard =
+        !hasMission &&
+        onOpenTraining != null &&
+        (training.available || training.focusConcepts.isNotEmpty);
+    // 올린 숙제가 없을 때 아래를 비워 두지 않도록 막힌 개념을 셋까지 보여 준다.
+    final stuck = recent.isEmpty
+        ? training.focusItems.where((item) => !item.isRelearned).take(3).toList()
+        : const <TrainingFocusItem>[];
     final accuracy = data.profile.stats.accuracy;
     final totalProblems = data.profile.stats.totalProblems;
 
@@ -423,10 +440,16 @@ class _ReturningHome extends StatelessWidget {
             card: Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                if (mission != null && mission.title.trim().isNotEmpty) ...[
+                if (hasMission) ...[
                   _MissionCard(
                     mission: mission,
                     onContinue: () => onOpenMission(mission),
+                  ),
+                  const SizedBox(height: AppSpacing.md),
+                ] else if (showTrainingCard) ...[
+                  _TrainingNudgeCard(
+                    concepts: training.focusConcepts,
+                    onOpen: onOpenTraining!,
                   ),
                   const SizedBox(height: AppSpacing.md),
                 ],
@@ -453,7 +476,7 @@ class _ReturningHome extends StatelessWidget {
                 ? _GuestSignupRow(onSignup: onSignup)
                 : null,
           ),
-          if (recent.isNotEmpty)
+          if (stuck.isNotEmpty)
             Padding(
               padding: const EdgeInsets.fromLTRB(
                 _kSidePad,
@@ -464,8 +487,33 @@ class _ReturningHome extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  _SectionHeader(title: '최근', caption: '${recent.length}장'),
+                  const _SectionHeader(title: '자주 막힌 개념', caption: ''),
                   const SizedBox(height: AppSpacing.md),
+                  for (final item in stuck) ...[
+                    _StuckConceptTile(item: item, onTap: onOpenTraining),
+                    const SizedBox(height: AppSpacing.sm),
+                  ],
+                ],
+              ),
+            ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(
+              _kSidePad,
+              AppSpacing.section,
+              _kSidePad,
+              0,
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                _SectionHeader(
+                  title: '최근',
+                  caption: recent.isEmpty ? '' : '${recent.length}장',
+                ),
+                const SizedBox(height: AppSpacing.md),
+                if (recent.isEmpty)
+                  const _EmptyRecentCard()
+                else
                   for (final item in recent) ...[
                     _RecentSubmissionTile(
                       item: item,
@@ -474,9 +522,9 @@ class _ReturningHome extends StatelessWidget {
                     ),
                     const SizedBox(height: AppSpacing.sm),
                   ],
-                ],
-              ),
+              ],
             ),
+          ),
         ],
       ),
     );
@@ -812,6 +860,141 @@ class _GuestSignupRow extends StatelessWidget {
               '가입하기',
               style: TextStyle(fontSize: 13.5, fontWeight: FontWeight.w800),
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 이어서 풀 세트가 없을 때 무대 카드: 막힌 개념 · 흰 「훈련하러 가기」.
+class _TrainingNudgeCard extends StatelessWidget {
+  const _TrainingNudgeCard({required this.concepts, required this.onOpen});
+
+  final List<String> concepts;
+  final VoidCallback onOpen;
+
+  @override
+  Widget build(BuildContext context) {
+    final eyebrow = concepts
+        .map((concept) => concept.trim())
+        .where((concept) => concept.isNotEmpty)
+        .take(3)
+        .join(' · ');
+    return StageCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (eyebrow.isNotEmpty) ...[
+            Text(
+              eyebrow,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: StageText.eyebrow,
+            ),
+            const SizedBox(height: AppSpacing.xs + 2),
+          ],
+          Text(
+            concepts.isEmpty
+                ? '막힌 개념으로 문제를 준비했어요'
+                : '막힌 개념 ${concepts.length}개를 모아뒀어요',
+            style: StageText.cardTitle,
+          ),
+          const SizedBox(height: AppSpacing.lg + 2),
+          FilledButton(
+            onPressed: onOpen,
+            style: AppButtonStyles.white(),
+            child: const Text('훈련하러 가기'),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 무대 밑 「자주 막힌 개념」 한 줄: 개념 · 오답 횟수 · 꺾쇠. 누르면 훈련 탭으로.
+class _StuckConceptTile extends StatelessWidget {
+  const _StuckConceptTile({required this.item, this.onTap});
+
+  final TrainingFocusItem item;
+  final VoidCallback? onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      padding: EdgeInsets.zero,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(AppRadii.lg),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  item.concept,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.text,
+                  ),
+                ),
+              ),
+              if (item.missScore > 0) ...[
+                const SizedBox(width: AppSpacing.sm),
+                Text(
+                  '오답 ${item.missScore}회',
+                  style: const TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textMuted,
+                  ),
+                ),
+              ],
+              if (onTap != null) ...[
+                const SizedBox(width: AppSpacing.xs),
+                const Icon(
+                  AppIcons.chevronRight,
+                  size: 20,
+                  color: AppColors.textMuted,
+                ),
+              ],
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+/// 올린 숙제가 없을 때 「최근」 자리: 무엇을 하면 채워지는지 알려 준다.
+class _EmptyRecentCard extends StatelessWidget {
+  const _EmptyRecentCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return const AppCard(
+      padding: EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+      child: Column(
+        children: [
+          Icon(AppIcons.camera, size: 24, color: AppColors.primary),
+          SizedBox(height: AppSpacing.sm),
+          Text(
+            '올린 숙제가 아직 없어요',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              fontSize: 15,
+              fontWeight: FontWeight.w700,
+              color: AppColors.text,
+            ),
+          ),
+          SizedBox(height: AppSpacing.xs),
+          Text(
+            '숙제를 찍으면 여기에 쌓여요',
+            textAlign: TextAlign.center,
+            style: TextStyle(fontSize: 13, color: AppColors.textSub),
           ),
         ],
       ),
