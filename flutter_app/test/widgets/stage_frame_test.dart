@@ -76,6 +76,30 @@ void main() {
     expect((row.center.dx - 512).abs(), lessThan(1));
   });
 
+  testWidgets('body rows fill the content width like a plain list', (t) async {
+    t.view.physicalSize = const Size(1170, 2532);
+    t.view.devicePixelRatio = 3;
+    addTearDown(t.view.reset);
+    await t.pumpWidget(_frame(rows: 1));
+    // 폭을 정하지 않은 줄도 본문 폭(390 - 좌우 24 × 2)을 꽉 채운다.
+    expect(t.getSize(find.byKey(const Key('row-0'))).width, 390 - 48);
+  });
+
+  testWidgets('tablet rows fill the capped width', (t) async {
+    t.view.physicalSize = const Size(2048, 1536);
+    t.view.devicePixelRatio = 2;
+    addTearDown(t.view.reset);
+    await t.pumpWidget(_frame(rows: 1));
+    final cap = TabletLayout.maxContentWidth(t.element(find.byType(ListView)));
+    final side = TabletLayout.pageHorizontalPadding(
+      t.element(find.byType(ListView)),
+    );
+    expect(
+      t.getSize(find.byKey(const Key('row-0'))).width,
+      moreOrLessEquals(cap < 1024 - side * 2 ? cap : 1024 - side * 2),
+    );
+  });
+
   testWidgets('last row scrolls above a floating tab bar', (t) async {
     t.view.physicalSize = const Size(1170, 2532);
     t.view.devicePixelRatio = 3;

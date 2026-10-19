@@ -1,3 +1,5 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
@@ -400,13 +402,18 @@ class _StageBodyRow extends StatelessWidget {
     final side = TabletLayout.pageHorizontalPadding(context);
     return Padding(
       padding: EdgeInsets.symmetric(horizontal: side),
-      child: Center(
-        child: ConstrainedBox(
-          constraints: BoxConstraints(
-            maxWidth: TabletLayout.maxContentWidth(context),
-          ),
-          child: child,
-        ),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          // 보통 목록처럼 폭을 꽉 채우되(버튼이 줄어들지 않게) 태블릿에서는 상한을 둔다.
+          final width = math.min(
+            constraints.maxWidth,
+            TabletLayout.maxContentWidth(context),
+          );
+          return Align(
+            alignment: Alignment.topCenter,
+            child: SizedBox(width: width, child: child),
+          );
+        },
       ),
     );
   }
