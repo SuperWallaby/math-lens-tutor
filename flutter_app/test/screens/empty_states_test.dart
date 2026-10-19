@@ -15,8 +15,8 @@ import 'package:math_lens_tutor/widgets/learning_profile_widgets.dart';
 import 'package:math_lens_tutor/widgets/skeleton_box.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
-/// Title as the screen draws it inside the scroll view. [GlassScrollEdge]
-/// repeats the same text outside it, so a bare `find.text` would match twice.
+/// Title as the screen draws it inside the scroll view (on the blue stage for
+/// the training tab).
 Finder _titleInScroll(String title) => find.descendant(
       of: find.byType(Scrollable),
       matching: find.text(title),
@@ -97,7 +97,7 @@ void main() {
     ]) {
       expect(find.text(t), findsOneWidget);
     }
-    expect(find.text('막힌 개념만 모아서 다시 풀어보는 곳이에요.'), findsOneWidget);
+    expect(find.text('막힌 개념만 모아서 다시 풀어봐요'), findsOneWidget);
     expect(find.text('아직 훈련할 항목이 없습니다'), findsNothing);
   });
 
@@ -152,7 +152,7 @@ void main() {
     expect(find.text('아직 훈련할 항목이 없습니다'), findsNothing);
   });
 
-  testWidgets('training list keeps its title and gets the scroll edge',
+  testWidgets('training list keeps its title on the stage, no scroll edge',
       (tester) async {
     await tester.pumpWidget(
       _training(
@@ -164,15 +164,13 @@ void main() {
 
     // 빈 상태·스크롤 상단과 같은 제목과 해요체 설명. 옛 「맞춤 훈련」 말투는 없다.
     expect(_titleInScroll('훈련'), findsOneWidget);
-    expect(find.text('막힌 개념만 모아서 다시 풀어보는 곳이에요.'), findsOneWidget);
+    expect(find.text('막힌 개념만 모아서 다시 풀어봐요'), findsOneWidget);
     expect(find.text('맞춤 훈련'), findsNothing);
     expect(find.text('당신을 위한 문제를 추천합니다.'), findsNothing);
     expect(find.text('이런 식으로 쌓여요'), findsNothing);
-    expect(find.byType(GlassScrollEdge), findsOneWidget);
-    expect(
-      tester.widget<GlassScrollEdge>(find.byType(GlassScrollEdge)).title,
-      '훈련',
-    );
+    // 스크롤하면 홈처럼 상태바 흐림 띠가 맡는다.
+    expect(find.byType(GlassScrollEdge), findsNothing);
+    expect(find.byType(GlassStatusBarBand), findsOneWidget);
   });
 
   group('training hero speaks 해요체 when the API sends no headline', () {
@@ -245,13 +243,13 @@ void main() {
     // 첫 프레임: 아직 불러오는 중이라 자리표시 카드가 보인다.
     expect(find.byType(SkeletonBox), findsWidgets);
     expect(_titleInScroll('훈련'), findsOneWidget);
-    expect(find.text('막힌 개념만 모아서 다시 풀어보는 곳이에요.'), findsOneWidget);
+    expect(find.text('막힌 개념만 모아서 다시 풀어봐요'), findsOneWidget);
     expect(find.text('복습 훈련'), findsNothing);
     expect(find.text('맞춤 피드'), findsNothing);
     await tester.pumpAndSettle();
   });
 
-  testWidgets('scroll edge appears after scrolling the training empty state',
+  testWidgets('status-bar band appears after scrolling the training empty state',
       (tester) async {
     tester.view.physicalSize = const Size(390, 420);
     tester.view.devicePixelRatio = 1;
@@ -261,13 +259,13 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(
-      tester.widget<GlassScrollEdge>(find.byType(GlassScrollEdge)).visible,
+      tester.widget<GlassStatusBarBand>(find.byType(GlassStatusBarBand)).visible,
       isFalse,
     );
     await tester.drag(find.byType(Scrollable).first, const Offset(0, -200));
     await tester.pumpAndSettle();
     expect(
-      tester.widget<GlassScrollEdge>(find.byType(GlassScrollEdge)).visible,
+      tester.widget<GlassStatusBarBand>(find.byType(GlassStatusBarBand)).visible,
       isTrue,
     );
   });

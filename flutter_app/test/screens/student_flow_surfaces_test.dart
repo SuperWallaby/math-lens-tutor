@@ -279,7 +279,7 @@ void main() {
   });
 
   group('training tab', () {
-    testWidgets('review button is the soft tab button, not a blue fill', (
+    testWidgets('review button is the white stage button, not a blue fill', (
       tester,
     ) async {
       await tester.pumpWidget(
@@ -297,8 +297,9 @@ void main() {
       final button = tester.widget<FilledButton>(
         find.widgetWithText(FilledButton, '5문제 세트로 복습'),
       );
-      expect(button.style!.backgroundColor!.resolve({}), AppColors.primarySoft);
-      expect(button.style!.foregroundColor!.resolve({}), AppColors.primaryDark);
+      // 무대 위 주 버튼은 흰 바탕 + 파란 글씨다.
+      expect(button.style!.backgroundColor!.resolve({}), Colors.white);
+      expect(button.style!.foregroundColor!.resolve({}), AppColors.primary);
       expect(_primaryButtons, findsNothing);
     });
   });

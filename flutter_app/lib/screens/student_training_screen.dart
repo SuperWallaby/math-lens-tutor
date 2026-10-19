@@ -3,20 +3,24 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 
 import '../dev/design_review_data.dart';
-import '../layout/tablet_layout.dart';
 import '../models/app_models.dart';
 import '../services/api_client.dart';
 import '../widgets/app_card.dart';
-import '../widgets/glass.dart';
 import '../widgets/learning_profile_widgets.dart';
 import '../widgets/mixed_math_text.dart';
+import '../widgets/page_stage.dart';
 import '../widgets/skeleton_box.dart';
 import '../widgets/skeleton_lines.dart';
 import 'open_practice_flow.dart';
 import '../theme/app_design_system.dart';
 import '../theme/app_icons.dart';
 
-const _scrollEdgeThreshold = 30.0;
+const _title = '훈련';
+const _subtitle = '막힌 개념만 모아서 다시 풀어봐요';
+
+/// 피드에 준비된 문제 수(카드마다 `problemCount`를 더한다).
+int feedProblemCount(TrainingFeedResponse feed) =>
+    feed.items.fold(0, (sum, item) => sum + item.problemCount);
 
 class _TrainingScreenData {
   const _TrainingScreenData({
@@ -47,9 +51,6 @@ class StudentTrainingScreen extends StatefulWidget {
 class StudentTrainingScreenState extends State<StudentTrainingScreen> {
   Future<_TrainingScreenData>? _screenFuture;
 
-  /// 본문이 [_scrollEdgeThreshold]보다 아래로 스크롤되면 위쪽 흐림을 보인다.
-  bool _scrolled = false;
-
   /// 하단 탭 전환 시 — TTL 내면 캐시 재사용.
   void refreshFromTab({bool forceRefresh = false}) {
     if (!forceRefresh &&
@@ -68,21 +69,8 @@ class StudentTrainingScreenState extends State<StudentTrainingScreen> {
 
   void _reload({bool forceRefresh = false}) {
     setState(() {
-      // 다시 불러오는 동안 스크롤 위치가 사라지므로 흐림도 함께 끈다.
-      _scrolled = false;
       _screenFuture = _loadScreen(forceRefresh: forceRefresh);
     });
-  }
-
-  bool _onScroll(ScrollNotification notification) {
-    if (notification.depth != 0 || notification.metrics.axis != Axis.vertical) {
-      return false;
-    }
-    final scrolled = notification.metrics.pixels > _scrollEdgeThreshold;
-    if (scrolled != _scrolled && mounted) {
-      setState(() => _scrolled = scrolled);
-    }
-    return false;
   }
 
   Future<_TrainingScreenData> _loadScreen({bool forceRefresh = false}) async {
@@ -140,21 +128,7 @@ class StudentTrainingScreenState extends State<StudentTrainingScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      fit: StackFit.expand,
-      children: [
-        NotificationListener<ScrollNotification>(
-          onNotification: _onScroll,
-          child: _buildBody(context),
-        ),
-        Positioned(
-          top: 0,
-          left: 0,
-          right: 0,
-          child: GlassScrollEdge(visible: _scrolled, title: '훈련'),
-        ),
-      ],
-    );
+    return StageFrame(child: _buildBody(context));
   }
 
   Widget _buildBody(BuildContext context) {
@@ -165,9 +139,17 @@ class StudentTrainingScreenState extends State<StudentTrainingScreen> {
           return const _TrainingTabSkeleton();
         }
         if (snapshot.hasError) {
-          return ProfileLoadingError(
-            error: snapshot.error,
-            onRetry: () => _reload(forceRefresh: true),
+          return RefreshIndicator(
+            onRefresh: () async => _reload(forceRefresh: true),
+            child: StageListView(
+              stage: const PageStage.tab(title: _title, subtitle: _subtitle),
+              children: [
+                ProfileLoadingError(
+                  error: snapshot.error,
+                  onRetry: () => _reload(forceRefresh: true),
+                ),
+              ],
+            ),
           );
         }
 
@@ -175,92 +157,96 @@ class StudentTrainingScreenState extends State<StudentTrainingScreen> {
         final feed = snapshot.data!.feed;
         final training = profile.training;
         final hasFeed = feed.items.isNotEmpty;
-        final showContent = training.available || hasFeed;
+        final stage = PageStage.tab(
+          title: _title,
+          subtitle: _subtitle,
+          children: [
+            _TrainingStageCard(
+              training: training,
+              hasFeed: hasFeed,
+              feedProblems: feedProblemCount(feed),
+              displayName: widget.apiClient.authSession.user?.displayName,
+              onStart: () => _startTraining(training),
+            ),
+            if (training.hasLearningData || hasFeed)
+              StageTileRow(
+                tiles: [
+                  StageTile(label: '풀 문제', value: '${feedProblemCount(feed)}개'),
+                  StageTile(
+                    label: '다시 맞힘',
+                    value: '${training.relearnedCount}건',
+                  ),
+                ],
+              ),
+          ],
+        );
+
+        final Widget list;
+        if (training.available || hasFeed) {
+          list = StageListView(
+            stage: stage,
+            children: _feedChildren(training, feed),
+          );
+        } else if (training.hasLearningData) {
+          list = StageListView(stage: stage, children: const []);
+        } else {
+          list = CustomScrollView(
+            physics: const AlwaysScrollableScrollPhysics(),
+            slivers: [
+              SliverToBoxAdapter(child: stage),
+              SliverPadding(
+                padding: stageBodyPadding(context),
+                sliver: const SliverFillRemaining(
+                  hasScrollBody: false,
+                  child: _TrainingFirstVisitBelow(),
+                ),
+              ),
+            ],
+          );
+        }
 
         return RefreshIndicator(
           onRefresh: () async => _reload(forceRefresh: true),
-          child: showContent
-              ? _buildFeed(context, profile, feed)
-              : CustomScrollView(
-                  physics: const AlwaysScrollableScrollPhysics(),
-                  slivers: [
-                    SliverPadding(
-                      padding: TabletLayout.pagePadding(context),
-                      sliver: SliverFillRemaining(
-                        hasScrollBody: false,
-                        child: _TrainingEmptyState(
-                          hasLearningData: training.hasLearningData,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
+          child: list,
         );
       },
     );
   }
 
-  Widget _buildFeed(
-    BuildContext context,
-    LearningProfile profile,
+  /// 무대 아래 목록: 피드 상태 칩 · 「풀 문제」 · 「훈련 대상」.
+  List<Widget> _feedChildren(
+    TrainingSnapshot training,
     TrainingFeedResponse feed,
   ) {
-    final training = profile.training;
-    final hasFeed = feed.items.isNotEmpty;
-    return ListView(
-      padding: TabletLayout.pagePadding(context),
-      children: [
-        const _TrainingHeader(),
-        if (feed.refreshPending) ...[
-          const SizedBox(height: 10),
-          _FeedStatusChip(
-            label: feed.isPrecomputed
-                ? '추천 목록 업데이트 중'
-                : '기본 추천 표시 · 분석 후 더 맞춤',
-          ),
-        ],
-        const SizedBox(height: 20),
-        if (training.available) ...[
-          _TrainingHeroCard(
-            training: training,
-            displayName: widget.apiClient.authSession.user?.displayName,
-          ),
-          const SizedBox(height: 16),
-          if (training.activeSetId != null && training.remainingCount > 0)
-            _ContinueTrainingCard(
-              remainingCount: training.remainingCount,
-              onTap: () => _startTraining(training),
-            )
-          else
-            FilledButton.icon(
-              style: AppButtonStyles.soft(),
-              onPressed: () => _startTraining(training),
-              icon: const Icon(AppIcons.play),
-              label: const Text('5문제 세트로 복습'),
-            ),
-          const SizedBox(height: 24),
-        ],
-        if (hasFeed) ...[
-          const SectionLabel('맞춤 문제'),
-          const SizedBox(height: 10),
-          ...feed.items.map(
-            (item) => Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _TrainingFeedCard(
-                item: item,
-                onTap: () => _startFeedItem(item),
-              ),
-            ),
-          ),
-          const SizedBox(height: 12),
-        ],
-        if (training.focusItems.isNotEmpty) ...[
-          const SectionLabel('훈련 대상'),
-          _TrainingFocusList(items: training.focusItems),
-        ],
-        const SizedBox(height: 24),
+    return [
+      if (feed.refreshPending) ...[
+        _FeedStatusChip(
+          label: feed.isPrecomputed
+              ? '추천 목록 업데이트 중'
+              : '기본 추천 표시 · 분석 후 더 맞춤',
+        ),
+        const SizedBox(height: 16),
       ],
-    );
+      if (feed.items.isNotEmpty) ...[
+        const SectionLabel('풀 문제'),
+        const SizedBox(height: 10),
+        ...feed.items.map(
+          (item) => Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _TrainingFeedCard(
+              item: item,
+              onTap: () => _startFeedItem(item),
+            ),
+          ),
+        ),
+        const SizedBox(height: 12),
+      ],
+      if (training.focusItems.isNotEmpty) ...[
+        const SectionLabel('훈련 대상'),
+        _TrainingFocusList(items: training.focusItems),
+      ],
+      const SizedBox(height: 24),
+    ];
   }
 }
 
@@ -434,41 +420,114 @@ class _FeedTag extends StatelessWidget {
   }
 }
 
-/// 훈련 탭 맨 위 제목 「훈련」과 설명. 목록·빈 상태·로딩이 모두 같은 글자를 쓰고,
-/// 스크롤하면 [GlassScrollEdge]가 같은 제목을 이어 받는다.
-class _TrainingHeader extends StatelessWidget {
-  const _TrainingHeader();
+/// 훈련 무대 카드. 지금 상태에 맞는 한 가지를 고른다.
+///
+/// 복습 세트(이어서 하기 / 5문제 새로) → 피드만 → 기록은 있는데 다 풂 → 기록 없음.
+class _TrainingStageCard extends StatelessWidget {
+  const _TrainingStageCard({
+    required this.training,
+    required this.hasFeed,
+    required this.feedProblems,
+    required this.displayName,
+    required this.onStart,
+  });
+
+  final TrainingSnapshot training;
+  final bool hasFeed;
+  final int feedProblems;
+  final String? displayName;
+  final VoidCallback onStart;
+
+  String _heroMessage() {
+    final fromApi = training.headline.trim();
+    if (fromApi.isNotEmpty) return fromApi;
+
+    final name = displayName?.trim();
+    if (name != null && name.isNotEmpty && name != '게스트') {
+      return '$name님, 막힌 개념으로 문제를 준비했어요.';
+    }
+    return '막힌 개념으로 문제를 준비했어요.';
+  }
 
   @override
   Widget build(BuildContext context) {
-    return const Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          '훈련',
-          style: TextStyle(
-            fontSize: 24,
-            fontWeight: FontWeight.w700,
-            color: AppColors.text,
-          ),
-        ),
-        SizedBox(height: 6),
-        Text(
-          '막힌 개념만 모아서 다시 풀어보는 곳이에요.',
-          style: TextStyle(color: AppColors.textSub, height: 1.45, fontSize: 14),
-        ),
-      ],
+    if (training.available) return _reviewSet();
+    if (hasFeed) {
+      return _message('풀 문제 $feedProblems개가 준비됐어요', null);
+    }
+    if (training.hasLearningData) {
+      return _message('막힌 문제를 다 풀었어요.', '새로 막히면 여기에 모여요.');
+    }
+    return _message('아직 훈련할 문제가 없어요', '숙제를 찍으면 막힌 개념이 여기에 모여요.');
+  }
+
+  Widget _message(String title, String? body) {
+    return StageCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(title, style: StageText.cardTitle),
+          if (body != null) ...[
+            const SizedBox(height: 6),
+            Text(body, style: StageText.body),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _reviewSet() {
+    final continueSet =
+        training.activeSetId != null && training.remainingCount > 0;
+    final concepts = training.focusConcepts.take(3).join(' · ');
+    return StageCard(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          if (concepts.isNotEmpty) ...[
+            Text(
+              concepts,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: StageText.eyebrow,
+            ),
+            const SizedBox(height: 6),
+          ],
+          Text(_heroMessage(), style: StageText.cardTitle),
+          if (training.totalMisses > 0) ...[
+            const SizedBox(height: 8),
+            Text('누적 오답 ${training.totalMisses}건', style: StageText.body),
+          ],
+          if (continueSet) ...[
+            const SizedBox(height: 4),
+            Text(
+              '틀렸던 개념 문제 · ${training.remainingCount}개 남음',
+              style: StageText.body,
+            ),
+          ],
+          const SizedBox(height: 16),
+          if (continueSet)
+            FilledButton(
+              style: AppButtonStyles.white(),
+              onPressed: onStart,
+              child: const Text('이어서 복습하기'),
+            )
+          else
+            FilledButton.icon(
+              style: AppButtonStyles.white(),
+              onPressed: onStart,
+              icon: const Icon(AppIcons.play),
+              label: const Text('5문제 세트로 복습'),
+            ),
+        ],
+      ),
     );
   }
 }
 
-/// 첫 로그인 직후(기록 없음)와 막힌 문제를 다 푼 뒤에 보이는 훈련 탭.
-///
-/// [hasLearningData]가 true면 빈 카드 문구만 바뀌고, 예시 줄과 카메라 안내는 숨긴다.
-class _TrainingEmptyState extends StatelessWidget {
-  const _TrainingEmptyState({required this.hasLearningData});
-
-  final bool hasLearningData;
+/// 첫 로그인 직후(기록 없음) 무대 아래: 예시 두 줄과 가운데 카메라 안내.
+class _TrainingFirstVisitBelow extends StatelessWidget {
+  const _TrainingFirstVisitBelow();
 
   static const _examples = [
     '단위 바꾸기 (분 → 시간) · 일차방정식의 활용 · 3문제',
@@ -480,68 +539,16 @@ class _TrainingEmptyState extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _TrainingHeader(),
-        const SizedBox(height: 20),
-        AppCard(
-          padding: const EdgeInsets.symmetric(vertical: 28, horizontal: 20),
-          child: SizedBox(
-            width: double.infinity,
-            child: Column(
-              children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: const BoxDecoration(
-                    color: AppColors.primarySoft,
-                    shape: BoxShape.circle,
-                  ),
-                  child: const Icon(
-                    AppIcons.pencil,
-                    size: 28,
-                    color: AppColors.primary,
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  hasLearningData ? '막힌 문제를 다 풀었어요.' : '아직 훈련할 문제가 없어요',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 17,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.text,
-                  ),
-                ),
-                const SizedBox(height: 6),
-                Text(
-                  hasLearningData
-                      ? '새로 막히면 여기에 모여요.'
-                      : '숙제를 찍으면 막힌 개념이 여기에 모여요.',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    height: 1.45,
-                    color: AppColors.textSub,
-                  ),
-                ),
-              ],
-            ),
+        const _ExampleHeader(),
+        const SizedBox(height: 10),
+        for (final example in _examples)
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: _ExampleRow(text: example),
           ),
-        ),
-        if (!hasLearningData) ...[
-          const SizedBox(height: 24),
-          const _ExampleHeader(),
-          const SizedBox(height: 10),
-          for (final example in _examples)
-            Padding(
-              padding: const EdgeInsets.only(bottom: 8),
-              child: _ExampleRow(text: example),
-            ),
-        ],
         const Spacer(),
-        if (!hasLearningData) ...[
-          const SizedBox(height: 20),
-          const _CameraHint(),
-        ],
+        const SizedBox(height: 20),
+        const _CameraHint(),
       ],
     );
   }
@@ -674,149 +681,6 @@ class _CameraHint extends StatelessWidget {
   }
 }
 
-class _TrainingHeroCard extends StatelessWidget {
-  const _TrainingHeroCard({
-    required this.training,
-    this.displayName,
-  });
-
-  final TrainingSnapshot training;
-  final String? displayName;
-
-  String _heroMessage() {
-    final fromApi = training.headline.trim();
-    if (fromApi.isNotEmpty) return fromApi;
-
-    final name = displayName?.trim();
-    if (name != null && name.isNotEmpty && name != '게스트') {
-      return '$name님, 막힌 개념으로 문제를 준비했어요.';
-    }
-    return '막힌 개념으로 문제를 준비했어요.';
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return AppCard(
-      padding: const EdgeInsets.all(18),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(
-                  color: AppColors.accent.withValues(alpha: 0.12),
-                  borderRadius: BorderRadius.circular(AppRadii.md),
-                ),
-                child: const Icon(
-                  AppIcons.replay,
-                  color: AppColors.accent,
-                  size: 24,
-                ),
-              ),
-              const SizedBox(width: 14),
-              Expanded(
-                child: Text(
-                  _heroMessage(),
-                  style: const TextStyle(
-                    fontWeight: FontWeight.w800,
-                    fontSize: 15,
-                    height: 1.45,
-                  ),
-                ),
-              ),
-            ],
-          ),
-          if (training.focusConcepts.isNotEmpty) ...[
-            const SizedBox(height: 10),
-            Text(
-              training.focusConcepts.take(3).join(' · '),
-              style: const TextStyle(
-                color: AppColors.textSub,
-                fontSize: 13,
-                height: 1.4,
-              ),
-            ),
-          ],
-          if (training.totalMisses > 0 || training.relearnedCount > 0) ...[
-            const SizedBox(height: 14),
-            Text(
-              [
-                if (training.totalMisses > 0) '누적 오답 ${training.totalMisses}건',
-                if (training.relearnedCount > 0)
-                  '재학습 성공 ${training.relearnedCount}건',
-              ].join(' · '),
-              style: const TextStyle(
-                color: AppColors.textMuted,
-                fontSize: 12,
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-class _ContinueTrainingCard extends StatelessWidget {
-  const _ContinueTrainingCard({
-    required this.remainingCount,
-    required this.onTap,
-  });
-
-  final int remainingCount;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    return Material(
-      color: AppColors.primary.withValues(alpha: 0.12),
-      borderRadius: BorderRadius.circular(AppRadii.lg),
-      child: InkWell(
-        borderRadius: BorderRadius.circular(AppRadii.lg),
-        onTap: onTap,
-        child: Container(
-          width: double.infinity,
-          padding: const EdgeInsets.all(18),
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(AppRadii.lg),
-            border: Border.all(color: AppColors.primary.withValues(alpha: 0.25)),
-          ),
-          child: Row(
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      '이어서 복습하기',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w900,
-                        fontSize: 15,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '틀렸던 개념 문제 · $remainingCount개 남음',
-                      style: const TextStyle(
-                        color: AppColors.textSub,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              const Icon(AppIcons.arrowRight, color: AppColors.primary),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _TrainingFocusList extends StatelessWidget {
   const _TrainingFocusList({required this.items});
 
@@ -895,23 +759,20 @@ class _TrainingFocusRow extends StatelessWidget {
   }
 }
 
-/// 훈련 탭 본문과 같은 구조의 로딩 플레이스홀더.
+/// 훈련 탭 본문과 같은 구조의 로딩 플레이스홀더. 무대(제목과 설명)는 그대로 보인다.
 class _TrainingTabSkeleton extends StatelessWidget {
   const _TrainingTabSkeleton();
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: TabletLayout.pagePadding(context),
+    return StageListView(
+      stage: const PageStage.tab(title: _title, subtitle: _subtitle),
       children: [
-        // 제목과 설명은 불러온 뒤와 같은 글자라 자리표시 대신 그대로 보인다.
-        const _TrainingHeader(),
-        const SizedBox(height: 20),
         const _TrainingHeroCardSkeleton(),
         const SizedBox(height: 16),
         const SkeletonBox(height: AppSizes.buttonHeight, borderRadius: AppRadii.md),
         const SizedBox(height: 24),
-        const SectionLabel('맞춤 문제'),
+        const SectionLabel('풀 문제'),
         const SizedBox(height: 10),
         for (var i = 0; i < 3; i++) ...[
           const _TrainingFeedCardSkeleton(),
