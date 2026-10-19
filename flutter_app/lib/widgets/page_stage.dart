@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
+import '../layout/tablet_layout.dart';
 import '../theme/app_design_system.dart';
 import 'glass.dart';
 
@@ -337,4 +338,115 @@ class PageStage extends StatelessWidget {
       ),
     );
   }
+}
+
+/// 이만큼 내려가면 「스크롤했다」로 본다(홈과 같은 값).
+const double _kStageScrolledThreshold = 8;
+
+/// 무대를 얹은 탭 화면의 틀. 스크롤하면 맨 위에 상태 표시줄 높이만큼 흐림 띠를
+/// 깔아 무대 글자가 시계와 겹치지 않게 한다. 상태바 글자는 기본 검정이고,
+/// 무대([PageStage])가 상태바 밑에 있는 동안만 흰색이 된다.
+class StageFrame extends StatefulWidget {
+  const StageFrame({super.key, required this.child});
+
+  final Widget child;
+
+  @override
+  State<StageFrame> createState() => _StageFrameState();
+}
+
+class _StageFrameState extends State<StageFrame> {
+  bool _scrolled = false;
+
+  bool _onScroll(ScrollNotification notification) {
+    if (notification.depth != 0 || notification.metrics.axis != Axis.vertical) {
+      return false;
+    }
+    final scrolled = notification.metrics.pixels > _kStageScrolledThreshold;
+    if (scrolled != _scrolled) setState(() => _scrolled = scrolled);
+    return false;
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AnnotatedRegion<SystemUiOverlayStyle>(
+      value: SystemUiOverlayStyle.dark,
+      child: Stack(
+        children: [
+          NotificationListener<ScrollNotification>(
+            onNotification: _onScroll,
+            child: widget.child,
+          ),
+          Positioned(
+            top: 0,
+            left: 0,
+            right: 0,
+            child: GlassStatusBarBand(visible: _scrolled),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// 무대 아래 본문 한 줄: 좌우 여백 + 태블릿 폭 상한 + 가운데 정렬.
+class _StageBodyRow extends StatelessWidget {
+  const _StageBodyRow({required this.child});
+
+  final Widget child;
+
+  @override
+  Widget build(BuildContext context) {
+    final side = TabletLayout.pageHorizontalPadding(context);
+    return Padding(
+      padding: EdgeInsets.symmetric(horizontal: side),
+      child: Center(
+        child: ConstrainedBox(
+          constraints: BoxConstraints(
+            maxWidth: TabletLayout.maxContentWidth(context),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+}
+
+/// 맨 위에 [stage]를 화면 폭 전체로 두고, 그 아래 [children]을 본문 폭으로 늘어놓는 목록.
+/// 아래 여백은 떠 있는 탭바 높이를 포함한다(`TabletLayout.pagePadding`).
+class StageListView extends StatelessWidget {
+  const StageListView({
+    super.key,
+    required this.stage,
+    required this.children,
+    this.physics = const AlwaysScrollableScrollPhysics(),
+  });
+
+  final Widget stage;
+  final List<Widget> children;
+  final ScrollPhysics physics;
+
+  @override
+  Widget build(BuildContext context) {
+    return ListView(
+      physics: physics,
+      padding: EdgeInsets.only(bottom: TabletLayout.pagePadding(context).bottom),
+      children: [
+        stage,
+        const SizedBox(height: AppSpacing.xl),
+        for (final child in children) _StageBodyRow(child: child),
+      ],
+    );
+  }
+}
+
+/// `CustomScrollView`에서 무대 아래 본문에 줄 여백.
+EdgeInsets stageBodyPadding(BuildContext context) {
+  final side = TabletLayout.pageHorizontalPadding(context);
+  return EdgeInsets.fromLTRB(
+    side,
+    AppSpacing.xl,
+    side,
+    TabletLayout.pagePadding(context).bottom,
+  );
 }
