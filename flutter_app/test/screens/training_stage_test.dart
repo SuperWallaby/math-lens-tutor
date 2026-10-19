@@ -242,6 +242,31 @@ void main() {
     expect(find.byType(StageTile), findsNothing);
   });
 
+  testWidgets('first visit: the camera hint sits above the floating tab bar', (
+    tester,
+  ) async {
+    tester.view.physicalSize = const Size(1170, 2532);
+    tester.view.devicePixelRatio = 3;
+    addTearDown(tester.view.reset);
+    await tester.pumpWidget(
+      MediaQuery(
+        // extendBody 탭바가 body에 넘기는 아래 여백(30 + 72 + 24).
+        data: const MediaQueryData(
+          size: Size(390, 844),
+          padding: EdgeInsets.only(top: 47, bottom: 126),
+        ),
+        child: _training(profile: designReviewProfileFirstVisit()),
+      ),
+    );
+    await tester.pumpAndSettle();
+
+    // 스크롤하지 않아도 안내가 탭바 위에 보여야 가운데 카메라를 가리킬 수 있다.
+    expect(
+      tester.getRect(find.text('가운데 카메라로 시작해요')).bottom,
+      lessThanOrEqualTo(844 - 126),
+    );
+  });
+
   testWidgets('loading: the stage shows, skeletons below, no tiles', (
     tester,
   ) async {

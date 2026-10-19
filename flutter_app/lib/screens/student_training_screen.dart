@@ -190,15 +190,21 @@ class StudentTrainingScreenState extends State<StudentTrainingScreen> {
         } else if (training.hasLearningData) {
           list = StageListView(stage: stage, children: const []);
         } else {
+          // 아래 여백(탭바 높이 포함)을 채움 영역 안에 둬야 맨 아래 카메라 안내가
+          // 스크롤하지 않아도 탭바 위에 보인다.
+          final pad = stageBodyPadding(context);
           list = CustomScrollView(
             physics: const AlwaysScrollableScrollPhysics(),
             slivers: [
               SliverToBoxAdapter(child: stage),
               SliverPadding(
-                padding: stageBodyPadding(context),
-                sliver: const SliverFillRemaining(
+                padding: pad.copyWith(bottom: 0),
+                sliver: SliverFillRemaining(
                   hasScrollBody: false,
-                  child: _TrainingFirstVisitBelow(),
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: pad.bottom),
+                    child: const _TrainingFirstVisitBelow(),
+                  ),
                 ),
               ),
             ],
