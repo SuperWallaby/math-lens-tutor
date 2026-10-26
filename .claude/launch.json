@@ -1,0 +1,14 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "flutter-web",
+      "runtimeExecutable": "bash",
+      "runtimeArgs": [
+        "-lc",
+        "cd flutter_app && flutter run -d web-server --web-port 8080 --web-hostname 127.0.0.1 --dart-define-from-file=dev/local-defines.json --dart-define=API_BASE_URL=http://127.0.0.1:3737"
+      ],
+      "port": 8080
+    }
+  ]
+}

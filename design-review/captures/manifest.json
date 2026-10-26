@@ -1,5 +1,5 @@
 {
-  "capturedAt": "2026-05-26T15:39:45.638Z",
+  "capturedAt": "2026-10-20T07:34:04.950Z",
   "items": [
     {
       "key": "student_hub__first_visit",
@@ -75,6 +75,11 @@
       "key": "student_training__empty",
       "url": "http://127.0.0.1:8080/?design_review=student_training__empty",
       "file": "design-review/captures/student_training/empty.png"
+    },
+    {
+      "key": "student_training__feed",
+      "url": "http://127.0.0.1:8080/?design_review=student_training__feed",
+      "file": "design-review/captures/student_training/feed.png"
     }
   ]
 }

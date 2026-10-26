@@ -32,6 +32,7 @@ const keys = [
   "student_progress__chain_warning",
   "student_progress__empty",
   "student_training__empty",
+  "student_training__feed",
 ];
 
 const baseUrl = (process.env.FLUTTER_WEB_URL ?? "http://127.0.0.1:8080").replace(
@@ -83,7 +84,10 @@ async function main() {
 
   await mkdir(outRoot, { recursive: true });
 
-  const browser = await chromium.launch({ headless: true });
+  const browser = await chromium.launch({
+    headless: true,
+    channel: process.env.PLAYWRIGHT_CHANNEL || undefined,
+  });
   const context = await browser.newContext({
     viewport: { width: 390, height: 844 },
     deviceScaleFactor: 2,
